@@ -1,0 +1,55 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"files": {
+		"include": ["**/*.ts", "**/*.js", ".vscode/*.json", "**/*.vue"],
+		"ignore": [
+			"dist/**/*",
+			"$types.d.ts",
+			".svelte-kit/**/*",
+			"node_modules/**/*",
+			"paraglide/**/*"
+		]
+	},
+	"javascript": {
+		"formatter": {
+			"lineWidth": 100,
+			"quoteStyle": "single",
+			"semicolons": "asNeeded",
+			"trailingCommas": "es5",
+			"indentStyle": "tab"
+		}
+	},
+	"linter": {
+		"rules": {
+			"style": {
+				"noNonNullAssertion": "off",
+				"useSingleVarDeclarator": {
+					"level": "warn",
+					"fix": "safe"
+				},
+				"useTemplate": {
+					"level": "warn",
+					"fix": "safe"
+				},
+				"noParameterAssign": "off",
+				"useImportType": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "off",
+				"noDebugger": "warn",
+				"noConsole": "info"
+			},
+			"performance": {
+				"noAccumulatingSpread": "off"
+			},
+			"complexity": {
+				"noBannedTypes": "off"
+			},
+			"security": {},
+			"correctness": {
+				"noUnusedImports": "off"
+			},
+			"nursery": {}
+		}
+	}
+}
