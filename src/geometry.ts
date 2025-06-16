@@ -1,6 +1,6 @@
 import { generation } from './globals'
 import { Mesh } from './mesh'
-import type { Vector3 } from './types'
+import { v3, type Vector3 } from './types'
 import { normalize, scale, translate } from './cpu/vectors'
 
 export function box({ size = 1, center = [0, 0, 0] as Vector3 } = {}): Mesh {
@@ -51,7 +51,7 @@ export function geodesicSphere({
 } = {}): Mesh {
 	// =5 = question, >5 = gpu better, <5 = cpu better
 	function midpoint(a: Vector3, b: Vector3): Vector3 {
-		return normalize([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2] as Vector3)
+		return normalize([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2])
 	}
 
 	// Start with icosahedron vertices
@@ -69,7 +69,7 @@ export function geodesicSphere({
 		[t, 0, 1],
 		[-t, 0, -1],
 		[-t, 0, 1],
-	].map((v) => normalize(v as Vector3))
+	].map((v) => normalize(v3(v)))
 
 	// Initial icosahedron faces
 	let faces: [number, number, number][] = [

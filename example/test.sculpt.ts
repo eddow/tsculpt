@@ -1,4 +1,4 @@
-import { Decimal, Vector3 } from '@tsculpt'
+import type { Decimal, Vector3 } from '@tsculpt'
 import { sphere } from '@tsculpt/geometry'
 
 /*TODO:
