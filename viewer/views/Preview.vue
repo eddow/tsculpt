@@ -1,7 +1,19 @@
 <template>
 	<div v-if="error" class="error">
-		<h2>On - {{ error.location }}</h2>
+		<h2>Error on {{ error.location }}</h2>
 		<pre>{{ error.err }}</pre>
+		<div v-if="error.err.stack" class="stack-trace">
+			<h3>Stack Trace:</h3>
+			<pre>{{ error.err.stack }}</pre>
+		</div>
+		<div v-if="error.err.message" class="error-message">
+			<h3>Error Message:</h3>
+			<pre>{{ error.err.message }}</pre>
+		</div>
+		<div v-if="error.err.fileName || error.err.lineNumber" class="error-location">
+			<h3>Location:</h3>
+			<pre>{{ error.err.fileName }}:{{ error.err.lineNumber }}</pre>
+		</div>
 	</div>
 	<Splitter v-else class="full-size" stateStorage="none">
 		<SplitterPanel :size="100">
@@ -12,7 +24,7 @@
 				ref="viewerRef"
 			/>
 		</SplitterPanel>
-		<SplitterPanel v-if="displaySettings.showParameters" :size="20" :style="{ minWidth: '250px' }">
+		<SplitterPanel v-if="displaySettings.showParameters" :size="20" :style="{ minWidth: '300px' }">
 			<Parameters
 				v-model:parameters="parameters"
 				:parameters-config="parametersConfig"
@@ -28,7 +40,7 @@ import { router } from '@/router'
 import type { MenuItem } from 'primevue/menuitem'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { type GenerationParameters, Mesh, ParametersConfig } from '@tsculpt'
+import { type GenerationParameters, type IMesh, ParametersConfig } from '@tsculpt'
 import { ComputedRef, type Ref, computed, inject, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { module, Module } from '../lib/source'
@@ -68,23 +80,27 @@ watch(
 const props = defineProps<{
 	path: string
 }>()
-
+type LoadLocation = '1-module' | '2-load' | '3-call'
 const error = ref<{
 	err: any
-	location: '1-module' | '2-load' | '3-call'
+	location: LoadLocation
 } | null>(null)
 
 const loadedModule = ref<Module | typeof waiting>(waiting)
-const factory = ref<Factory<MaybePromise<Mesh>> | typeof waiting>(waiting)
+const factory = ref<Factory<MaybePromise<IMesh>> | typeof waiting>(waiting)
 const parameters = ref<GenerationParameters>({ ...defaultGlobals })
 const parametersConfig = ref<ParametersConfig | false>(false)
-const mesh = ref<Mesh | typeof waiting>(waiting)
+const mesh = ref<IMesh | typeof waiting>(waiting)
 
 function noErrorBefore(location: any) {
 	return !error.value?.location || error.value.location > `${location}`
 }
 const moduleRef: ComputedRef<Ref<Promise<Module>>> = computed(() => module(`/${props.path}.sculpt.ts`))
 const loadingModule = computed(() => moduleRef.value.value)
+function handleError(err: any, location: LoadLocation) {
+	console.error(err)
+	error.value = { err, location }
+}
 watch(
 	loadingModule,
 	async (loadingModule) => {
@@ -92,7 +108,7 @@ watch(
 		try {
 			loadedModule.value = await loadingModule
 		} catch (err) {
-			error.value = { err, location: '1-module' }
+			handleError(err, '1-module')
 		}
 	},
 	{ immediate: true }
@@ -104,7 +120,7 @@ watch(
 		if (noErrorBefore(2) && loadedModule !== waiting) {
 			error.value = null
 			try {
-				const entry = loadedModule[hash] as MaybeFactory<MaybePromise<Mesh>>
+				const entry = loadedModule[hash] as MaybeFactory<MaybePromise<IMesh>>
 				if (!entry) throw new Error(`No export found for ${hash}`)
 				if (typeof entry === 'function') {
 					// @ts-expect-error `params` come from `vite-plugin-param-metadata`
@@ -112,7 +128,7 @@ watch(
 					factory.value = () => withGlobals(() => entry(parameters.value), parameters.value)
 				} else factory.value = () => entry
 			} catch (err) {
-				error.value = { err, location: '2-load' }
+				handleError(err, '2-load')
 				factory.value = () => {
 					throw err
 				}
@@ -130,7 +146,7 @@ watch(
 			try {
 				mesh.value = await factory(parameters)
 			} catch (err) {
-				error.value = { err, location: '3-call' }
+				handleError(err, '3-call')
 			}
 		}
 	},

@@ -9,7 +9,7 @@ import { isDark } from '@/lib/stores'
 import { waiting } from '@/lib/utils'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import type { Mesh } from 'tsculpt'
+import type { IMesh } from '@tsculpt'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const colors = {
@@ -34,7 +34,7 @@ const colors = {
 }
 
 const props = defineProps<{
-	viewed: Mesh | typeof waiting
+	viewed: IMesh | typeof waiting
 	displayMode: 'solid' | 'wireframe' | 'solid-edges'
 	showAxes: boolean
 }>()
@@ -290,8 +290,8 @@ function updateGeometry() {
 		return
 	}
 
-	if (props.viewed.vertices && props.viewed.faces) {
-		const vertices = new Float32Array(props.viewed.vertices.flat())
+	if (props.viewed.vectors && props.viewed.faces) {
+		const vertices = new Float32Array(props.viewed.vectors.flat())
 		geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
 
 		if (props.viewed.faces) {

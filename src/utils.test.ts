@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type Vector3 } from './types'
+import { type Vector3 } from './types/vectors'
 import { equals, linear, normalize, rotate3, scale, translate, vector } from './cpu/vectors'
 
 describe('Vector operations', () => {

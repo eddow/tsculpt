@@ -1,4 +1,4 @@
-import { GenerationParameters } from 'tsculpt'
+import { GenerationParameters } from '@tsculpt'
 
 export const waiting = Symbol('waiting')
 export type MaybePromise<T> = Promise<T> | T

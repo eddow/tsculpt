@@ -1,11 +1,15 @@
 <template>
 	<div class="list-container">
-		<Tree :value="files" selectionMode="single" @node-select="onSelect" class="file-tree" toggleable>
+		<Tree :value="files" selectionMode="single" class="file-tree" toggleable>
 			<template #default="{ node }">
-				<span :class="{ 'file-node': true, 'is-file': !node.children }">
-					<i :class="node.children ? 'pi pi-folder' : 'pi pi-file'" />
+				<span v-if="node.children" :class="{ 'file-node': true, 'is-file': !node.children }">
+					<i class="pi pi-folder" />
 					{{ node.label }}
 				</span>
+				<a v-else :class="{ 'file-node': true, 'is-file': !node.children }" :href="`/preview/${node.path}`">
+					<i class="pi pi-file" />
+					{{ node.label }}
+				</a>
 			</template>
 		</Tree>
 	</div>
@@ -13,7 +17,6 @@
 
 <script setup lang="ts">
 import { modules } from '@/lib/source'
-import { router } from '@/router'
 import type { TreeNode } from 'primevue/treenode'
 import { onMounted, ref } from 'vue'
 
@@ -46,7 +49,7 @@ function addNode(nodes: TreeNode[], path: string) {
 		label: file!,
 		selectable: true,
 		leaf: true,
-		path,
+		path: path.replace(/\.sculpt\.ts$/, ''),
 	})
 }
 
@@ -60,23 +63,20 @@ onMounted(async () => {
 	// Get root level nodes
 	files.value = nodes
 })
-
-function onSelect(node: TreeNode) {
-	const treeNode = node as TreeNode
-	if (treeNode.path) {
-		router.push(`/preview/${treeNode.path}`)
-	}
-}
 </script>
 
 <style lang="sass">
 .list-container
 	height: 100vh
-	max-width: 800px
-	margin: 0 auto
+	width: 100vw
+	display: flex
+	justify-content: center
 	padding: 1rem
+	box-sizing: border-box
 
 .file-tree
+	width: 100%
+	max-width: 600px
 	height: 100%
 	.file-node
 		display: flex

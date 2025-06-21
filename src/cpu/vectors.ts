@@ -1,7 +1,4 @@
-import type { Vector3 } from '../types'
-
-// Type for vectors of any dimension
-export type VectorD = readonly number[]
+import type { Vector3, VectorD } from '../types/vectors'
 
 export function equals<Vector extends VectorD>(a: Vector, b: Vector): boolean {
 	return a.length === b.length && a.every((value, index) => value === b[index])

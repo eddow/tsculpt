@@ -5,7 +5,7 @@ function givenConstant(value: any) {
 	const text = typeof value === 'string' ? value : value.getText()
 	try {
 		// biome-ignore lint/security/noGlobalEval: From coder to coder
-		return eval(text)
+		return (0, eval)(text)
 	} catch (e) {
 		return { raw: text }
 	}
