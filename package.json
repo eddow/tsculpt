@@ -13,6 +13,7 @@
 		"test:ui": "vitest --ui"
 	},
 	"dependencies": {
+		"@jscad/modeling": "^2.12.5",
 		"@primeuix/themes": "^1.1.1",
 		"@types/three": "^0.177.0",
 		"@types/ws": "^8.18.1",

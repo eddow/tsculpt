@@ -22,9 +22,6 @@ export class VectorMap<Vector extends VectorD> {
 		}
 		return this.map.get(k)!
 	}
-	vector(i: number): Vector {
-		return this.stereotypes[i]
-	}
 	stereotype(v: Vector): Vector {
 		return this.stereotypes[this.index(v)]
 	}
