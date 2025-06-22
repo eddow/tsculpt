@@ -4,6 +4,9 @@ import { createApp } from 'vue'
 import App from './App.vue'
 
 import Accordion from 'primevue/accordion'
+import AccordionContent from 'primevue/accordioncontent'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionPanel from 'primevue/accordionpanel'
 import AccordionTab from 'primevue/accordiontab'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
@@ -44,6 +47,9 @@ app.component('Card', Card)
 app.component('Dialog', Dialog)
 app.component('Menu', Menu)
 app.component('Accordion', Accordion)
+app.component('AccordionContent', AccordionContent)
+app.component('AccordionHeader', AccordionHeader)
+app.component('AccordionPanel', AccordionPanel)
 app.component('AccordionTab', AccordionTab)
 app.component('SplitButton', SplitButton)
 app.component('DataTable', DataTable)

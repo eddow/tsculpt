@@ -26,6 +26,7 @@
 		</SplitterPanel>
 		<SplitterPanel v-if="displaySettings.showParameters" :size="20" :style="{ minWidth: '300px' }">
 			<Parameters
+				:viewed="factory === waiting ? waiting : mesh"
 				v-model:parameters="parameters"
 				:parameters-config="parametersConfig"
 			/>
@@ -49,24 +50,14 @@ const hash = computed(() => route.hash.slice(1) || 'default')
 const viewerRef = ref<InstanceType<typeof Viewer>>()
 import { Factory, MaybeFactory, MaybePromise, waiting } from '@/lib/utils'
 import { defaultGlobals, withGlobals } from '@tsculpt/globals'
+import { localStored } from '@/lib/stores'
 
 type DisplayMode = 'solid' | 'wireframe' | 'solid-edges'
-type DisplaySettings = {
-	mode: DisplayMode
-	showAxes: boolean
-	showParameters: boolean
-}
-
-// Load display settings from localStorage or use defaults
-const savedDisplay = localStorage.getItem('viewer-display')
-const defaultDisplay: DisplaySettings = {
-	mode: 'solid',
+const displaySettings = localStored('viewer-display', {
+	mode: 'solid' as DisplayMode,
 	showAxes: false,
 	showParameters: true,
-}
-const displaySettings = ref<DisplaySettings>(
-	savedDisplay ? JSON.parse(savedDisplay) : defaultDisplay
-)
+})
 
 // Save settings whenever they change
 watch(

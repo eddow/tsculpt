@@ -1,50 +1,98 @@
 <template>
-	<div v-if="allParametersConfig" class="parameters">
-		<div class="parameters-header">
-			<h2>Parameters</h2>
-			<Button
-				icon="pi pi-refresh"
-				class="p-button-text"
-				@click="resetAllToDefaults"
-				:disabled="!hasChanges"
-				:tooltip="'Reset all to defaults'"
-			/>
-		</div>
-		<div class="parameters-list">
-			<Parameter
-				v-for="(config, name) in allParametersConfig"
-				:key="name"
-				:name="name"
-				:config="config"
-				:model-value="parameters[name] ?? config.default"
-				@update:model-value="value => updateParameter(name, value)"
-			/>
-		</div>
+	{{ accordionRef?.value?.value }}
+	<div v-if="viewed === waiting">
+		<h2>Loading...</h2>
 	</div>
-	<div v-else class="parameters">
-		<div class="parameters-header">
-			<h2>No Parameters Available</h2>
-		</div>
-	</div>
+	<Accordion v-else :multiple="true" v-model:value="shown" ref="accordionRef">
+		<AccordionPanel value="parameters" v-if="allParametersConfig">
+			<AccordionHeader>
+				Parameters
+				<Button
+					v-if="parametersTabExpanded"
+					icon="pi pi-refresh"
+					class="p-button-text p-button-sm right-button"
+					@click.stop="resetAllToDefaults"
+					:disabled="!hasChanges"
+					:tooltip="'Reset all to defaults'"
+				/>
+			</AccordionHeader>
+			<AccordionContent>
+				<Parameter
+					v-for="(config, name) in allParametersConfig"
+					:key="name"
+					:name="name"
+					:config="config"
+					:model-value="parameters[name] ?? config.default"
+					@update:model-value="value => updateParameter(name, value)"
+				/>
+			</AccordionContent>
+		</AccordionPanel>
+		<AccordionPanel value="parameters" v-else>
+			<AccordionHeader>Parameters</AccordionHeader>
+			<AccordionContent>
+				<h2>No Parameters Available</h2>
+			</AccordionContent>
+		</AccordionPanel>
+		<AccordionPanel value="statistics">
+			<AccordionHeader>Statistics</AccordionHeader>
+			<AccordionContent>
+				<table class="statistics-table">
+					<tbody>
+						<tr v-for="item in statistics" :key="item.field">
+							<th>{{ item.field }}</th>
+							<td>{{ item.value }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</AccordionContent>
+		</AccordionPanel>
+	</Accordion>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import type { GenerationParameters, ParametersConfig } from '@tsculpt'
+import Accordion from 'primevue/accordion'
+import AccordionPanel from 'primevue/accordionpanel'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionContent from 'primevue/accordioncontent'
+import type { GenerationParameters, IMesh, ParametersConfig } from '@tsculpt'
 import { globalsConfig } from '@tsculpt/globals'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import Parameter from './Parameter.vue'
+import { localStored } from '@/lib/stores'
+import { waiting } from '@/lib/utils'
 
+const shown = localStored('parameters-shown', ['parameters'])
 const props = defineProps<{
+	viewed: IMesh | typeof waiting
 	parameters: GenerationParameters
 	parametersConfig: ParametersConfig | false
 }>()
 
 const emit = defineEmits<(e: 'update:parameters', value: GenerationParameters) => void>()
+const statistics = computed(() => {
+	const viewed = props.viewed
+	if (viewed === waiting) return []
+	const stats = {
+		vertices: viewed.vectors.length,
+		faces: viewed.faces.length,
+	}
+	return Object.entries(stats).map(([field, value]) => ({ field, value }))
+})
+const accordionRef = ref()
+
 const allParametersConfig = computed(() => {
 	return props.parametersConfig === false
 		? false
 		: ({ ...globalsConfig, ...props.parametersConfig } as ParametersConfig)
+})
+
+// Check if parameters tab is expanded by looking for the active class
+const parametersTabExpanded = computed(() => {
+	if (!accordionRef.value) return true
+	const panels = accordionRef.value.$el?.querySelectorAll('.p-accordion-panel')
+	if (!panels || panels.length === 0) return true
+	return panels[0]?.classList.contains('p-accordionpanel-active')
 })
 
 const updateParameter = (name: string, value: any) => {
@@ -105,32 +153,25 @@ const hasChanges = computed(() => {
 // Initialize defaults on mount
 ensureDefaults()
 </script>
-
 <style lang="sass">
-.parameters
-	height: 100%
-	display: flex
-	flex-direction: column
-	background: var(--surface-ground)
+.right-button
+	margin-left: auto
+	margin-right: .5rem
 
-	.parameters-header
-		padding: 1rem
-		border-bottom: 1px solid var(--surface-border)
-		display: flex
-		justify-content: space-between
-		align-items: center
+.statistics-table
+	width: 100%
+	border-collapse: collapse
+	margin: 0.5rem 0
 
-		h2
-			margin: 0
-			font-size: 1.2rem
-			font-weight: 600
-			color: var(--text-color)
+	th
+		font-weight: 600
+		color: var(--text-color-secondary)
+		padding: 0.25rem 0.5rem 0.25rem 0
+		width: 40%
+		text-align: right
 
-	.parameters-list
-		flex: 1
-		overflow-y: auto
-		padding: 1rem
-		display: flex
-		flex-direction: column
-		gap: 1rem
+	td
+		padding: 0.25rem 0
+		color: var(--text-color)
+		font-family: var(--font-family-mono)
 </style>
