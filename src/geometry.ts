@@ -1,25 +1,20 @@
-import { normalize, scale, translate } from './cpu/vectors'
+import { normalize } from './cpu/vector'
+import { vector } from './expression'
 import { generation } from './globals'
 import { Mesh } from './types/mesh'
 import { type Vector3, v3 } from './types/vectors'
 
 export function box({ size = 1, center = [0, 0, 0] as Vector3 } = {}): Mesh {
-	const vertices = translate(
-		scale(
-			[
-				[-1, -1, -1],
-				[1, -1, -1],
-				[1, 1, -1],
-				[-1, 1, -1],
-				[-1, -1, 1],
-				[1, -1, 1],
-				[1, 1, 1],
-				[-1, 1, 1],
-			].map((v) => v3(v)),
-			size
-		),
-		center
-	)
+	const vertices = [
+		[-1, -1, -1],
+		[1, -1, -1],
+		[1, 1, -1],
+		[-1, 1, -1],
+		[-1, -1, 1],
+		[1, -1, 1],
+		[1, 1, 1],
+		[-1, 1, 1],
+	].map((v) => vector<Vector3>`${size} * ${v3(v)} + ${center}`)
 
 	const faceIndices: [number, number, number][] = [
 		// Front face (CCW from outside)F
@@ -118,9 +113,7 @@ export function geodesicSphere({
 
 	return new Mesh(
 		icosahedron.faces,
-		Array.from(icosahedron.vectors).map(
-			(v) => translate([scale([v], radius)[0]], center)[0]
-		) as Vector3[]
+		icosahedron.vectors.map((v) => vector`${radius} * ${v} + ${center}`)
 	)
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { equals, linear, normalize, rotate3, scale, translate, vector } from './cpu/vectors'
+import { equals, normalize, rotate3 } from './cpu/vector'
+import { vector } from './expression'
 import { type Vector3 } from './types/vectors'
 
 describe('Vector operations', () => {
@@ -38,23 +39,6 @@ describe('Vector operations', () => {
 			const result = normalize(input)
 			const expectedLength = 0.5
 			for (const x of result) expect(x).toBeCloseTo(expectedLength)
-		})
-	})
-
-	describe('linear', () => {
-		it('should handle single vector scaling', () => {
-			const result = linear([2, [1, 2, 3] as Vector3])
-			expect(result).toEqual([2, 4, 6])
-		})
-
-		it('should add multiple scaled vectors', () => {
-			const result = linear([1, [1, 0, 0] as Vector3], [2, [0, 1, 0] as Vector3])
-			expect(result).toEqual([1, 2, 0])
-		})
-
-		it('should handle vectors of different lengths', () => {
-			const result = linear([1, [1, 2]], [1, [3, 4, 5]])
-			expect(result).toEqual([4, 6, 5])
 		})
 	})
 
@@ -115,46 +99,6 @@ describe('Vertices operations', () => {
 		[1, 1, 1],
 		[0, 1, 1],
 	] as Vector3[]
-
-	describe('translate', () => {
-		it('should translate vertices', () => {
-			const offset: Vector3 = [1, 2, 3]
-			const result = translate(vertices, offset)
-			const firstVertex = result[0]
-			expect(firstVertex).toEqual([1, 2, 3])
-		})
-
-		it('should not modify original vertices', () => {
-			const original = vertices[0]
-			translate(vertices, [1, 1, 1])
-			expect(vertices[0]).toEqual(original)
-		})
-
-		it('should handle zero translation', () => {
-			const result = translate(vertices, [0, 0, 0])
-			expect(result).toEqual(vertices)
-		})
-	})
-
-	describe('scale', () => {
-		it('should scale vertices uniformly', () => {
-			const result = scale(vertices, 2)
-			const firstVertex = result[0]
-			expect(firstVertex).toEqual([0, 0, 0])
-			expect(result[1]).toEqual([2, 0, 0])
-		})
-
-		it('should not modify original vertices', () => {
-			const original = [...vertices]
-			scale(vertices, 2)
-			expect(vertices).toEqual(original)
-		})
-
-		it('should handle unit scale', () => {
-			const result = scale(vertices, 1)
-			expect(result).toEqual(vertices)
-		})
-	})
 
 	describe('rotate3', () => {
 		it('should rotate around X axis', () => {

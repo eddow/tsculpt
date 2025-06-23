@@ -4,7 +4,7 @@ import { Plugin } from 'vite'
 function givenConstant(value: any) {
 	const text = typeof value === 'string' ? value : value.getText()
 	try {
-		// biome-ignore lint/security/noGlobalEval: From coder to coder
+		// biome-ignore lint: From coder to coder
 		return (0, eval)(text)
 	} catch (e) {
 		return { raw: text }

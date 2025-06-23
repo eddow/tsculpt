@@ -1,113 +1,94 @@
-export class ParserError extends Error {
-	constructor(message: string, reading: Reading) {
+export class ParserError<Built> extends Error {
+	constructor(message: string, reading: Reading<Built>) {
 		super(`${reading.source}\n${' '.repeat(reading.index)}^-- ${message}`)
 	}
 }
 
-export type OperatorPrecedence = {
+export type OperationExpression<Built> = {
+	type: 'operation'
+	operator: string
+	operands: ParsedExpression<Built>[]
+}
+export type BuiltExpression<Built> = { type: 'built'; value: Built }
+export type ParsedExpression<Built> = OperationExpression<Built> | BuiltExpression<Built>
+
+export type OperatorPrecedence<Built> = {
 	operators: { [symbol: string]: 'binary' | 'nary' }[]
-	prefix?: string[]
-	postfix?: string[]
+	operations: { [symbol: string]: (...operands: Built[]) => Built }
+	prefix?: Record<string, (operand: Built) => Built>
+	postfix?: Record<string, (operand: Built) => Built>
 	emptyOperator?: string
-	variables?: true
-	paramIndexes?: true
+	atomics: { rex: RegExp; build: (match: RegExpMatchArray) => Built }[]
 }
 
-type Token = { pos: number } & (
-	| { type: 'number'; value: number }
-	| { type: 'variable'; name: string }
-	| { type: 'paramIndex'; index: number }
+type Token<Built> = { pos: number } & (
+	| { type: 'atomic'; value: Built }
 	| { type: 'operator'; symbol: string }
 	| { type: 'leftParen' }
 	| { type: 'rightParen' }
 )
 
-export type OperationExpression = { type: 'operation'; operator: string; operands: Expression[] }
-export type NumberExpression = { type: 'number'; value: number }
-export type VariableExpression = { type: 'variable'; name: string }
-export type ParamIndexExpression = { type: 'paramIndex'; index: number }
-export type PrefixExpression = { type: 'prefix'; operator: string; operand: Expression }
-export type PostfixExpression = { type: 'postfix'; operator: string; operand: Expression }
-export type Expression =
-	| OperationExpression
-	| NumberExpression
-	| VariableExpression
-	| ParamIndexExpression
-	| PrefixExpression
-	| PostfixExpression
-
-function tokenize(expr: string, precedence: OperatorPrecedence): Token[] {
-	const tokens: Token[] = []
+function tokenize<Built>(expr: string, precedence: OperatorPrecedence<Built>): Token<Built>[] {
+	const tokens: Token<Built>[] = []
 	let i = 0
+	const operators = new Set<string>()
+	for (const op in precedence.operations) operators.add(op)
+	for (const op in precedence.prefix) operators.add(op)
+	for (const op in precedence.postfix) operators.add(op)
+
+	const opRegexp = new RegExp(
+		`(${Array.from(operators)
+			.sort((a, b) => b.length - a.length)
+			.map((op) => op.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+			.join(')|(')})`,
+		'y'
+	)
+
+	for (const atomic of precedence.atomics)
+		if (!atomic.rex.flags.includes('y'))
+			atomic.rex = new RegExp(atomic.rex.source, `y${atomic.rex.flags}`)
+
+	function tokenCase(
+		rex: RegExp,
+		tokenizer?: Partial<Token<Built>> | ((match: RegExpMatchArray) => Partial<Token<Built>>)
+	): true | undefined {
+		rex.lastIndex = i
+		const match = rex.exec(expr)
+		if (match) {
+			if (tokenizer)
+				tokens.push({
+					...(typeof tokenizer === 'function' ? tokenizer(match) : tokenizer),
+					pos: i,
+				} as Token<Built>)
+			i += match[0].length
+			return true
+		}
+	}
 
 	while (i < expr.length) {
-		const char = expr[i]
-
+		let found = false
 		// Skip whitespace
-		if (/\s/.test(char)) {
-			i++
-			continue
-		}
+		if (tokenCase(/\s+/y)) continue
 
-		// Handle parentheses
-		if (char === '(') {
-			tokens.push({ type: 'leftParen', pos: i })
-			i++
-			continue
-		}
-
-		if (char === ')') {
-			tokens.push({ type: 'rightParen', pos: i })
-			i++
-			continue
-		}
-
-		// Handle numbers
-		if (/\d(\.\d*)?/.test(char)) {
-			let numStr = ''
-			while (i < expr.length && (/\d/.test(expr[i]) || expr[i] === '.')) {
-				numStr += expr[i]
-				i++
+		if (tokenCase(/\(/y, { type: 'leftParen' })) continue
+		if (tokenCase(/\)/y, { type: 'rightParen' })) continue
+		for (const atomic of precedence.atomics)
+			if (tokenCase(atomic.rex, (match) => ({ type: 'atomic', value: atomic.build(match) }))) {
+				found = true
+				break
 			}
-			tokens.push({ type: 'number', value: Number.parseFloat(numStr), pos: i })
-			continue
-		}
-
-		if (precedence.variables && /[a-zA-Z_]/.test(char)) {
-			let name = ''
-			while (i < expr.length && /[a-zA-Z0-9_$]/.test(expr[i])) {
-				name += expr[i]
-				i++
-			}
-			tokens.push({ type: 'variable', name, pos: i })
-			continue
-		}
-
-		if (precedence.paramIndexes && char === '$') {
-			i++ // consume the $
-			let index = ''
-			while (i < expr.length && /\d/.test(expr[i])) {
-				index += expr[i]
-				i++
-			}
-			if (index.length === 0)
-				throw new ParserError('Invalid param index', { source: expr, index: i - 1, tokens })
-			tokens.push({ type: 'paramIndex', index: Number(index), pos: i })
-			continue
-		}
-		const opRegexp = /[^\d\w\s$_()]/
+		if (found) continue
 		// Handle operators (single character for now)
-		if (opRegexp.test(char)) {
-			let operator = ''
-			while (i < expr.length && opRegexp.test(expr[i])) {
-				operator += expr[i]
-				i++
-			}
+		opRegexp.lastIndex = i
+		const match = opRegexp.exec(expr)
+		if (match) {
+			const operator = match[0]
+			i += operator.length
 
 			// Check if this contains multiple postfix operators
 			if (precedence.postfix && operator.length > 1) {
 				// Try to split into multiple postfix operators
-				const sortedPostfix = precedence.postfix.sort((a, b) => b.length - a.length)
+				const sortedPostfix = Object.keys(precedence.postfix).sort((a, b) => b.length - a.length)
 				let remaining = operator
 				let pos = i - operator.length
 
@@ -135,45 +116,46 @@ function tokenize(expr: string, precedence: OperatorPrecedence): Token[] {
 		}
 
 		// Unknown character
-		throw new ParserError(`Unexpected character: ${char}`, { source: expr, index: i, tokens })
+		if (!found)
+			throw new ParserError(`Unexpected character: ${expr[i]}`, { source: expr, index: i, tokens })
 	}
 
 	return tokens
 }
 
-type Reading = {
+type Reading<Built> = {
 	source: string
-	tokens: Token[]
+	tokens: Token<Built>[]
 	index: number
 }
 
-export function parse(expr: string, precedence: OperatorPrecedence): Expression {
+function build<Built>(
+	parsed: ParsedExpression<Built>,
+	precedence: OperatorPrecedence<Built>
+): Built {
+	if (parsed.type === 'built') return parsed.value
+	if (parsed.type === 'operation')
+		return precedence.operations[parsed.operator](
+			...parsed.operands.map((operand) => build(operand, precedence))
+		)
+	throw new Error('Invalid parsed expression')
+}
+
+export function parse<Built>(expr: string, precedence: OperatorPrecedence<Built>): Built {
 	const tokens = tokenize(expr, precedence)
 	const reading = { tokens, index: 0, source: expr }
 	const result = parseExpression(reading, precedence, 0)
 	if (reading.index < tokens.length) {
-		const token = tokens[reading.index]
-		switch (token.type) {
-			case 'leftParen':
-				throw new ParserError('Unexpected opening parenthesis', reading)
-			case 'rightParen':
-				throw new ParserError('Unexpected closing parenthesis', reading)
-			case 'number':
-				throw new ParserError('Unexpected number', reading)
-			case 'variable':
-				throw new ParserError('Unexpected variable', reading)
-			case 'operator':
-				throw new ParserError(`Unexpected operator: ${token.symbol}`, reading)
-		}
+		throw new ParserError('Expected end of expression', reading)
 	}
-	return result
+	return build(result, precedence)
 }
 
-function parseExpression(
-	reading: Reading,
-	precedence: OperatorPrecedence,
+function parseExpression<Built>(
+	reading: Reading<Built>,
+	precedence: OperatorPrecedence<Built>,
 	precedenceLevel: number
-): Expression {
+): ParsedExpression<Built> {
 	if (precedenceLevel === precedence.operators.length)
 		return parseLowerPrecedence(reading, precedence)
 
@@ -181,12 +163,12 @@ function parseExpression(
 	return operateExpression(operand1, reading, precedence, precedenceLevel)
 }
 
-function operateExpression(
-	operand1: Expression,
-	reading: Reading,
-	precedence: OperatorPrecedence,
+function operateExpression<Built>(
+	operand1: ParsedExpression<Built>,
+	reading: Reading<Built>,
+	precedence: OperatorPrecedence<Built>,
 	precedenceLevel: number
-): Expression {
+): ParsedExpression<Built> {
 	// Check if we have more tokens
 	if (reading.index >= reading.tokens.length) {
 		return operand1
@@ -196,11 +178,7 @@ function operateExpression(
 	let empty = false
 	const operators = precedence.operators[precedenceLevel]
 	const eo = precedence.emptyOperator
-	if (
-		eo &&
-		operators[eo] &&
-		['number', 'variable', 'paramIndex', 'leftParen'].includes(token.type)
-	) {
+	if (eo && operators[eo] && ['atomic', 'leftParen'].includes(token.type)) {
 		token = { type: 'operator', symbol: eo, pos: token.pos }
 		empty = true
 	}
@@ -214,7 +192,7 @@ function operateExpression(
 
 	if (operators[token.symbol] === 'binary') {
 		const operand2 = parseExpression(reading, precedence, precedenceLevel + 1)
-		const result: OperationExpression = {
+		const result: OperationExpression<Built> = {
 			type: 'operation',
 			operator: token.symbol,
 			operands: [operand1, operand2],
@@ -237,31 +215,36 @@ function operateExpression(
 	return { type: 'operation', operator: token.symbol, operands }
 }
 
-function parseLowerPrecedence(reading: Reading, precedence: OperatorPrecedence): Expression {
+function parseLowerPrecedence<Built>(
+	reading: Reading<Built>,
+	precedence: OperatorPrecedence<Built>
+): ParsedExpression<Built> {
 	const unit = parseUnit(reading, precedence)
 
 	// Handle postfix operators (highest precedence)
 	let result = unit
 	while (reading.index < reading.tokens.length) {
 		const token = reading.tokens[reading.index]
-		if (token.type !== 'operator' || !precedence.postfix?.includes(token.symbol)) {
-			break
-		}
+		const postfix = token.type === 'operator' && precedence.postfix?.[token.symbol]
+		if (!postfix) break
 		reading.index++
-		result = { type: 'postfix', operator: token.symbol, operand: result }
+		result = { type: 'built', value: postfix(build(result, precedence)) }
 	}
 
 	return result
 }
 
-function parseUnit(reading: Reading, precedence: OperatorPrecedence): Expression {
+function parseUnit<Built>(
+	reading: Reading<Built>,
+	precedence: OperatorPrecedence<Built>
+): ParsedExpression<Built> {
 	const token = reading.tokens[reading.index]
 	if (!token) {
 		throw new ParserError('Unexpected end of expression', reading)
 	}
 
 	switch (token.type) {
-		case 'leftParen':
+		case 'leftParen': {
 			// Parse expression inside parentheses
 			reading.index++ // consume left parenthesis
 			const expr = parseExpression(reading, precedence, 0)
@@ -271,32 +254,44 @@ function parseUnit(reading: Reading, precedence: OperatorPrecedence): Expression
 			}
 			reading.index++ // consume right parenthesis
 			return expr
+		}
 
-		case 'number':
+		case 'atomic':
 			reading.index++
-			return { type: 'number', value: token.value }
+			return { type: 'built', value: token.value }
 
-		case 'variable':
-			reading.index++
-			return { type: 'variable', name: token.name }
-
-		case 'paramIndex':
-			reading.index++
-			return { type: 'paramIndex', index: token.index }
-
-		case 'operator':
+		case 'operator': {
 			// Check if this is a unary operator
-			if (precedence.prefix?.includes(token.symbol)) {
+			const prefix = precedence.prefix?.[token.symbol]
+			if (prefix) {
 				reading.index++
 				const operand = parseLowerPrecedence(reading, precedence)
-				return { type: 'prefix', operator: token.symbol, operand }
+				return { type: 'built', value: prefix(build(operand, precedence)) }
 			}
 			throw new ParserError(`Unexpected operator: ${token.symbol}`, reading)
-
+		}
 		case 'rightParen':
 			throw new ParserError('Unexpected closing parenthesis', reading)
 
 		default:
 			throw new ParserError(`Unexpected token: ${token}`, reading)
+	}
+}
+export function cachedParser<Value, Cached, Result>(
+	precedence: OperatorPrecedence<Cached>,
+	calculus: (cached: Cached, values: Value[]) => Result
+): (expr: TemplateStringsArray, ...values: Value[]) => Result {
+	const cache = new WeakMap<TemplateStringsArray, Cached>()
+	return (expr: TemplateStringsArray, ...values: Value[]) => {
+		let cached = cache.get(expr)
+		if (!cached) {
+			const parts = [...expr]
+			const last = parts.pop()
+			const $ = parts.map((part, i) => `${part} $${i}`)
+			const constructed = [...$, last].join('')
+			cached = parse(constructed, precedence)
+			cache.set(expr, cached)
+		}
+		return calculus(cached, values)
 	}
 }

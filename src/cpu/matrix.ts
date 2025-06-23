@@ -1,5 +1,5 @@
 import { Matrix, Vector3 } from '../types'
-import { normalize } from './vectors'
+import { normalize } from './vector'
 
 export function matMul(a: Matrix, b: Matrix): Matrix {
 	return [

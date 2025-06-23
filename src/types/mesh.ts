@@ -14,7 +14,7 @@ abstract class BaseMesh implements IMesh {
 	abstract readonly faces: readonly FaceIndices[]
 	abstract readonly vectors: readonly Vector3[]
 
-	@cached('vectors')
+	@cached()
 	get verticed() {
 		return this.faces.map((face) => face.map((i) => this.vectors[i]) as [Vector3, Vector3, Vector3])
 	}
@@ -32,8 +32,12 @@ export class Mesh extends BaseMesh implements IMesh {
 		super()
 		if (faces.length === 0) return
 		if (vertices) {
-			for (const vertice of vertices) this.set.index(vertice)
-			this.faces = faces as FaceIndices[]
+			const indices = [] as number[]
+			for (const vertice of vertices) indices.push(this.set.index(vertice))
+			this.faces =
+				indices.length < vertices.length
+					? (faces as FaceIndices[]).map((face) => face.map((i) => indices[i]) as FaceIndices)
+					: (faces as FaceIndices[])
 		} else
 			this.faces = (faces as [Vector3, Vector3, Vector3][]).map(
 				(face) => face.map((v) => this.set.index(v)) as FaceIndices
@@ -42,12 +46,7 @@ export class Mesh extends BaseMesh implements IMesh {
 	get vectors() {
 		return this.set.vectors
 	}
-}
-/*
-export class TransformedMesh extends BaseMesh {
-	constructor(mesh: IMesh, transform: (v: Vector3) => Vector3) {
-		super()
-		this.faces = mesh.faces
-		this.vectors = mesh.vectors.map(transform)
+	map(fct: (v: Vector3) => Vector3): Mesh {
+		return new Mesh(this.faces, this.set.vectors.map(fct))
 	}
-}*/
+}

@@ -2,10 +2,8 @@ import type { VectorD } from './types/vectors'
 
 const epsilon = 1e-6
 export class VectorMap<Vector extends VectorD> {
-	private map = new Map<string, number>()
-	private stereotypes = [] as Vector[]
-
-	constructor() {}
+	private mapped = new Map<string, number>()
+	public readonly vectors = [] as Vector[]
 
 	// Quantize coordinates to a grid of size epsilon
 	private key(v: Vector): string {
@@ -15,21 +13,14 @@ export class VectorMap<Vector extends VectorD> {
 
 	index(v: Vector): number {
 		const k = this.key(v)
-		if (!this.map.has(k)) {
-			this.map.set(k, this.stereotypes.length)
+		if (!this.mapped.has(k)) {
+			this.mapped.set(k, this.vectors.length)
 			// @ts-expect-error number[] -> Vector
-			this.stereotypes.push(v.map((n) => Math.round(n / epsilon) * epsilon))
+			this.vectors.push(v.map((n) => Math.round(n / epsilon) * epsilon))
 		}
-		return this.map.get(k)!
-	}
-	stereotype(v: Vector): Vector {
-		return this.stereotypes[this.index(v)]
-	}
-	get vectors(): readonly Vector[] {
-		return this.stereotypes
+		return this.mapped.get(k)!
 	}
 	size(): number {
-		return this.map.size
+		return this.mapped.size
 	}
-	[index: number]: Vector
 }

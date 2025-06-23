@@ -19,6 +19,7 @@ function withNumber(prop: string | symbol): string | symbol | number {
 }
 export class Proxied implements ProxyHandled {
 	constructor() {
+		// biome-ignore lint/correctness/noConstructorReturn: That's the whole point of this class
 		return new Proxy(this, {
 			get(target: ProxyHandled, prop) {
 				// @ts-expect-error

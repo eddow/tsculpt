@@ -91,6 +91,7 @@ const moduleRef: ComputedRef<Ref<Promise<Module>>> = computed(() =>
 )
 const loadingModule = computed(() => moduleRef.value.value)
 function handleError(err: any, location: LoadLocation) {
+	// biome-ignore lint: We want it debuggable
 	console.error(err)
 	error.value = { err, location }
 }

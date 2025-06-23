@@ -1,15 +1,49 @@
 import { describe, expect, it } from 'vitest'
 import { type OperatorPrecedence, parse } from './expression'
 
+type OperationExpression = {
+	type: 'operation'
+	operator: string
+	operands: ParsedExpression[]
+}
+type NumberExpression = { type: 'number'; value: number }
+type VariableExpression = { type: 'variable'; name: string }
+type ParamIndexExpression = { type: 'paramIndex'; index: number }
+type PrefixExpression = { type: 'prefix'; operator: string; operand: ParsedExpression }
+type PostfixExpression = { type: 'postfix'; operator: string; operand: ParsedExpression }
+type ParsedExpression =
+	| OperationExpression
+	| NumberExpression
+	| VariableExpression
+	| ParamIndexExpression
+	| PrefixExpression
+	| PostfixExpression
+
 describe('Expression Parser', () => {
 	// Define a simple precedence table for testing
-	const precedence: OperatorPrecedence = {
+	const precedence: OperatorPrecedence<ParsedExpression> = {
 		operators: [{ '+': 'nary', '-': 'binary' }, { '*': 'nary', '/': 'binary' }, { '^': 'binary' }],
-		prefix: ['-'],
-		postfix: ['!', '++'],
+		prefix: { '-': (operand) => ({ type: 'prefix', operator: '-', operand }) },
+		postfix: {
+			'!': (operand) => ({ type: 'postfix', operator: '!', operand }),
+			'++': (operand) => ({ type: 'postfix', operator: '++', operand }),
+		},
+		operations: {
+			'+': (...operands) => ({ type: 'operation', operator: '+', operands }),
+			'-': (...operands) => ({ type: 'operation', operator: '-', operands }),
+			'*': (...operands) => ({ type: 'operation', operator: '*', operands }),
+			'/': (...operands) => ({ type: 'operation', operator: '/', operands }),
+			'^': (...operands) => ({ type: 'operation', operator: '^', operands }),
+		},
 		emptyOperator: '*',
-		variables: true,
-		paramIndexes: true,
+		atomics: [
+			{ rex: /\d+(:?\.\d+)?/, build: (match) => ({ type: 'number', value: Number(match[0]) }) },
+			{ rex: /[a-zA-Z_][a-zA-Z0-9_]*/, build: (match) => ({ type: 'variable', name: match[0] }) },
+			{
+				rex: /\$\d+/,
+				build: (match) => ({ type: 'paramIndex', index: Number(match[0].slice(1)) }),
+			},
+		],
 	}
 
 	describe('Number parsing', () => {
@@ -308,11 +342,11 @@ describe('Expression Parser', () => {
 	describe('Error handling', () => {
 		it('should throw on mismatched parentheses', () => {
 			expect(() => parse('(1 + 2', precedence)).toThrow('Expected closing parenthesis')
-			expect(() => parse('1 + 2)', precedence)).toThrow('Unexpected closing parenthesis')
+			expect(() => parse('1 + 2)', precedence)).toThrow('Expected end of expression')
 		})
 
 		it('should throw on unknown operators', () => {
-			expect(() => parse('1 @ 2', precedence)).toThrow('Unexpected operator: @')
+			expect(() => parse('1 @ 2', precedence)).toThrow('Unexpected character: @')
 		})
 
 		it('should throw on invalid expressions', () => {
@@ -569,15 +603,15 @@ describe('Expression Parser', () => {
 
 	describe('ParamIndex error handling', () => {
 		it('should throw on invalid paramIndex syntax', () => {
-			expect(() => parse('$', precedence)).toThrow('Invalid param index')
+			expect(() => parse('$', precedence)).toThrow('Unexpected character: $')
 		})
 
 		it('should throw on paramIndex with non-numeric index', () => {
-			expect(() => parse('$abc', precedence)).toThrow('Invalid param index')
+			expect(() => parse('$abc', precedence)).toThrow('Unexpected character: $')
 		})
 
 		it('should throw on paramIndex with decimal', () => {
-			expect(() => parse('$1.5', precedence)).toThrow('Unexpected operator: .')
+			expect(() => parse('$1.5', precedence)).toThrow('Unexpected character: .')
 		})
 
 		it('should handle paramIndex with leading zeros', () => {

@@ -1,4 +1,5 @@
-export function cached(...needed: PropertyKey[]) {
+const calculating: { class: new () => any; prop: string }[] = []
+export function cached() {
 	return (_target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
 		const original = descriptor.get
 		if (!original) {
@@ -6,14 +7,24 @@ export function cached(...needed: PropertyKey[]) {
 		}
 
 		descriptor.get = function (this: any) {
-			const missing = needed.filter((p) => !isCached(this, p))
-			if (missing.length)
+			const alreadyCalculating = calculating.findIndex(
+				(c) => c.class === this && c.prop === propertyKey
+			)
+			if (alreadyCalculating > -1)
 				throw new Error(
-					`Missing properties to calculate ${String(propertyKey)}: ${missing.join(', ')}`
+					`Circular dependency detected: ${calculating
+						.slice(alreadyCalculating)
+						.map((c) => `${c.class.name}.${c.prop}`)
+						.join(' -> ')} -> again`
 				)
-			const rv = original.call(this)
-			cache(this, propertyKey, rv)
-			return rv
+			calculating.push({ class: this.constructor, prop: String(propertyKey) })
+			try {
+				const rv = original.call(this)
+				cache(this, propertyKey, rv)
+				return rv
+			} finally {
+				calculating.pop()
+			}
 		}
 
 		return descriptor
