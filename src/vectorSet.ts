@@ -9,8 +9,8 @@ export class VectorMap<Vector extends VectorD> {
 
 	// Quantize coordinates to a grid of size epsilon
 	private key(v: Vector): string {
-		const q = v.map(n => Math.round(n / epsilon))
-		return q.join(",")
+		const q = v.map((n) => Math.round(n / epsilon))
+		return q.join(',')
 	}
 
 	index(v: Vector): number {
@@ -18,7 +18,7 @@ export class VectorMap<Vector extends VectorD> {
 		if (!this.map.has(k)) {
 			this.map.set(k, this.stereotypes.length)
 			// @ts-expect-error number[] -> Vector
-			this.stereotypes.push(v.map(n => Math.round(n / epsilon) * epsilon))
+			this.stereotypes.push(v.map((n) => Math.round(n / epsilon) * epsilon))
 		}
 		return this.map.get(k)!
 	}

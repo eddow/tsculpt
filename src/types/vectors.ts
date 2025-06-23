@@ -1,4 +1,3 @@
-
 // Type for vectors of any dimension
 export type VectorD = readonly number[]
 export type Vector2 = readonly [number, number]

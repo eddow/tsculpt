@@ -50,17 +50,17 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import Accordion from 'primevue/accordion'
-import AccordionPanel from 'primevue/accordionpanel'
-import AccordionHeader from 'primevue/accordionheader'
-import AccordionContent from 'primevue/accordioncontent'
-import type { GenerationParameters, IMesh, ParametersConfig } from '@tsculpt'
-import { globalsConfig } from '@tsculpt/globals'
-import { computed, ref } from 'vue'
-import Parameter from './Parameter.vue'
 import { localStored } from '@/lib/stores'
 import { waiting } from '@/lib/utils'
+import type { GenerationParameters, IMesh, ParametersConfig } from '@tsculpt'
+import { globalsConfig } from '@tsculpt/globals'
+import Accordion from 'primevue/accordion'
+import AccordionContent from 'primevue/accordioncontent'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionPanel from 'primevue/accordionpanel'
+import Button from 'primevue/button'
+import { computed, ref } from 'vue'
+import Parameter from './Parameter.vue'
 
 const shown = localStored('parameters-shown', ['parameters'])
 const props = defineProps<{

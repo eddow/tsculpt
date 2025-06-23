@@ -1,7 +1,7 @@
+import { normalize, scale, translate } from './cpu/vectors'
 import { generation } from './globals'
 import { Mesh } from './types/mesh'
-import { v3, type Vector3 } from './types/vectors'
-import { normalize, scale, translate } from './cpu/vectors'
+import { type Vector3, v3 } from './types/vectors'
 
 export function box({ size = 1, center = [0, 0, 0] as Vector3 } = {}): Mesh {
 	const vertices = translate(
@@ -15,7 +15,7 @@ export function box({ size = 1, center = [0, 0, 0] as Vector3 } = {}): Mesh {
 				[1, -1, 1],
 				[1, 1, 1],
 				[-1, 1, 1],
-			].map(v => v3(v)),
+			].map((v) => v3(v)),
 			size
 		),
 		center
@@ -57,7 +57,7 @@ export function geodesicSphere({
 
 	// Start with icosahedron vertices
 	const t = (1 + Math.sqrt(5)) / 2
-	let vertices: Vector3[] = [
+	const vertices: Vector3[] = [
 		[-1, t, 0],
 		[1, t, 0],
 		[-1, -t, 0],
@@ -73,7 +73,7 @@ export function geodesicSphere({
 	].map((v) => normalize(v3(v)))
 
 	// Initial icosahedron faces
-	let faceIndices: [number, number, number][] = [
+	const faceIndices: [number, number, number][] = [
 		[0, 11, 5],
 		[0, 5, 1],
 		[0, 1, 7],
@@ -110,12 +110,7 @@ export function geodesicSphere({
 			const bc = midpoint(b, c)
 			const ca = midpoint(c, a)
 
-			newFaces.push(
-				[a, ab, ca],
-				[ab, b, bc],
-				[ca, bc, c],
-				[ab, bc, ca]
-			)
+			newFaces.push([a, ab, ca], [ab, b, bc], [ca, bc, c], [ab, bc, ca])
 		}
 
 		icosahedron = new Mesh(newFaces)
@@ -123,7 +118,9 @@ export function geodesicSphere({
 
 	return new Mesh(
 		icosahedron.faces,
-		Array.from(icosahedron.vectors).map(v => translate([scale([v], radius)[0]], center)[0]) as Vector3[]
+		Array.from(icosahedron.vectors).map(
+			(v) => translate([scale([v], radius)[0]], center)[0]
+		) as Vector3[]
 	)
 }
 

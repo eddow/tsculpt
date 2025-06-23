@@ -1,5 +1,5 @@
-import { Matrix, Vector3 } from "../types"
-import { normalize } from "./vectors"
+import { Matrix, Vector3 } from '../types'
+import { normalize } from './vectors'
 
 export function matMul(a: Matrix, b: Matrix): Matrix {
 	return [
@@ -24,52 +24,41 @@ export function matMul(a: Matrix, b: Matrix): Matrix {
 
 export function matTranspose(a: Matrix): Matrix {
 	return [
-		a[0], a[4], a[8], a[12],
-		a[1], a[5], a[9], a[13],
-		a[2], a[6], a[10], a[14],
-		a[3], a[7], a[11], a[15],
+		a[0],
+		a[4],
+		a[8],
+		a[12],
+		a[1],
+		a[5],
+		a[9],
+		a[13],
+		a[2],
+		a[6],
+		a[10],
+		a[14],
+		a[3],
+		a[7],
+		a[11],
+		a[15],
 	]
 }
 
-export const identity: Matrix = [
-	1, 0, 0, 0,
-	0, 1, 0, 0,
-	0, 0, 1, 0,
-	0, 0, 0, 1,
-]
+export const identity: Matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 
 export function scale(v: Vector3 | number): Matrix {
-	return typeof v === 'number' ? [
-		v, 0, 0, 0,
-		0, v, 0, 0,
-		0, 0, v, 0,
-		0, 0, 0, 1,
-	] : [
-		v[0], 0, 0, 0,
-		0, v[1], 0, 0,
-		0, 0, v[2], 0,
-		0, 0, 0, 1,
-	]
+	return typeof v === 'number'
+		? [v, 0, 0, 0, 0, v, 0, 0, 0, 0, v, 0, 0, 0, 0, 1]
+		: [v[0], 0, 0, 0, 0, v[1], 0, 0, 0, 0, v[2], 0, 0, 0, 0, 1]
 }
 
 export function translate(v: Vector3): Matrix {
-	return [
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		v[0], v[1], v[2], 1,
-	]
+	return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, v[0], v[1], v[2], 1]
 }
 
 export function rotate(v: Vector3, size?: number | undefined): Matrix {
-	if( size !== undefined) v = scale(normalize(v), size)
+	if (size !== undefined) v = scale(normalize(v), size)
 	const [x, y, z] = v
 	const cos = Math.cos(z)
 	const sin = Math.sin(z)
-	return [
-		cos, sin, 0, 0,
-		-sin, cos, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1,
-	]
+	return [cos, sin, 0, 0, -sin, cos, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 }

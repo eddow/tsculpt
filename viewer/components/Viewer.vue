@@ -7,9 +7,9 @@
 <script setup lang="ts">
 import { isDark } from '@/lib/stores'
 import { waiting } from '@/lib/utils'
+import type { IMesh } from '@tsculpt'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import type { IMesh } from '@tsculpt'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const colors = {

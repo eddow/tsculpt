@@ -69,7 +69,6 @@ export class Proxied implements ProxyHandled {
 			setPrototypeOf(target: ProxyHandled, proto: any) {
 				return target.setPrototypeOf?.(proto) ?? Object.setPrototypeOf(target, proto)
 			},
-
 		})
 	}
 }

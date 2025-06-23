@@ -38,19 +38,19 @@
 import Parameters from '@/components/Parameters.vue'
 import Viewer from '@/components/Viewer.vue'
 import { router } from '@/router'
+import { type GenerationParameters, type IMesh, ParametersConfig } from '@tsculpt'
 import type { MenuItem } from 'primevue/menuitem'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { type GenerationParameters, type IMesh, ParametersConfig } from '@tsculpt'
 import { ComputedRef, type Ref, computed, inject, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { module, Module } from '../lib/source'
 const route = useRoute()
 const hash = computed(() => route.hash.slice(1) || 'default')
 const viewerRef = ref<InstanceType<typeof Viewer>>()
+import { localStored } from '@/lib/stores'
 import { Factory, MaybeFactory, MaybePromise, waiting } from '@/lib/utils'
 import { defaultGlobals, withGlobals } from '@tsculpt/globals'
-import { localStored } from '@/lib/stores'
 
 type DisplayMode = 'solid' | 'wireframe' | 'solid-edges'
 const displaySettings = localStored('viewer-display', {
@@ -86,7 +86,9 @@ const mesh = ref<IMesh | typeof waiting>(waiting)
 function noErrorBefore(location: any) {
 	return !error.value?.location || error.value.location > `${location}`
 }
-const moduleRef: ComputedRef<Ref<Promise<Module>>> = computed(() => module(`/${props.path}.sculpt.ts`))
+const moduleRef: ComputedRef<Ref<Promise<Module>>> = computed(() =>
+	module(`/${props.path}.sculpt.ts`)
+)
 const loadingModule = computed(() => moduleRef.value.value)
 function handleError(err: any, location: LoadLocation) {
 	console.error(err)
@@ -161,7 +163,7 @@ if (menuItems) {
 	watch(
 		[loadedModule, hash, displaySettings],
 		async ([loadedModule, hash, displaySettings]) => {
-			if(loadedModule === waiting) return
+			if (loadedModule === waiting) return
 			const hashes = Object.keys(loadedModule)
 			menuItems.value = [
 				{

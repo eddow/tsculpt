@@ -1,18 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import {
-	parse,
-	type OperatorPrecedence
-} from './expression'
+import { type OperatorPrecedence, parse } from './expression'
 
 describe('Expression Parser', () => {
 	// Define a simple precedence table for testing
 	const precedence: OperatorPrecedence = {
-		operators: [
-			{ '+': 'nary', '-': 'binary' },
-			{ '*': 'nary', '/': 'binary' },
-			{ '^': 'binary' }
-		],
-		unary: ['-'] // Unary minus
+		operators: [{ '+': 'nary', '-': 'binary' }, { '*': 'nary', '/': 'binary' }, { '^': 'binary' }],
+		prefix: ['-'],
+		postfix: ['!', '++'],
+		emptyOperator: '*',
+		variables: true,
+		paramIndexes: true,
 	}
 
 	describe('Number parsing', () => {
@@ -58,12 +55,6 @@ describe('Expression Parser', () => {
 			const result = parse('_private', precedence)
 			expect(result.type).toBe('variable')
 			expect((result as any).name).toBe('_private')
-		})
-
-		it('should parse variables starting with dollar sign', () => {
-			const result = parse('$special', precedence)
-			expect(result.type).toBe('variable')
-			expect((result as any).name).toBe('$special')
 		})
 	})
 
@@ -170,7 +161,7 @@ describe('Expression Parser', () => {
 	describe('Unary operator parsing', () => {
 		it('should parse unary minus', () => {
 			const result = parse('-5', precedence)
-			expect(result.type).toBe('unaryOperator')
+			expect(result.type).toBe('prefix')
 			const unOp = result as any
 			expect(unOp.operator).toBe('-')
 			expect(unOp.operand.type).toBe('number')
@@ -182,8 +173,68 @@ describe('Expression Parser', () => {
 			expect(result.type).toBe('operation')
 			const binOp = result as any
 			expect(binOp.operator).toBe('*')
-			expect(binOp.operands[0].type).toBe('unaryOperator')
+			expect(binOp.operands[0].type).toBe('prefix')
 			expect(binOp.operands[1].value).toBe(3)
+		})
+	})
+
+	describe('Postfix operator parsing', () => {
+		it('should parse single postfix operator', () => {
+			const result = parse('5!', precedence)
+			expect(result.type).toBe('postfix')
+			const postOp = result as any
+			expect(postOp.operator).toBe('!')
+			expect(postOp.operand.type).toBe('number')
+			expect(postOp.operand.value).toBe(5)
+		})
+
+		it('should parse multiple postfix operators', () => {
+			const result = parse('5!++', precedence)
+			expect(result.type).toBe('postfix')
+			const postOp = result as any
+			expect(postOp.operator).toBe('++')
+			expect(postOp.operand.type).toBe('postfix')
+			expect(postOp.operand.operator).toBe('!')
+			expect(postOp.operand.operand.type).toBe('number')
+			expect(postOp.operand.operand.value).toBe(5)
+		})
+
+		it('should handle postfix with prefix operators', () => {
+			const result = parse('-5!', precedence)
+			expect(result.type).toBe('prefix')
+			const preOp = result as any
+			expect(preOp.operator).toBe('-')
+			expect(preOp.operand.type).toBe('postfix')
+			expect(preOp.operand.operator).toBe('!')
+			expect(preOp.operand.operand.type).toBe('number')
+			expect(preOp.operand.operand.value).toBe(5)
+		})
+
+		it('should handle postfix with variables', () => {
+			const result = parse('x!', precedence)
+			expect(result.type).toBe('postfix')
+			const postOp = result as any
+			expect(postOp.operator).toBe('!')
+			expect(postOp.operand.type).toBe('variable')
+			expect(postOp.operand.name).toBe('x')
+		})
+
+		it('should handle postfix with parentheses', () => {
+			const result = parse('(1 + 2)!', precedence)
+			expect(result.type).toBe('postfix')
+			const postOp = result as any
+			expect(postOp.operator).toBe('!')
+			expect(postOp.operand.type).toBe('operation')
+			expect(postOp.operand.operator).toBe('+')
+		})
+
+		it('should handle postfix with paramIndex', () => {
+			const result = parse('$0!', precedence)
+			expect(result.type).toBe('postfix')
+			const postOp = result as any
+			expect(postOp.operator).toBe('!')
+			expect(postOp.operand.type).toBe('paramIndex')
+			expect(postOp.operand.index).toBe(0)
 		})
 	})
 
@@ -239,7 +290,7 @@ describe('Expression Parser', () => {
 			expect(result.type).toBe('operation')
 			const binOp = result as any
 			expect(binOp.operator).toBe('+')
-			expect(binOp.operands[0].type).toBe('unaryOperator')
+			expect(binOp.operands[0].type).toBe('prefix')
 			expect(binOp.operands[1].type).toBe('operation')
 		})
 
@@ -301,7 +352,7 @@ describe('Expression Parser', () => {
 			expect(result.type).toBe('operation')
 			const binOp = result as any
 			expect(binOp.operator).toBe('+')
-			expect(binOp.operands[0].type).toBe('unaryOperator')
+			expect(binOp.operands[0].type).toBe('prefix')
 		})
 	})
 
@@ -323,6 +374,222 @@ describe('Expression Parser', () => {
 		it('should handle multiple spaces', () => {
 			const result = parse('  1   +   2  ', precedence)
 			expect(result.type).toBe('operation')
+		})
+	})
+
+	describe('Empty operator parsing', () => {
+		it('should handle empty operator for implicit multiplication', () => {
+			const result = parse('2x', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('*')
+			expect(op.operands[0].value).toBe(2)
+			expect(op.operands[1].name).toBe('x')
+		})
+
+		it('should handle empty operator with parentheses', () => {
+			const result = parse('3(x+1)', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('*')
+			expect(op.operands[0].value).toBe(3)
+			expect(op.operands[1].type).toBe('operation')
+		})
+
+		it('should handle multiple empty operators', () => {
+			const result = parse('2x 3y', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('*')
+			expect(op.operands[0].value).toBe(2)
+			expect(op.operands[1].name).toBe('x')
+			expect(op.operands[2].value).toBe(3)
+			expect(op.operands[3].name).toBe('y')
+		})
+
+		it('should respect precedence with empty operator', () => {
+			const result = parse('2x + 3y', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('+')
+			expect(op.operands[0].type).toBe('operation')
+			expect(op.operands[1].type).toBe('operation')
+		})
+
+		it('should handle empty operator with unary operators', () => {
+			const result = parse('-2x', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('*')
+			expect(op.operands[0].type).toBe('prefix')
+			expect(op.operands[1].name).toBe('x')
+		})
+
+		it('should cumulate also empty operator', () => {
+			const result = parse('-2x*3y', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('*')
+			expect(op.operands[0].type).toBe('prefix')
+			expect(op.operands[1].name).toBe('x')
+			expect(op.operands[2].value).toBe(3)
+			expect(op.operands[3].name).toBe('y')
+		})
+
+		it('should handle empty operator with complex expressions', () => {
+			const result = parse('2(x+y)', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('*')
+			expect(op.operands[0].value).toBe(2)
+			expect(op.operands[1].type).toBe('operation')
+		})
+
+		it('should handle empty operator precedence correctly', () => {
+			const result = parse('2x^2', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('*')
+			expect(op.operands[0].value).toBe(2)
+			expect(op.operands[1].type).toBe('operation')
+			expect(op.operands[1].operator).toBe('^')
+			expect(op.operands[1].operands[0].name).toBe('x')
+			expect(op.operands[1].operands[1].value).toBe(2)
+		})
+	})
+
+	describe('ParamIndex parsing', () => {
+		it('should parse simple paramIndex', () => {
+			const result = parse('$0', precedence)
+			expect(result.type).toBe('paramIndex')
+			expect((result as any).index).toBe(0)
+		})
+
+		it('should parse multi-digit paramIndex', () => {
+			const result = parse('$42', precedence)
+			expect(result.type).toBe('paramIndex')
+			expect((result as any).index).toBe(42)
+		})
+
+		it('should parse paramIndex with operations', () => {
+			const result = parse('$0 + $1', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('+')
+			expect(op.operands[0].type).toBe('paramIndex')
+			expect(op.operands[0].index).toBe(0)
+			expect(op.operands[1].type).toBe('paramIndex')
+			expect(op.operands[1].index).toBe(1)
+		})
+
+		it('should parse paramIndex with numbers', () => {
+			const result = parse('$0 * 2', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('*')
+			expect(op.operands[0].type).toBe('paramIndex')
+			expect(op.operands[0].index).toBe(0)
+			expect(op.operands[1].type).toBe('number')
+			expect(op.operands[1].value).toBe(2)
+		})
+
+		it('should parse paramIndex with variables', () => {
+			const result = parse('$0 + x', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('+')
+			expect(op.operands[0].type).toBe('paramIndex')
+			expect(op.operands[0].index).toBe(0)
+			expect(op.operands[1].type).toBe('variable')
+			expect(op.operands[1].name).toBe('x')
+		})
+
+		it('should parse paramIndex in parentheses', () => {
+			const result = parse('($0 + $1) * 2', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('*')
+			expect(op.operands[0].type).toBe('operation')
+			expect(op.operands[1].type).toBe('number')
+			expect(op.operands[1].value).toBe(2)
+		})
+
+		it('should parse paramIndex with unary operators', () => {
+			const result = parse('-$0', precedence)
+			expect(result.type).toBe('prefix')
+			const unOp = result as any
+			expect(unOp.operator).toBe('-')
+			expect(unOp.operand.type).toBe('paramIndex')
+			expect(unOp.operand.index).toBe(0)
+		})
+
+		it('should parse complex paramIndex expressions', () => {
+			const result = parse('$0 * $1 + $2', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('+')
+			expect(op.operands[0].type).toBe('operation')
+			expect(op.operands[1].type).toBe('paramIndex')
+			expect(op.operands[1].index).toBe(2)
+		})
+
+		it('should parse paramIndex with empty operator', () => {
+			const result = parse('2$0', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('*')
+			expect(op.operands[0].type).toBe('number')
+			expect(op.operands[0].value).toBe(2)
+			expect(op.operands[1].type).toBe('paramIndex')
+			expect(op.operands[1].index).toBe(0)
+		})
+
+		it('should handle paramIndex precedence correctly', () => {
+			const result = parse('$0 + $1 * $2', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('+')
+			expect(op.operands[0].type).toBe('paramIndex')
+			expect(op.operands[0].index).toBe(0)
+			expect(op.operands[1].type).toBe('operation')
+			expect(op.operands[1].operator).toBe('*')
+		})
+
+		it('should parse multiple paramIndexes in sequence', () => {
+			const result = parse('$0$1$2', precedence)
+			expect(result.type).toBe('operation')
+			const op = result as any
+			expect(op.operator).toBe('*')
+			expect(op.operands[0].type).toBe('paramIndex')
+			expect(op.operands[0].index).toBe(0)
+			expect(op.operands[1].index).toBe(1)
+			expect(op.operands[2].index).toBe(2)
+		})
+	})
+
+	describe('ParamIndex error handling', () => {
+		it('should throw on invalid paramIndex syntax', () => {
+			expect(() => parse('$', precedence)).toThrow('Invalid param index')
+		})
+
+		it('should throw on paramIndex with non-numeric index', () => {
+			expect(() => parse('$abc', precedence)).toThrow('Invalid param index')
+		})
+
+		it('should throw on paramIndex with decimal', () => {
+			expect(() => parse('$1.5', precedence)).toThrow('Unexpected operator: .')
+		})
+
+		it('should handle paramIndex with leading zeros', () => {
+			const result = parse('$001', precedence)
+			expect(result.type).toBe('paramIndex')
+			expect((result as any).index).toBe(1)
+		})
+
+		it('should handle paramIndex with large numbers', () => {
+			const result = parse('$999999', precedence)
+			expect(result.type).toBe('paramIndex')
+			expect((result as any).index).toBe(999999)
 		})
 	})
 })

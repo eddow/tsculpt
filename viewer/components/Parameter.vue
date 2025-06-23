@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import type { ParameterConfig } from '@tsculpt'
+import { defaultGlobals } from '@tsculpt/globals'
 import InputNumber from 'primevue/inputnumber'
 import InputSwitch from 'primevue/inputswitch'
 import Select from 'primevue/select'
-import { defaultGlobals } from '@tsculpt/globals'
 import { computed } from 'vue'
-import type { ParameterConfig } from '@tsculpt'
 import SlidParameter from './SlidParameter.vue'
 
 const props = defineProps<{

@@ -1,5 +1,5 @@
+import { Expression, cachedParser } from '../expression'
 import type { Vector3, VectorD } from '../types/vectors'
-
 export function equals<Vector extends VectorD>(a: Vector, b: Vector): boolean {
 	return a.length === b.length && a.every((value, index) => value === b[index])
 }
@@ -60,6 +60,103 @@ export function rotate3(vertices: Vector3[], angle: number, axis: Vector3): Vect
 	})
 }
 
+function calculate(
+	expr: Expression,
+	values: (number | readonly number[])[]
+): number | readonly number[] {
+	switch (expr.type) {
+		case 'operation':
+			switch (expr.operator) {
+				case '+':
+					const addTerms = expr.operands.map((operand) => calculate(operand, values))
+					// If all terms are numbers, add them
+					if (addTerms.every((term) => typeof term === 'number')) {
+						return (addTerms as number[]).reduce((sum, term) => sum + term, 0)
+					}
+					// If all terms are vectors, add them component-wise
+					if (addTerms.every((term) => Array.isArray(term))) {
+						const vectors = addTerms as readonly number[][]
+						const maxLength = Math.max(...vectors.map((v) => v.length))
+						const result = new Array(maxLength).fill(0)
+						for (const vector of vectors) {
+							for (let i = 0; i < vector.length; i++) {
+								result[i] += vector[i]
+							}
+						}
+						return result
+					}
+					throw new Error('Cannot add mixed types')
+
+				case '-':
+					if (expr.operands.length !== 2) {
+						throw new Error('Subtraction requires exactly 2 operands')
+					}
+					const left = calculate(expr.operands[0], values)
+					const right = calculate(expr.operands[1], values)
+
+					// If both are numbers
+					if (typeof left === 'number' && typeof right === 'number') {
+						return left - right
+					}
+					// If both are vectors
+					if (Array.isArray(left) && Array.isArray(right)) {
+						const maxLength = Math.max(left.length, right.length)
+						const result = new Array(maxLength).fill(0)
+						for (let i = 0; i < left.length; i++) {
+							result[i] = left[i]
+						}
+						for (let i = 0; i < right.length; i++) {
+							result[i] -= right[i]
+						}
+						return result
+					}
+					throw new Error('Cannot subtract mixed types')
+
+				case '*':
+					const mulTerms = expr.operands.map((operand) => calculate(operand, values))
+					// If all terms are numbers, multiply them
+					if (mulTerms.every((term) => typeof term === 'number')) {
+						return (mulTerms as number[]).reduce((product, term) => product * term, 1)
+					}
+					// If we have a number and a vector, scale the vector
+					const numbers = mulTerms.filter((term) => typeof term === 'number') as number[]
+					const vectors = mulTerms.filter((term) => Array.isArray(term)) as readonly number[][]
+
+					if (numbers.length === 1 && vectors.length === 1) {
+						const scale = numbers[0]
+						const vector = vectors[0]
+						return vector.map((v) => scale * v)
+					}
+					throw new Error('Invalid multiplication: need exactly one number and one vector')
+
+				default:
+					throw new Error(`Unknown operator: ${expr.operator}`)
+			}
+		case 'number':
+			return expr.value
+		case 'paramIndex':
+			return values[expr.index]
+		default:
+			throw new Error(`Unknown expression type: ${(expr as any).type}`)
+	}
+}
+export const vector = cachedParser<readonly number[], number | readonly number[], Expression>(
+	{
+		operators: [{ '+': 'nary', '-': 'binary' }, { '*': 'nary' }],
+		emptyOperator: '*',
+		paramIndexes: true,
+	},
+	(expr) => expr,
+	(expr, values) => {
+		const result = calculate(expr, values)
+		if (!(result instanceof Array)) throw new Error(`Invalid vector expression: ${expr}`)
+		return result
+	}
+) as <Vector extends VectorD>(
+	expr: TemplateStringsArray,
+	...values: readonly (number | Vector)[]
+) => Vector
+/*
 export function vector<Vector extends VectorD>(
 	strings: TemplateStringsArray,
 	...values: (Vector | number)[]
@@ -82,7 +179,7 @@ export function vector<Vector extends VectorD>(
 		let factor = term[0] === '-' ? -1 : 1
 		if (term[0] === '-') term = term.slice(1)
 		let vector: Vector | undefined
-		for (let part of term.split(/\s*[* ]\s*/)) {
+		for (let part of term.split(/\s*[* ]\s* /)) {
 			part = part.trim()
 			if (part.startsWith('$')) {
 				const index = Number.parseInt(part.slice(1))
@@ -103,3 +200,4 @@ export function vector<Vector extends VectorD>(
 	}
 	return rv as unknown as Vector
 }
+*/

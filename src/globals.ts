@@ -4,7 +4,7 @@ type MaybePromise<T> = Promise<T> | T
 export type GenerationParameters = {
 	/**
 	 * The grain of the generated geometry.
-	 * Curves are approximated by straight lines smaller than this value.
+	 * Curves are approximated by smallest straight lines bigger than this value.
 	 * @default 0.5
 	 */
 	grain: number

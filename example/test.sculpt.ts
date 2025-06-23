@@ -1,6 +1,6 @@
-import { fromJscad, toJscad, type Decimal, type Vector3 } from '@tsculpt'
-import { box, sphere } from '@tsculpt/geometry'
 import { booleans } from '@jscad/modeling'
+import { type Decimal, type Vector3, fromJscad, toJscad } from '@tsculpt'
+import { box, sphere } from '@tsculpt/geometry'
 const { subtract } = booleans
 /*TODO:
 export default ({
@@ -9,10 +9,7 @@ export default ({
 })=> {
  */
 // TODO Weird thing happen (really long generation + no edges visible) when going from 15 to 16
-export default function scene({
-	radius = 5 as Decimal<1, 100>,
-	center = [0, 0, 0] as Vector3,
-}) {
+export default function scene({ radius = 5 as Decimal<1, 100>, center = [0, 0, 0] as Vector3 }) {
 	const s1 = sphere({ radius, center })
 	const s1jsc = toJscad(s1)
 	const b1 = box({ size: radius * 0.8, center })
