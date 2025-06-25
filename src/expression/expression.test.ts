@@ -1,629 +1,571 @@
 import { describe, expect, it } from 'vitest'
-import { type OperatorPrecedence, parse } from './expression'
+import { Parser } from './expression'
 
-type OperationExpression = {
-	type: 'operation'
-	operator: string
-	operands: ParsedExpression[]
-}
-type NumberExpression = { type: 'number'; value: number }
-type VariableExpression = { type: 'variable'; name: string }
-type ParamIndexExpression = { type: 'paramIndex'; index: number }
-type PrefixExpression = { type: 'prefix'; operator: string; operand: ParsedExpression }
-type PostfixExpression = { type: 'postfix'; operator: string; operand: ParsedExpression }
+type BinaryExpression =
+	| { '-': { left: ParsedExpression; right: ParsedExpression } }
+	| { '/': { left: ParsedExpression; right: ParsedExpression } }
+type NaryExpression =
+	| { '+': ParsedExpression[] }
+	| { '*': ParsedExpression[] }
+	| { '^': ParsedExpression[] }
+type NumberExpression = { number: number }
+type VariableExpression = { variable: string }
+type ParamExpression = { param: number }
+type PrefixExpression = { '-': ParsedExpression }
+type PostfixExpression = { '!': ParsedExpression } | { '++': ParsedExpression }
+type SurroundedExpression = { '[.]': ParsedExpression }
 type ParsedExpression =
-	| OperationExpression
+	| NaryExpression
+	| BinaryExpression
 	| NumberExpression
 	| VariableExpression
-	| ParamIndexExpression
+	| ParamExpression
 	| PrefixExpression
 	| PostfixExpression
+	| SurroundedExpression
 
 describe('Expression Parser', () => {
 	// Define a simple precedence table for testing
-	const precedence: OperatorPrecedence<ParsedExpression> = {
-		operators: [{ '+': 'nary', '-': 'binary' }, { '*': 'nary', '/': 'binary' }, { '^': 'binary' }],
-		prefix: { '-': (operand) => ({ type: 'prefix', operator: '-', operand }) },
+	const parser = new Parser<ParsedExpression>({
+		precedence: [{ '+': 'nary', '-': 'binary' }, { '*': 'nary', '/': 'binary' }, { '^': 'binary' }],
+		prefix: { '-': (operand) => ({ '-': operand }) },
 		postfix: {
-			'!': (operand) => ({ type: 'postfix', operator: '!', operand }),
-			'++': (operand) => ({ type: 'postfix', operator: '++', operand }),
+			'!': (operand) => ({ '!': operand }),
+			'++': (operand) => ({ '++': operand }),
 		},
 		operations: {
-			'+': (...operands) => ({ type: 'operation', operator: '+', operands }),
-			'-': (...operands) => ({ type: 'operation', operator: '-', operands }),
-			'*': (...operands) => ({ type: 'operation', operator: '*', operands }),
-			'/': (...operands) => ({ type: 'operation', operator: '/', operands }),
-			'^': (...operands) => ({ type: 'operation', operator: '^', operands }),
+			'+': (...operands) => ({ '+': operands }),
+			'-': (...operands) => {
+				expect(operands.length).toBe(2)
+				return { '-': { left: operands[0], right: operands[1] } }
+			},
+			'*': (...operands) => ({ '*': operands }),
+			'/': (left, right) => ({ '/': { left, right } }),
+			'^': (...operands) => ({ '^': operands }),
 		},
 		emptyOperator: '*',
 		atomics: [
-			{ rex: /\d+(:?\.\d+)?/, build: (match) => ({ type: 'number', value: Number(match[0]) }) },
-			{ rex: /[a-zA-Z_][a-zA-Z0-9_]*/, build: (match) => ({ type: 'variable', name: match[0] }) },
+			{ rex: /\d+(:?\.\d+)?/, build: (match) => ({ number: Number(match[0]) }) },
+			{ rex: /[a-zA-Z_][a-zA-Z0-9_]*/, build: (match) => ({ variable: match[0] }) },
 			{
 				rex: /\$\d+/,
-				build: (match) => ({ type: 'paramIndex', index: Number(match[0].slice(1)) }),
+				build: (match) => ({ param: Number(match[0].slice(1)) }),
 			},
 		],
-	}
+		surroundings: [
+			{
+				open: '(',
+				close: ')',
+				build: (operand) => operand,
+			},
+			{
+				open: '[',
+				close: ']',
+				build: (operand) => ({ '[.]': operand }),
+			},
+		],
+	})
 
 	describe('Number parsing', () => {
 		it('should parse simple numbers', () => {
-			const result = parse('42', precedence)
-			expect(result.type).toBe('number')
-			expect((result as any).value).toBe(42)
+			const result = parser.parse('42')
+			expect(result).toEqual({ number: 42 })
 		})
 
 		it('should parse decimal numbers', () => {
-			const result = parse('3.14', precedence)
-			expect(result.type).toBe('number')
-			expect((result as any).value).toBe(3.14)
+			const result = parser.parse('3.14')
+			expect(result).toEqual({ number: 3.14 })
 		})
 
 		it('should parse zero', () => {
-			const result = parse('0', precedence)
-			expect(result.type).toBe('number')
-			expect((result as any).value).toBe(0)
+			const result = parser.parse('0')
+			expect(result).toEqual({ number: 0 })
 		})
 	})
 
 	describe('Variable parsing', () => {
 		it('should parse simple variables', () => {
-			const result = parse('x', precedence)
-			expect(result.type).toBe('variable')
-			expect((result as any).name).toBe('x')
+			const result = parser.parse('x')
+			expect(result).toEqual({ variable: 'x' })
 		})
 
 		it('should parse multi-character variables', () => {
-			const result = parse('variable', precedence)
-			expect(result.type).toBe('variable')
-			expect((result as any).name).toBe('variable')
+			const result = parser.parse('variable')
+			expect(result).toEqual({ variable: 'variable' })
 		})
 
 		it('should parse variables with numbers', () => {
-			const result = parse('var123', precedence)
-			expect(result.type).toBe('variable')
-			expect((result as any).name).toBe('var123')
+			const result = parser.parse('var123')
+			expect(result).toEqual({ variable: 'var123' })
 		})
 
 		it('should parse variables starting with underscore', () => {
-			const result = parse('_private', precedence)
-			expect(result.type).toBe('variable')
-			expect((result as any).name).toBe('_private')
+			const result = parser.parse('_private')
+			expect(result).toEqual({ variable: '_private' })
 		})
 	})
 
 	describe('Binary operator parsing', () => {
-		it('should parse simple addition', () => {
-			const result = parse('1 + 2', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('+')
-			expect(binOp.operands[0].type).toBe('number')
-			expect(binOp.operands[1].type).toBe('number')
-			expect(binOp.operands[0].value).toBe(1)
-			expect(binOp.operands[1].value).toBe(2)
-		})
-
-		it('should parse simple multiplication', () => {
-			const result = parse('3 * 4', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('*')
-			expect(binOp.operands[0].value).toBe(3)
-			expect(binOp.operands[1].value).toBe(4)
-		})
-
-		it('should parse multiple operations with correct precedence', () => {
-			const result = parse('1 + 2 * 3', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('+')
-			expect(binOp.operands[0].value).toBe(1)
-			expect(binOp.operands[1].type).toBe('operation')
-			const rightOp = binOp.operands[1] as any
-			expect(rightOp.operator).toBe('*')
-			expect(rightOp.operands[0].value).toBe(2)
-			expect(rightOp.operands[1].value).toBe(3)
-		})
-
 		it('should handle left associativity for same precedence', () => {
-			const result = parse('1 - 2 - 3', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('-')
-			// It became (1-2)-3
-			// Check left associativity: ((1-2)-3)
-			// Root is '-'
-			expect(binOp.operator).toBe('-')
-			// Left operand is an operation '-'
-			expect(binOp.operands[0].type).toBe('operation')
-			const leftOp = binOp.operands[0]
-			expect(leftOp.operator).toBe('-')
-			// Leftmost operand is 1
-			expect(leftOp.operands[0].value).toBe(1)
-			// Right operand of leftOp is 2
-			expect(leftOp.operands[1].value).toBe(2)
-			// Rightmost operand is 3
-			expect(binOp.operands[1].value).toBe(3)
+			const result = parser.parse('1 - 2 - 3')
+			expect(result).toEqual({
+				'-': {
+					left: { '-': { left: { number: 1 }, right: { number: 2 } } },
+					right: { number: 3 },
+				},
+			})
 		})
 	})
 
 	describe('N-ary operator parsing', () => {
 		it('should parse multiple additions as n-ary', () => {
-			const result = parse('1 + 2 + 3', precedence)
-			expect(result.type).toBe('operation')
-			const naryOp = result as any
-			expect(naryOp.operator).toBe('+')
-			expect(naryOp.operands).toHaveLength(3)
-			expect(naryOp.operands[0].value).toBe(1)
-			expect(naryOp.operands[1].value).toBe(2)
-			expect(naryOp.operands[2].value).toBe(3)
+			const result = parser.parse('1 + 2 + 3')
+			expect(result).toEqual({
+				'+': [{ number: 1 }, { number: 2 }, { number: 3 }],
+			})
 		})
 
 		it('should parse multiple multiplications as n-ary', () => {
-			const result = parse('2 * 3 * 4', precedence)
-			expect(result.type).toBe('operation')
-			const naryOp = result as any
-			expect(naryOp.operator).toBe('*')
-			expect(naryOp.operands).toHaveLength(3)
-			expect(naryOp.operands[0].value).toBe(2)
-			expect(naryOp.operands[1].value).toBe(3)
-			expect(naryOp.operands[2].value).toBe(4)
+			const result = parser.parse('2 * 3 * 4')
+			expect(result).toEqual({
+				'*': [{ number: 2 }, { number: 3 }, { number: 4 }],
+			})
 		})
 
 		it('should handle mixed n-ary and binary operators', () => {
-			const result = parse('1 + 2 + 3 * 4', precedence)
-			expect(result.type).toBe('operation')
-			const naryOp = result as any
-			expect(naryOp.operator).toBe('+')
-			expect(naryOp.operands).toHaveLength(3)
-			expect(naryOp.operands[2].type).toBe('operation')
+			const result = parser.parse('1 + 2 + 3 * 4')
+			expect(result).toEqual({
+				'+': [{ number: 1 }, { number: 2 }, { '*': [{ number: 3 }, { number: 4 }] }],
+			})
 		})
 
 		it('should handle n-ary operators with variables', () => {
-			const result = parse('a + b + c', precedence)
-			expect(result.type).toBe('operation')
-			const naryOp = result as any
-			expect(naryOp.operator).toBe('+')
-			expect(naryOp.operands).toHaveLength(3)
-			expect(naryOp.operands[0].name).toBe('a')
-			expect(naryOp.operands[1].name).toBe('b')
-			expect(naryOp.operands[2].name).toBe('c')
+			const result = parser.parse('a + b + c')
+			expect(result).toEqual({
+				'+': [{ variable: 'a' }, { variable: 'b' }, { variable: 'c' }],
+			})
 		})
 	})
 
-	describe('Unary operator parsing', () => {
+	describe('Prefix operator parsing', () => {
 		it('should parse unary minus', () => {
-			const result = parse('-5', precedence)
-			expect(result.type).toBe('prefix')
-			const unOp = result as any
-			expect(unOp.operator).toBe('-')
-			expect(unOp.operand.type).toBe('number')
-			expect(unOp.operand.value).toBe(5)
+			const result = parser.parse('-5')
+			expect(result).toEqual({
+				'-': { number: 5 },
+			})
 		})
 
 		it('should handle unary minus with higher precedence', () => {
-			const result = parse('-2 * 3', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('*')
-			expect(binOp.operands[0].type).toBe('prefix')
-			expect(binOp.operands[1].value).toBe(3)
+			const result = parser.parse('-5 * 3')
+			expect(result).toEqual({
+				'*': [{ '-': { number: 5 } }, { number: 3 }],
+			})
 		})
 	})
 
 	describe('Postfix operator parsing', () => {
-		it('should parse single postfix operator', () => {
-			const result = parse('5!', precedence)
-			expect(result.type).toBe('postfix')
-			const postOp = result as any
-			expect(postOp.operator).toBe('!')
-			expect(postOp.operand.type).toBe('number')
-			expect(postOp.operand.value).toBe(5)
+		it('should parse a single postfix operator', () => {
+			const result = parser.parse('5!')
+			expect(result).toEqual({
+				'!': { number: 5 },
+			})
 		})
 
 		it('should parse multiple postfix operators', () => {
-			const result = parse('5!++', precedence)
-			expect(result.type).toBe('postfix')
-			const postOp = result as any
-			expect(postOp.operator).toBe('++')
-			expect(postOp.operand.type).toBe('postfix')
-			expect(postOp.operand.operator).toBe('!')
-			expect(postOp.operand.operand.type).toBe('number')
-			expect(postOp.operand.operand.value).toBe(5)
+			const result = parser.parse('5!++')
+			expect(result).toEqual({
+				'++': { '!': { number: 5 } },
+			})
 		})
 
-		it('should handle postfix with prefix operators', () => {
-			const result = parse('-5!', precedence)
-			expect(result.type).toBe('prefix')
-			const preOp = result as any
-			expect(preOp.operator).toBe('-')
-			expect(preOp.operand.type).toBe('postfix')
-			expect(preOp.operand.operator).toBe('!')
-			expect(preOp.operand.operand.type).toBe('number')
-			expect(preOp.operand.operand.value).toBe(5)
+		it('should handle postfix expressions with prefix operators', () => {
+			const result = parser.parse('-5!')
+			expect(result).toEqual({
+				'-': { '!': { number: 5 } },
+			})
 		})
 
-		it('should handle postfix with variables', () => {
-			const result = parse('x!', precedence)
-			expect(result.type).toBe('postfix')
-			const postOp = result as any
-			expect(postOp.operator).toBe('!')
-			expect(postOp.operand.type).toBe('variable')
-			expect(postOp.operand.name).toBe('x')
+		it('should handle postfix expressions with variables', () => {
+			const result = parser.parse('x!')
+			expect(result).toEqual({
+				'!': { variable: 'x' },
+			})
 		})
 
-		it('should handle postfix with parentheses', () => {
-			const result = parse('(1 + 2)!', precedence)
-			expect(result.type).toBe('postfix')
-			const postOp = result as any
-			expect(postOp.operator).toBe('!')
-			expect(postOp.operand.type).toBe('operation')
-			expect(postOp.operand.operator).toBe('+')
+		it('should handle postfix expressions with parentheses', () => {
+			const result = parser.parse('(1 + 2)!')
+			expect(result).toEqual({
+				'!': { '+': [{ number: 1 }, { number: 2 }] },
+			})
 		})
 
-		it('should handle postfix with paramIndex', () => {
-			const result = parse('$0!', precedence)
-			expect(result.type).toBe('postfix')
-			const postOp = result as any
-			expect(postOp.operator).toBe('!')
-			expect(postOp.operand.type).toBe('paramIndex')
-			expect(postOp.operand.index).toBe(0)
+		it('should handle postfix expressions with parameter indices', () => {
+			const result = parser.parse('$0!')
+			expect(result).toEqual({
+				'!': { param: 0 },
+			})
 		})
 	})
 
 	describe('Parentheses parsing', () => {
 		it('should parse simple parentheses', () => {
-			const result = parse('(1 + 2)', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('+')
-			expect(binOp.operands[0].value).toBe(1)
-			expect(binOp.operands[1].value).toBe(2)
+			const result = parser.parse('(1 + 2)')
+			expect(result).toEqual({
+				'+': [{ number: 1 }, { number: 2 }],
+			})
 		})
 
 		it('should override operator precedence with parentheses', () => {
-			const result = parse('(1 + 2) * 3', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('*')
-			expect(binOp.operands[0].type).toBe('operation')
-			expect(binOp.operands[1].value).toBe(3)
+			const result = parser.parse('(1 + 2) * 3')
+			expect(result).toEqual({
+				'*': [{ '+': [{ number: 1 }, { number: 2 }] }, { number: 3 }],
+			})
 		})
 
 		it('should handle nested parentheses', () => {
-			const result = parse('((1 + 2) * 3) + 4', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('+')
-			expect(binOp.operands[1].value).toBe(4)
+			const result = parser.parse('((1 + 2) * 3) + 4')
+			expect(result).toEqual({
+				'+': [{ '*': [{ '+': [{ number: 1 }, { number: 2 }] }, { number: 3 }] }, { number: 4 }],
+			})
 		})
 
 		it('should handle complex nested expressions', () => {
-			const result = parse('(a + b) * (c - d)', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('*')
-			expect(binOp.operands[0].type).toBe('operation')
-			expect(binOp.operands[1].type).toBe('operation')
+			const result = parser.parse('(a + b) * (c - d)')
+			expect(result).toEqual({
+				'*': [
+					{ '+': [{ variable: 'a' }, { variable: 'b' }] },
+					{ '-': { left: { variable: 'c' }, right: { variable: 'd' } } },
+				],
+			})
 		})
 	})
 
 	describe('Complex expressions', () => {
-		it('should parse expression with variables and numbers', () => {
-			const result = parse('x + 2 * y', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('+')
-			expect(binOp.operands[0].type).toBe('variable')
-			expect(binOp.operands[0].name).toBe('x')
+		it('should handle complex expression with all operators', () => {
+			const result = parser.parse('-a! + b * (c - d)')
+			expect(result).toEqual({
+				'+': [
+					{ '-': { '!': { variable: 'a' } } },
+					{
+						'*': [
+							{ variable: 'b' },
+							{ '-': { left: { variable: 'c' }, right: { variable: 'd' } } },
+						],
+					},
+				],
+			})
+		})
+
+		it('should handle expression with parameter indices', () => {
+			const result = parser.parse('$0 + $1 * $2')
+			expect(result).toEqual({
+				'+': [{ param: 0 }, { '*': [{ param: 1 }, { param: 2 }] }],
+			})
+		})
+
+		it('should handle mixed numbers and variables', () => {
+			const result = parser.parse('2 * x + 3 * y')
+			expect(result).toEqual({
+				'+': [
+					{ '*': [{ number: 2 }, { variable: 'x' }] },
+					{ '*': [{ number: 3 }, { variable: 'y' }] },
+				],
+			})
 		})
 
 		it('should handle expression with unary and binary operators', () => {
-			const result = parse('-x + y * 2', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('+')
-			expect(binOp.operands[0].type).toBe('prefix')
-			expect(binOp.operands[1].type).toBe('operation')
+			const result = parser.parse('-x + y * 2')
+			expect(result).toEqual({
+				'+': [{ '-': { variable: 'x' } }, { '*': [{ variable: 'y' }, { number: 2 }] }],
+			})
 		})
 
 		it('should handle whitespace correctly', () => {
-			const result1 = parse('1+2', precedence)
-			const result2 = parse('1 + 2', precedence)
-			const result3 = parse(' 1 + 2 ', precedence)
-
-			expect(result1.type).toBe('operation')
-			expect(result2.type).toBe('operation')
-			expect(result3.type).toBe('operation')
+			const result1 = parser.parse('1+2')
+			const result2 = parser.parse('1 + 2')
+			const result3 = parser.parse(' 1 + 2 ')
+			expect(result1).toEqual({ '+': [{ number: 1 }, { number: 2 }] })
+			expect(result2).toEqual({ '+': [{ number: 1 }, { number: 2 }] })
+			expect(result3).toEqual({ '+': [{ number: 1 }, { number: 2 }] })
 		})
 	})
 
 	describe('Error handling', () => {
 		it('should throw on mismatched parentheses', () => {
-			expect(() => parse('(1 + 2', precedence)).toThrow('Expected closing parenthesis')
-			expect(() => parse('1 + 2)', precedence)).toThrow('Expected end of expression')
+			expect(() => parser.parse('(1 + 2')).toThrow("Expected closing ')'")
+			expect(() => parser.parse('1 + 2)')).toThrow('Expected end of expression')
 		})
 
 		it('should throw on unknown operators', () => {
-			expect(() => parse('1 @ 2', precedence)).toThrow('Unexpected character: @')
+			expect(() => parser.parse('1 @ 2')).toThrow('Unexpected character: @')
 		})
 
 		it('should throw on invalid expressions', () => {
-			expect(() => parse('1 +', precedence)).toThrow('Unexpected end of expression')
-			expect(() => parse('+ 1', precedence)).toThrow('Unexpected operator: +')
+			expect(() => parser.parse('1 +')).toThrow('Unexpected end of expression')
+			expect(() => parser.parse('+ 1')).toThrow('Unexpected operator: +')
 		})
 
 		it('should throw on not enough operands', () => {
 			// This would be caught during operator application
-			expect(() => parse('1 + + 2', precedence)).toThrow('Unexpected operator: +')
+			expect(() => parser.parse('1 + + 2')).toThrow('Unexpected operator: +')
 		})
 	})
 
 	describe('Operator precedence', () => {
 		it('should respect multiplication over addition', () => {
-			const result = parse('1 + 2 * 3', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('+')
-			expect(binOp.operands[1].type).toBe('operation')
-			const rightOp = binOp.operands[1] as any
-			expect(rightOp.operator).toBe('*')
+			const result = parser.parse('1 + 2 * 3')
+			expect(result).toEqual({
+				'+': [{ number: 1 }, { '*': [{ number: 2 }, { number: 3 }] }],
+			})
 		})
 
 		it('should respect exponentiation over multiplication', () => {
-			const result = parse('2 * 3 ^ 2', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('*')
-			expect(binOp.operands[1].type).toBe('operation')
-			const rightOp = binOp.operands[1] as any
-			expect(rightOp.operator).toBe('^')
+			const result = parser.parse('2 * 3 ^ 2')
+			expect(result).toEqual({
+				'*': [{ number: 2 }, { '^': [{ number: 3 }, { number: 2 }] }],
+			})
 		})
 
 		it('should handle unary minus with highest precedence', () => {
-			const result = parse('-2 + 3', precedence)
-			expect(result.type).toBe('operation')
-			const binOp = result as any
-			expect(binOp.operator).toBe('+')
-			expect(binOp.operands[0].type).toBe('prefix')
+			const result = parser.parse('-2 + 3')
+			expect(result).toEqual({
+				'+': [{ '-': { number: 2 } }, { number: 3 }],
+			})
 		})
 	})
 
 	describe('Edge cases', () => {
-		it('should handle single number', () => {
-			const result = parse('42', precedence)
-			expect(result.type).toBe('number')
-		})
-
 		it('should handle single variable', () => {
-			const result = parse('x', precedence)
-			expect(result.type).toBe('variable')
+			const result = parser.parse('x')
+			expect(result).toEqual({ variable: 'x' })
 		})
 
 		it('should handle empty parentheses', () => {
-			expect(() => parse('()', precedence)).toThrow('Unexpected closing parenthesis')
+			expect(() => parser.parse('()')).toThrow('Unexpected token: close')
 		})
 
 		it('should handle multiple spaces', () => {
-			const result = parse('  1   +   2  ', precedence)
-			expect(result.type).toBe('operation')
+			const result = parser.parse('  1   +   2  ')
+			expect(result).toEqual({
+				'+': [{ number: 1 }, { number: 2 }],
+			})
 		})
 	})
 
 	describe('Empty operator parsing', () => {
 		it('should handle empty operator for implicit multiplication', () => {
-			const result = parse('2x', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('*')
-			expect(op.operands[0].value).toBe(2)
-			expect(op.operands[1].name).toBe('x')
+			const result = parser.parse('2x')
+			expect(result).toEqual({
+				'*': [{ number: 2 }, { variable: 'x' }],
+			})
 		})
 
 		it('should handle empty operator with parentheses', () => {
-			const result = parse('3(x+1)', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('*')
-			expect(op.operands[0].value).toBe(3)
-			expect(op.operands[1].type).toBe('operation')
+			const result = parser.parse('3(x+1)')
+			expect(result).toEqual({
+				'*': [{ number: 3 }, { '+': [{ variable: 'x' }, { number: 1 }] }],
+			})
 		})
 
 		it('should handle multiple empty operators', () => {
-			const result = parse('2x 3y', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('*')
-			expect(op.operands[0].value).toBe(2)
-			expect(op.operands[1].name).toBe('x')
-			expect(op.operands[2].value).toBe(3)
-			expect(op.operands[3].name).toBe('y')
+			const result = parser.parse('2x 3y')
+			expect(result).toEqual({
+				'*': [{ number: 2 }, { variable: 'x' }, { number: 3 }, { variable: 'y' }],
+			})
 		})
 
 		it('should respect precedence with empty operator', () => {
-			const result = parse('2x + 3y', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('+')
-			expect(op.operands[0].type).toBe('operation')
-			expect(op.operands[1].type).toBe('operation')
+			const result = parser.parse('2x + 3y')
+			expect(result).toEqual({
+				'+': [
+					{ '*': [{ number: 2 }, { variable: 'x' }] },
+					{ '*': [{ number: 3 }, { variable: 'y' }] },
+				],
+			})
 		})
 
 		it('should handle empty operator with unary operators', () => {
-			const result = parse('-2x', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('*')
-			expect(op.operands[0].type).toBe('prefix')
-			expect(op.operands[1].name).toBe('x')
+			const result = parser.parse('-2x')
+			expect(result).toEqual({
+				'*': [{ '-': { number: 2 } }, { variable: 'x' }],
+			})
 		})
 
 		it('should cumulate also empty operator', () => {
-			const result = parse('-2x*3y', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('*')
-			expect(op.operands[0].type).toBe('prefix')
-			expect(op.operands[1].name).toBe('x')
-			expect(op.operands[2].value).toBe(3)
-			expect(op.operands[3].name).toBe('y')
+			const result = parser.parse('-2x*3y')
+			expect(result).toEqual({
+				'*': [{ '-': { number: 2 } }, { variable: 'x' }, { number: 3 }, { variable: 'y' }],
+			})
 		})
 
 		it('should handle empty operator with complex expressions', () => {
-			const result = parse('2(x+y)', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('*')
-			expect(op.operands[0].value).toBe(2)
-			expect(op.operands[1].type).toBe('operation')
+			const result = parser.parse('2(x+y)')
+			expect(result).toEqual({
+				'*': [{ number: 2 }, { '+': [{ variable: 'x' }, { variable: 'y' }] }],
+			})
 		})
 
 		it('should handle empty operator precedence correctly', () => {
-			const result = parse('2x^2', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('*')
-			expect(op.operands[0].value).toBe(2)
-			expect(op.operands[1].type).toBe('operation')
-			expect(op.operands[1].operator).toBe('^')
-			expect(op.operands[1].operands[0].name).toBe('x')
-			expect(op.operands[1].operands[1].value).toBe(2)
+			const result = parser.parse('2x^2')
+			expect(result).toEqual({
+				'*': [{ number: 2 }, { '^': [{ variable: 'x' }, { number: 2 }] }],
+			})
 		})
 	})
 
-	describe('ParamIndex parsing', () => {
-		it('should parse simple paramIndex', () => {
-			const result = parse('$0', precedence)
-			expect(result.type).toBe('paramIndex')
-			expect((result as any).index).toBe(0)
+	describe('Param parsing', () => {
+		it('should parse simple param', () => {
+			const result = parser.parse('$0')
+			expect(result).toEqual({ param: 0 })
 		})
 
-		it('should parse multi-digit paramIndex', () => {
-			const result = parse('$42', precedence)
-			expect(result.type).toBe('paramIndex')
-			expect((result as any).index).toBe(42)
+		it('should parse multi-digit param', () => {
+			const result = parser.parse('$42')
+			expect(result).toEqual({ param: 42 })
 		})
 
-		it('should parse paramIndex with operations', () => {
-			const result = parse('$0 + $1', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('+')
-			expect(op.operands[0].type).toBe('paramIndex')
-			expect(op.operands[0].index).toBe(0)
-			expect(op.operands[1].type).toBe('paramIndex')
-			expect(op.operands[1].index).toBe(1)
+		it('should parse param with operations', () => {
+			const result = parser.parse('$0 + $1')
+			expect(result).toEqual({
+				'+': [{ param: 0 }, { param: 1 }],
+			})
 		})
 
-		it('should parse paramIndex with numbers', () => {
-			const result = parse('$0 * 2', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('*')
-			expect(op.operands[0].type).toBe('paramIndex')
-			expect(op.operands[0].index).toBe(0)
-			expect(op.operands[1].type).toBe('number')
-			expect(op.operands[1].value).toBe(2)
+		it('should parse param with numbers', () => {
+			const result = parser.parse('$0 * 2')
+			expect(result).toEqual({
+				'*': [{ param: 0 }, { number: 2 }],
+			})
 		})
 
-		it('should parse paramIndex with variables', () => {
-			const result = parse('$0 + x', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('+')
-			expect(op.operands[0].type).toBe('paramIndex')
-			expect(op.operands[0].index).toBe(0)
-			expect(op.operands[1].type).toBe('variable')
-			expect(op.operands[1].name).toBe('x')
+		it('should parse param with variables', () => {
+			const result = parser.parse('$0 + x')
+			expect(result).toEqual({
+				'+': [{ param: 0 }, { variable: 'x' }],
+			})
 		})
 
-		it('should parse paramIndex in parentheses', () => {
-			const result = parse('($0 + $1) * 2', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('*')
-			expect(op.operands[0].type).toBe('operation')
-			expect(op.operands[1].type).toBe('number')
-			expect(op.operands[1].value).toBe(2)
+		it('should parse param in parentheses', () => {
+			const result = parser.parse('($0 + $1) * 2')
+			expect(result).toEqual({
+				'*': [{ '+': [{ param: 0 }, { param: 1 }] }, { number: 2 }],
+			})
 		})
 
-		it('should parse paramIndex with unary operators', () => {
-			const result = parse('-$0', precedence)
-			expect(result.type).toBe('prefix')
-			const unOp = result as any
-			expect(unOp.operator).toBe('-')
-			expect(unOp.operand.type).toBe('paramIndex')
-			expect(unOp.operand.index).toBe(0)
+		it('should parse param with unary operators', () => {
+			const result = parser.parse('-$0')
+			expect(result).toEqual({ '-': { param: 0 } })
 		})
 
-		it('should parse complex paramIndex expressions', () => {
-			const result = parse('$0 * $1 + $2', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('+')
-			expect(op.operands[0].type).toBe('operation')
-			expect(op.operands[1].type).toBe('paramIndex')
-			expect(op.operands[1].index).toBe(2)
+		it('should parse complex param expressions', () => {
+			const result = parser.parse('$0 * $1 + $2')
+			expect(result).toEqual({
+				'+': [{ '*': [{ param: 0 }, { param: 1 }] }, { param: 2 }],
+			})
 		})
 
-		it('should parse paramIndex with empty operator', () => {
-			const result = parse('2$0', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('*')
-			expect(op.operands[0].type).toBe('number')
-			expect(op.operands[0].value).toBe(2)
-			expect(op.operands[1].type).toBe('paramIndex')
-			expect(op.operands[1].index).toBe(0)
+		it('should parse param with empty operator', () => {
+			const result = parser.parse('2$0')
+			expect(result).toEqual({
+				'*': [{ number: 2 }, { param: 0 }],
+			})
 		})
 
-		it('should handle paramIndex precedence correctly', () => {
-			const result = parse('$0 + $1 * $2', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('+')
-			expect(op.operands[0].type).toBe('paramIndex')
-			expect(op.operands[0].index).toBe(0)
-			expect(op.operands[1].type).toBe('operation')
-			expect(op.operands[1].operator).toBe('*')
+		it('should handle param precedence correctly', () => {
+			const result = parser.parse('$0 + $1 * $2')
+			expect(result).toEqual({
+				'+': [{ param: 0 }, { '*': [{ param: 1 }, { param: 2 }] }],
+			})
 		})
 
-		it('should parse multiple paramIndexes in sequence', () => {
-			const result = parse('$0$1$2', precedence)
-			expect(result.type).toBe('operation')
-			const op = result as any
-			expect(op.operator).toBe('*')
-			expect(op.operands[0].type).toBe('paramIndex')
-			expect(op.operands[0].index).toBe(0)
-			expect(op.operands[1].index).toBe(1)
-			expect(op.operands[2].index).toBe(2)
+		it('should parse multiple params in sequence', () => {
+			const result = parser.parse('$0$1$2')
+			expect(result).toEqual({
+				'*': [{ param: 0 }, { param: 1 }, { param: 2 }],
+			})
 		})
 	})
 
-	describe('ParamIndex error handling', () => {
-		it('should throw on invalid paramIndex syntax', () => {
-			expect(() => parse('$', precedence)).toThrow('Unexpected character: $')
+	describe('Surrounding tokens', () => {
+		it('should parse [.] surrounding tokens', () => {
+			const result = parser.parse('[x + y]')
+			expect(result).toEqual({
+				'[.]': { '+': [{ variable: 'x' }, { variable: 'y' }] },
+			})
 		})
 
-		it('should throw on paramIndex with non-numeric index', () => {
-			expect(() => parse('$abc', precedence)).toThrow('Unexpected character: $')
+		it('should parse nested [.] surrounding tokens', () => {
+			const result = parser.parse('[[x]]')
+			expect(result).toEqual({
+				'[.]': { '[.]': { variable: 'x' } },
+			})
 		})
 
-		it('should throw on paramIndex with decimal', () => {
-			expect(() => parse('$1.5', precedence)).toThrow('Unexpected character: .')
+		it('should parse [.] with complex expressions', () => {
+			const result = parser.parse('[x * y + z]')
+			expect(result).toEqual({
+				'[.]': { '+': [{ '*': [{ variable: 'x' }, { variable: 'y' }] }, { variable: 'z' }] },
+			})
 		})
 
-		it('should handle paramIndex with leading zeros', () => {
-			const result = parse('$001', precedence)
-			expect(result.type).toBe('paramIndex')
-			expect((result as any).index).toBe(1)
+		it('should handle [.] with numbers', () => {
+			const result = parser.parse('[42]')
+			expect(result).toEqual({
+				'[.]': { number: 42 },
+			})
 		})
 
-		it('should handle paramIndex with large numbers', () => {
-			const result = parse('$999999', precedence)
-			expect(result.type).toBe('paramIndex')
-			expect((result as any).index).toBe(999999)
+		it('should handle [.] with variables', () => {
+			const result = parser.parse('[x]')
+			expect(result).toEqual({
+				'[.]': { variable: 'x' },
+			})
+		})
+
+		it('should handle [.] with unary operators', () => {
+			const result = parser.parse('[-x]')
+			expect(result).toEqual({
+				'[.]': { '-': { variable: 'x' } },
+			})
+		})
+
+		it('should handle [.] with postfix operators', () => {
+			const result = parser.parse('[x!]')
+			expect(result).toEqual({
+				'[.]': { '!': { variable: 'x' } },
+			})
+		})
+
+		it('should handle [.] with paramIndex', () => {
+			const result = parser.parse('[$0]')
+			expect(result).toEqual({
+				'[.]': { param: 0 },
+			})
+		})
+
+		it('should handle mixed surrounding tokens', () => {
+			const result = parser.parse('([x + y])')
+			expect(result).toEqual({
+				'[.]': { '+': [{ variable: 'x' }, { variable: 'y' }] },
+			})
+		})
+
+		it('should handle [.] with empty operator', () => {
+			const result = parser.parse('2[x]')
+			expect(result).toEqual({
+				'*': [{ number: 2 }, { '[.]': { variable: 'x' } }],
+			})
+		})
+	})
+
+	describe('Surrounding error handling', () => {
+		it('should throw on mismatched [.] tokens', () => {
+			expect(() => parser.parse('[x + y')).toThrow('Expected closing')
+			expect(() => parser.parse('x + y]')).toThrow('Expected end of expression')
+		})
+
+		it('should throw on empty [.] tokens', () => {
+			expect(() => parser.parse(']')).toThrow('Unexpected token: close')
 		})
 	})
 })

@@ -1,4 +1,4 @@
-const calculating: { class: new () => any; prop: string }[] = []
+const calculating: { object: object; prop: PropertyKey }[] = []
 export function cached() {
 	return (_target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
 		const original = descriptor.get
@@ -8,16 +8,16 @@ export function cached() {
 
 		descriptor.get = function (this: any) {
 			const alreadyCalculating = calculating.findIndex(
-				(c) => c.class === this && c.prop === propertyKey
+				(c) => c.object === this && c.prop === propertyKey
 			)
 			if (alreadyCalculating > -1)
 				throw new Error(
 					`Circular dependency detected: ${calculating
 						.slice(alreadyCalculating)
-						.map((c) => `${c.class.name}.${c.prop}`)
+						.map((c) => `${c.object.constructor.name}.${String(c.prop)}`)
 						.join(' -> ')} -> again`
 				)
-			calculating.push({ class: this.constructor, prop: String(propertyKey) })
+			calculating.push({ object: this, prop: propertyKey })
 			try {
 				const rv = original.call(this)
 				cache(this, propertyKey, rv)

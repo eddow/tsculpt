@@ -1,6 +1,6 @@
 import { cached } from '../ts/decorators'
 import { VectorMap } from '../vectorSet'
-import type { Vector3 } from './vectors'
+import type { Vector3 } from './bunches'
 
 type FaceIndices = [number, number, number]
 

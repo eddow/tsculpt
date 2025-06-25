@@ -1,5 +1,5 @@
-import { VectorD } from '@tsculpt/types'
-import { cachedParser } from './expression'
+import { Matrix, NumberBunch, Vector } from '../types/bunches'
+import { TemplateParser } from './templated'
 
 export class SemanticError extends Error {}
 
@@ -39,11 +39,11 @@ function calculate(
 			let result = [] as number[]
 			for (const term of expr.terms) {
 				const calc = calculate(term, values)
-				if (!Array.isArray(calc)) throw new SemanticError(`Cannot sum non-vector values: ${calc}`)
+				if (!(calc instanceof Vector)) throw new SemanticError(`Cannot sum non-vector values: ${calc}`)
 				while (result.length < calc.length) result.push(0)
 				result = result.map((r, i) => r + (calc[i] ?? 0))
 			}
-			return result
+			return Vector.from(result)
 		}
 		case 'prod': {
 			let numeric = expr.factor
@@ -55,13 +55,18 @@ function calculate(
 				else vector = calc
 			}
 			if (!vector) throw new SemanticError(`No vector in expression: ${expr}`)
-			return vector.map((v) => v * numeric)
+			return Vector.from(vector.map((v) => v * numeric))
 		}
 	}
 }
-export const vector = cachedParser<number | readonly number[], LinearExpression, readonly number[]>(
+
+const formulas = new TemplateParser<
+	LinearExpression,
+	number | readonly number[],
+	number | readonly number[]
+>(
 	{
-		operators: [{ '+': 'nary', '-': 'binary' }, { '*': 'nary' }],
+		precedence: [{ '+': 'nary', '-': 'binary' }, { '*': 'nary' }],
 		emptyOperator: '*',
 		prefix: {
 			'-': (a) => neg(a),
@@ -87,15 +92,25 @@ export const vector = cachedParser<number | readonly number[], LinearExpression,
 				rex: /(?:\d+(:?\.\d+)?)|(?:\.\d+)/,
 				build: (match) => ({ type: 'prod', factor: Number(match[0]), factors: [] }),
 			},
-			{ rex: /\$(\d+)/, build: (match) => ({ type: 'parameter', index: Number(match[1]) }) },
 		],
+		surroundings: [{ open: '(', close: ')', build: (expr) => expr }],
 	},
-	(expr, values) => {
-		const result = calculate(expr, values)
-		if (!Array.isArray(result)) throw new Error(`Invalid vector expression: ${expr}`)
-		return result
-	}
-) as <Vector extends VectorD>(
-	expr: TemplateStringsArray,
-	...values: readonly (number | Vector)[]
-) => Vector
+	(index) => ({ type: 'parameter', index }),
+	calculate
+)
+
+function expectClass<T>(value: unknown, type: new (...args: any[]) => T) {
+	if (!(value instanceof type))
+		throw new SemanticError(
+			`Expected ${type.name}, got: ${
+				typeof value === 'object' ? value?.constructor.name : typeof value
+			}`
+		)
+	return value as T
+}
+export function vector(expr: TemplateStringsArray, ...values: readonly NumberBunch[]) {
+	return expectClass(formulas.calculate(expr, ...values), Vector)
+}
+export function matrix(expr: TemplateStringsArray, ...values: readonly NumberBunch[]) {
+	return expectClass(formulas.calculate(expr, ...values), Matrix)
+}

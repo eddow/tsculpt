@@ -1,20 +1,22 @@
-import { normalize } from './cpu/vector'
-import { vector } from './expression'
+import { mapped, normalize } from './cpu/vector'
 import { generation } from './globals'
+import { type Vector3, v3 } from './types'
 import { Mesh } from './types/mesh'
-import { type Vector3, v3 } from './types/vectors'
 
-export function box({ size = 1, center = [0, 0, 0] as Vector3 } = {}): Mesh {
-	const vertices = [
-		[-1, -1, -1],
-		[1, -1, -1],
-		[1, 1, -1],
-		[-1, 1, -1],
-		[-1, -1, 1],
-		[1, -1, 1],
-		[1, 1, 1],
-		[-1, 1, 1],
-	].map((v) => vector<Vector3>`${size} * ${v3(v)} + ${center}`)
+export function box({ size = 1, center = v3(0, 0, 0) } = {}): Mesh {
+	const vertices = mapped<Vector3>(
+		(v) => v3`${size} * ${v} + ${center}`,
+		[
+			[-1, -1, -1],
+			[1, -1, -1],
+			[1, 1, -1],
+			[-1, 1, -1],
+			[-1, -1, 1],
+			[1, -1, 1],
+			[1, 1, 1],
+			[-1, 1, 1],
+		]
+	)
 
 	const faceIndices: [number, number, number][] = [
 		// Front face (CCW from outside)F
@@ -42,30 +44,33 @@ export function box({ size = 1, center = [0, 0, 0] as Vector3 } = {}): Mesh {
 
 export function geodesicSphere({
 	radius = 1,
-	subdivisions = 1,
-	center = [0, 0, 0] as Vector3,
-} = {}): Mesh {
 	// =5 = question, >5 = gpu better, <5 = cpu better
+	subdivisions = 1,
+	center = v3(0, 0, 0),
+} = {}): Mesh {
 	function midpoint(a: Vector3, b: Vector3): Vector3 {
-		return normalize(v3((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2))
+		return normalize(v3`${a} + ${b}`)
 	}
 
 	// Start with icosahedron vertices
 	const t = (1 + Math.sqrt(5)) / 2
-	const vertices: Vector3[] = [
-		[-1, t, 0],
-		[1, t, 0],
-		[-1, -t, 0],
-		[1, -t, 0],
-		[0, -1, t],
-		[0, 1, t],
-		[0, -1, -t],
-		[0, 1, -t],
-		[t, 0, -1],
-		[t, 0, 1],
-		[-t, 0, -1],
-		[-t, 0, 1],
-	].map((v) => normalize(v3(v)))
+	const vertices = mapped<Vector3>(
+		(v) => normalize(v),
+		[
+			[-1, t, 0],
+			[1, t, 0],
+			[-1, -t, 0],
+			[1, -t, 0],
+			[0, -1, t],
+			[0, 1, t],
+			[0, -1, -t],
+			[0, 1, -t],
+			[t, 0, -1],
+			[t, 0, 1],
+			[-t, 0, -1],
+			[-t, 0, 1],
+		]
+	)
 
 	// Initial icosahedron faces
 	const faceIndices: [number, number, number][] = [
@@ -113,11 +118,11 @@ export function geodesicSphere({
 
 	return new Mesh(
 		icosahedron.faces,
-		icosahedron.vectors.map((v) => vector`${radius} * ${v} + ${center}`)
+		mapped<Vector3>((v) => v3`${radius} * ${v} + ${center}`, icosahedron.vectors)
 	)
 }
 
-export function sphere({ radius = 1, center = [0, 0, 0] as Vector3 } = {}): Mesh {
+export function sphere({ radius = 1, center = v3(0, 0, 0) } = {}): Mesh {
 	const { grain } = generation
 	// Calculate required subdivisions based on grain size
 	// Initial edge length is approximately 1.051 × radius for icosahedron
