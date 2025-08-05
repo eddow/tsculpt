@@ -1,8 +1,8 @@
-import { AMesh, Engine, InternalMesh } from "./index"
-import { Mesh, Vector3 } from '../types'
+import { AMesh, Engine, InternalMesh } from "../src/booleans/index"
+import { Mesh, Vector3 } from '../src/types'
 
 // Fake mesh for testing purposes
-class FakeMesh extends InternalMesh {
+export class FakeMesh extends InternalMesh {
 	constructor(public readonly id: string) {
 		super()
 	}
@@ -55,4 +55,4 @@ class TesterEngine extends Engine {
 
 export default new TesterEngine()
 
-export * from './index'
+export * from '../src/booleans/index'

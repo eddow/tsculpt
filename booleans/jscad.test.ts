@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { JscadEngine } from './jscad'
-import { Mesh } from '../types/mesh'
-import { Vector3 } from '../types/bunches'
+import engine from './jscad'
+import { Mesh } from '../src/types/mesh'
+import { Vector3 } from '../src/types/bunches'
 
 // Helper function to create a simple test mesh
 function createTestMesh(): Mesh {
@@ -19,9 +19,7 @@ function createTestMesh(): Mesh {
 }
 
 describe('JscadEngine', () => {
-	const engine = new JscadEngine()
-
-		it('should perform union operations', () => {
+	it('should perform union operations', () => {
 		const mesh1 = createTestMesh()
 		const mesh2 = createTestMesh()
 

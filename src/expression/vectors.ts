@@ -6,6 +6,10 @@ export function vecProd(a: number | readonly number[], b: number | readonly numb
 	if (typeof a === 'number') return typeof b === 'number' ? a * b : b.map((v) => v * a)
 	return typeof b === 'number' ? a.map((v) => v * b) : zip(a, b).map(([a, b]) => a * b)
 }
+export function vecSum(a: number | readonly number[], b: number | readonly number[]): number | readonly number[] {
+	if (typeof a === 'number') return typeof b === 'number' ? a + b : b.map((v) => v + a)
+	return typeof b === 'number' ? a.map((v) => v + b) : zip(a, b).map(([a, b]) => a + b)
+}
 
 export class SemanticError extends Error {}
 

@@ -3,14 +3,14 @@ import { URL, fileURLToPath } from 'node:url'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import paramMetadataInjector from './viewer/vite-plugin-param-metadata'
-// https://vitejs.dev/config/
+
 export default defineConfig({
 	plugins: [vue(), paramMetadataInjector()],
 	resolve: {
 		alias: {
 			'@': fileURLToPath(new URL('./viewer', import.meta.url)),
 			'@tsculpt': fileURLToPath(new URL('./src', import.meta.url)),
-			'@booleans': fileURLToPath(new URL('./src/booleans/jscad.ts', import.meta.url)),
+			'@booleans': fileURLToPath(new URL('./booleans/jscad.ts', import.meta.url)),
 		},
 	},
 	css: {
@@ -37,7 +37,7 @@ export default defineConfig({
 	test: {
 		include: ['src/**/*.test.ts'],
 		alias: {
-			'@booleans': fileURLToPath(new URL('./src/booleans/tester.ts', import.meta.url)),
+			'@booleans': fileURLToPath(new URL('./booleans/tester.ts', import.meta.url)),
 		},
 		coverage: {
 			provider: 'v8',
@@ -47,6 +47,6 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
-		exclude: ['example/test.ts'],
+		exclude: ['example/*.ts'],
 	},
 })

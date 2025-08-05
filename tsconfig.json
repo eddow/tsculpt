@@ -25,7 +25,7 @@
 		"paths": {
 			"@tsculpt": ["./src"],
 			"@tsculpt/*": ["./src/*"],
-			"@booleans": ["./src/booleans/tester.ts"]
+			"@booleans": ["booleans/tester.ts"]
 		}
 	}
 }

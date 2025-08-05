@@ -1,0 +1,23 @@
+// Example 1: Using the Vite plugin approach (recommended)
+// This will be automatically converted to a Mesh at build time
+import stlMesh from './model.stl?raw'
+
+export default stlMesh
+/*
+// Example 2: Using raw import with runtime parsing
+import stlData from './model.stl?raw'
+import { loadSTL } from '@tsculpt/utils/stl-loader'
+
+export function loadSTLAtRuntime() {
+	return loadSTL(stlData)
+}
+
+// Example 3: Multiple STL files
+import cubeSTL from './cube.stl'
+import sphereSTL from './sphere.stl'
+
+export function combinedMesh() {
+	// You can combine multiple STL meshes
+	return cubeSTL.translate([0, 0, 0]).union(sphereSTL.translate([2, 0, 0]))
+}
+*/

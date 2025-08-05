@@ -1,11 +1,11 @@
 import { Color, Geom3, Poly3 } from "@jscad/modeling/src/geometries/types"
-import { AMesh, Engine, InternalMesh } from "./index"
+import { AMesh, Engine, InternalMesh } from "../src/booleans/index"
 
 import { Mat4 } from "@jscad/modeling/src/maths/mat4"
 import { toJscad } from "@tsculpt/jscad"
-import { Mesh, Vector3 } from '../types'
+import { Mesh, Vector3 } from '../src/types'
 import { booleans } from '@jscad/modeling'
-import { triangles } from "./utils"
+import { triangles } from "../src/booleans/utils"
 const { union, intersect, subtract } = booleans
 
 class JscadMesh extends InternalMesh implements Geom3 {
@@ -58,4 +58,4 @@ class JscadEngine extends Engine {
 
 export default new JscadEngine()
 
-export * from './index'
+export * from '../src/booleans/index'

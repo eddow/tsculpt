@@ -2,27 +2,21 @@ import { TemplateParser } from './templated'
 import { Mesh } from '../types/mesh'
 import { Vector3, Vector } from '../types/bunches'
 import booleans, { isMesh, type AMesh } from '@booleans'
+import { vecProd } from './vectors'
 
 export class MeshSemanticError extends Error {}
 
 type MeshParameter = { type: 'parameter'; index: number }
-type MeshOperation = { type: 'operation'; operator: string; operands: MeshExpression[] }
-type MeshLiteral = { type: 'mesh'; value: Mesh }
-type VectorLiteral = { type: 'vector'; value: Vector3 }
-type NumberLiteral = { type: 'number'; value: number }
-type MeshExpression = MeshParameter | MeshOperation | MeshLiteral | VectorLiteral | NumberLiteral
+type MeshScale = { type: 'scale'; factor: number | number[]; operands: MeshExpression[] }
+type MeshTranslate = { type: 'translate'; terms: MeshExpression[] }
+type MeshSubtract = { type: 'subtract'; operands: [MeshExpression, MeshExpression] }
+type MeshIntersect = { type: 'intersect'; operands: MeshExpression[] }
+type MeshUnion = { type: 'union'; operands: MeshExpression[] }
+type MeshLiteral = { type: 'literal'; value: number | Vector3 }
+type MeshExpression = MeshParameter | MeshScale | MeshTranslate | MeshSubtract | MeshIntersect | MeshUnion | MeshLiteral
 
-// Define the mesh operations
-function translate(mesh: Mesh, vector: Vector3): Mesh {
-	return mesh.map(v => v.map((coord, i) => coord + vector[i]) as Vector3)
-}
-
-function scale(mesh: Mesh, factor: number | Vector3): Mesh {
-	if (typeof factor === 'number') {
-		return mesh.map(v => v.map(coord => coord * factor) as Vector3)
-	} else {
-		return mesh.map(v => v.map((coord, i) => coord * factor[i]) as Vector3)
-	}
+function isUnity(factor: number | (readonly number[])): boolean {
+	return Array.isArray(factor) ? factor.every((v) => v === 1) : factor === 1
 }
 
 function recur(
@@ -32,55 +26,98 @@ function recur(
 	switch (expr.type) {
 		case 'parameter':
 			return values[expr.index]
-		case 'operation': {
-			const operands = expr.operands.map(op => recur(op, values))
+		case 'literal':
+			return expr.value
+		case 'scale': {
+			let factor: number | (readonly number[]) = expr.factor
+			let mesh: AMesh | undefined
+				for (const operand of expr.operands) {
+					const result = recur(operand, values)
+					if(isMesh(result)) {
+						if(mesh) throw new MeshSemanticError(`Cannot scale multiple meshes: ${mesh} and ${result}`)
+						mesh = result
+					} else factor = vecProd(factor, result)
+				}
+				if(isUnity(factor)) return mesh || 1
+				const scale = Array.isArray(factor) ? Vector.from(factor) as Vector3 : factor as number
+				if(!mesh) return scale
 
-			switch (expr.operator) {
-				case '+': {
-					const mesh = operands[0] as AMesh
-					const second = operands[1]
-					if (!(second instanceof Vector3)) {
-						throw new MeshSemanticError(`Cannot add mesh to: ${second}`)
-					}
-					return translate(booleans.result(mesh), second)
-				}
-				case '*': {
-					const mesh = operands[0] as AMesh
-					const factor = operands[1]
-					if (typeof factor === 'number') {
-						return scale(booleans.result(mesh), factor)
-					} else if (factor instanceof Vector3) {
-						return scale(booleans.result(mesh), factor)
-					} else {
-						throw new MeshSemanticError(`Cannot multiply mesh by: ${factor}`)
-					}
-				}
-				case '-': {
-					const mesh1 = operands[0] as AMesh
-					const mesh2 = operands[1] as AMesh
-					return booleans.subtract(mesh1, mesh2)
-				}
-				case '&': {
-					const mesh1 = operands[0] as AMesh
-					const mesh2 = operands[1] as AMesh
-					return booleans.intersect(mesh1, mesh2)
-				}
-				case '|': {
-					const mesh1 = operands[0] as AMesh
-					const mesh2 = operands[1] as AMesh
-					return booleans.union(mesh1, mesh2)
-				}
-				default:
-					throw new MeshSemanticError(`Unknown operator: ${expr.operator}`)
+				return booleans.result(mesh).scale(scale)
 			}
+		case 'translate': {
+				let vector: Vector = Vector.from([0, 0, 0])
+				let mesh: AMesh | undefined
+				for (const term of expr.terms) {
+					const result = recur(term, values)
+					if(isMesh(result)) {
+						if(mesh) throw new MeshSemanticError(`Cannot translate multiple meshes: ${mesh} and ${result}`)
+						mesh = result
+					} else if(typeof result === 'number') throw new MeshSemanticError(`Cannot translate by number: ${result}`)
+					else vector = vector.add(result)
+				}
+				if(!mesh) return vector as Vector3
+				return booleans.result(mesh).translate(vector as Vector3)
+			}
+		case 'subtract':
+			const a = recur(expr.operands[0], values)
+			const b = recur(expr.operands[1], values)
+			if(!isMesh(a)) throw new MeshSemanticError(`Bad operand to subtract from: ${a}`)
+			if(!isMesh(b)) throw new MeshSemanticError(`Bad operand to subtract: ${b}`)
+			return booleans.subtract(a, b)
+		case 'intersect': {
+				const meshes: AMesh[] = []
+				for (const operand of expr.operands) {
+					const result = recur(operand, values)
+					if(!isMesh(result)) throw new MeshSemanticError(`Bad operand to intersect: ${result}`)
+					meshes.push(result)
+				}
+				return booleans.intersect(...meshes)
+			}
+		case 'union': {
+			const meshes: AMesh[] = []
+			for (const operand of expr.operands) {
+				const result = recur(operand, values)
+				if(!isMesh(result)) throw new MeshSemanticError(`Bad operand to union: ${result}`)
+				meshes.push(result)
+			}
+			return booleans.union(...meshes)
 		}
-		case 'mesh':
-			return expr.value
-		case 'vector':
-			return expr.value
-		case 'number':
-			return expr.value
 	}
+}
+
+function translate(...operands: MeshExpression[]): MeshExpression {
+	const resultingOperands: MeshExpression[] = []
+	let vector: Vector = Vector.from([0, 0, 0])
+	function add(expr: MeshExpression) {
+		if (expr.type === 'translate') for (const term of expr.terms) add(term)
+		else if (expr.type === 'literal') {
+			if (typeof expr.value === 'number') throw new MeshSemanticError(`Cannot translate by number: ${expr.value}`)
+			vector = vector.add(expr.value)
+		}
+		else resultingOperands.push(expr)
+	}
+	for (const operand of operands) add(operand)
+	if (!vector.every((v) => v === 0)) resultingOperands.push({ type: 'literal', value: vector as Vector3 })
+	return resultingOperands.length === 1
+		? resultingOperands[0]
+		: { type: 'translate', terms: resultingOperands }
+}
+
+function scale(...operands: MeshExpression[]): MeshExpression {
+	const resultingOperands: MeshExpression[] = []
+	let factor: number | (readonly number[]) = 1
+	function add(expr: MeshExpression) {
+		if (expr.type === 'scale') {
+			factor = vecProd(factor, expr.factor)
+			for (const term of expr.operands) add(term)
+		} else if (expr.type === 'literal')
+			factor = vecProd(factor, expr.value)
+		else resultingOperands.push(expr)
+	}
+	for (const operand of operands) add(operand)
+	return resultingOperands.length === 1 && isUnity(factor)
+		? resultingOperands[0]
+		: { type: 'scale', factor, operands: resultingOperands }
 }
 
 const meshFormulas = new TemplateParser<
@@ -93,44 +130,33 @@ const meshFormulas = new TemplateParser<
 			{ '|': 'nary' },
 			{ '&': 'nary' },
 			{ '-': 'binary' },
-			{ '+': 'binary' },
-			{ '*': 'binary' }
+			{ '+': 'nary' },
+			{ '*': 'nary' }
 		],
 		operations: {
-			'+': (a: MeshExpression, b: MeshExpression) => ({
-				type: 'operation',
-				operator: '+',
-				operands: [a, b]
-			}),
-			'*': (a: MeshExpression, b: MeshExpression) => ({
-				type: 'operation',
-				operator: '*',
-				operands: [a, b]
-			}),
+			'+': (...operands)=> translate(...operands),
+			'*': (...operands)=> scale(...operands),
 			'-': (a: MeshExpression, b: MeshExpression) => ({
-				type: 'operation',
-				operator: '-',
+				type: 'subtract',
 				operands: [a, b]
 			}),
-			'&': (a: MeshExpression, b: MeshExpression) => ({
-				type: 'operation',
-				operator: '&',
-				operands: [a, b]
+			'&': (...operands) => ({
+				type: 'intersect',
+				operands
 			}),
-			'|': (a: MeshExpression, b: MeshExpression) => ({
-				type: 'operation',
-				operator: '|',
-				operands: [a, b]
+			'|': (...operands) => ({
+				type: 'union',
+				operands
 			})
 		},
 		atomics: [
 			{
 				rex: /\[([\d \.-]+)\]/s,
-				build: (match) => ({ type: 'vector', value: Vector.from(match[1].split(/\s+/).map(Number)) as Vector3 })
+				build: (match) => ({ type: 'literal', value: Vector.from(match[1].split(/\s+/).map(Number)) as Vector3 })
 			},
 			{
-				rex: /(?:\d+(:?\.\d+)?)|(?:\.\d+)/,
-				build: (match) => ({ type: 'number', value: Number(match[0]) })
+				rex: /(?:\d+(:?\.\d+)?)|(?:\.\d+)/, // TODO: add support for scientific notation
+				build: (match) => ({ type: 'literal', value: Number(match[0]) })
 			}
 		],
 		surroundings: [{ open: '(', close: ')' }]

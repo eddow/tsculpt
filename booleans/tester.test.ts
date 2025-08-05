@@ -1,7 +1,7 @@
-import { describe, expect, it, beforeEach } from 'vitest'
-import { TesterEngine, FakeMesh } from './tester'
-import { Mesh } from '../types/mesh'
-import { Vector3 } from '../types/bunches'
+import { describe, expect, it } from 'vitest'
+import engine, { FakeMesh } from './tester'
+import { Mesh } from '../src/types/mesh'
+import { Vector3 } from '../src/types/bunches'
 
 // Helper function to create a simple test mesh
 function createTestMesh(): Mesh {
@@ -19,12 +19,6 @@ function createTestMesh(): Mesh {
 }
 
 describe('TesterEngine', () => {
-	let engine: TesterEngine
-
-	beforeEach(() => {
-		engine = new TesterEngine()
-	})
-
 	describe('operation tracking', () => {
 		it('should start with zero operations', () => {
 			expect(engine.getOperationCount()).toBe(0)

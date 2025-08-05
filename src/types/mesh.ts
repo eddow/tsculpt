@@ -1,3 +1,4 @@
+import { vecProd, vecSum } from '@tsculpt/expression'
 import { cached } from '../ts/decorators'
 import { VectorMap } from '../vectorSet'
 import { v3 } from './builders'
@@ -51,9 +52,9 @@ export class Mesh extends BaseMesh implements IMesh {
 		return new Mesh(this.faces, this.set.vectors.map(fct))
 	}
 	translate(t: Vector3): Mesh {
-		return this.map((v) => v3`${v} + ${t}`)
+		return this.map((v) => vecSum(v, t) as Vector3)
 	}
 	scale(s: Vector3 | number): Mesh {
-		return this.map((v) => v3`${v} * ${s}`)
+		return this.map((v) => vecProd(v, s) as Vector3)
 	}
 }

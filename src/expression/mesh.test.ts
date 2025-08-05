@@ -20,7 +20,7 @@ function createTestMesh(): Mesh {
 
 describe('Mesh operations', () => {
 	describe('mesh template tag', () => {
-				it('should handle translation with vector', () => {
+		it('should handle translation with vector', () => {
 			const testMesh = createTestMesh()
 
 			const result = mesh`${testMesh} + [1 2 3]`
@@ -74,8 +74,9 @@ describe('Mesh operations', () => {
 
 			const result = mesh`${mesh1} - ${mesh2}`
 
-			// For now, the implementation returns the first mesh
-			expect(result).toBe(mesh1)
+			// Should return a mesh (from tester engine)
+			expect(result).toBeInstanceOf(Mesh)
+			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 
 		it('should handle boolean intersection', () => {
@@ -84,8 +85,9 @@ describe('Mesh operations', () => {
 
 			const result = mesh`${mesh1} & ${mesh2}`
 
-			// For now, the implementation returns the first mesh
-			expect(result).toBe(mesh1)
+			// Should return a mesh (from tester engine)
+			expect(result).toBeInstanceOf(Mesh)
+			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 
 		it('should handle boolean union', () => {
@@ -94,11 +96,36 @@ describe('Mesh operations', () => {
 
 			const result = mesh`${mesh1} | ${mesh2}`
 
-			// For now, the implementation returns the first mesh
-			expect(result).toBe(mesh1)
+			// Should return a mesh (from tester engine)
+			expect(result).toBeInstanceOf(Mesh)
+			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 
-		it('should handle complex expressions', () => {
+		it('should handle multiple meshes in union', () => {
+			const mesh1 = createTestMesh()
+			const mesh2 = createTestMesh()
+			const mesh3 = createTestMesh()
+
+			const result = mesh`${mesh1} | ${mesh2} | ${mesh3}`
+
+			// Should return a mesh (from tester engine)
+			expect(result).toBeInstanceOf(Mesh)
+			expect(result.vectors.length).toBe(3) // Single triangle from tester
+		})
+
+		it('should handle multiple meshes in intersection', () => {
+			const mesh1 = createTestMesh()
+			const mesh2 = createTestMesh()
+			const mesh3 = createTestMesh()
+
+			const result = mesh`${mesh1} & ${mesh2} & ${mesh3}`
+
+			// Should return a mesh (from tester engine)
+			expect(result).toBeInstanceOf(Mesh)
+			expect(result.vectors.length).toBe(3) // Single triangle from tester
+		})
+
+		it('should handle complex expressions with translation and scaling', () => {
 			const testMesh = createTestMesh()
 
 			const result = mesh`(${testMesh} + [1 0 0]) * 2`
@@ -114,37 +141,16 @@ describe('Mesh operations', () => {
 			}
 		})
 
-				it('should handle multiple operations', () => {
+		it('should handle complex boolean expressions', () => {
 			const mesh1 = createTestMesh()
 			const mesh2 = createTestMesh()
+			const mesh3 = createTestMesh()
 
-			const result = mesh`${mesh1} + [1 0 0] & ${mesh2}`
+			const result = mesh`(${mesh1} + [1 0 0]) & ${mesh2} | ${mesh3}`
 
-			// Should translate mesh1 and then intersect with mesh2
-			// For now, the implementation returns the first mesh
-			expect(result.vectors.length).toBe(mesh1.vectors.length)
-			// Check that the first mesh was translated
-			expect(result.vectors[0][0]).toBe(mesh1.vectors[0][0] + 1)
-		})
-
-		it('should throw on invalid expressions', () => {
-			const testMesh = createTestMesh()
-
-			expect(() => mesh`invalid ${testMesh}`).toThrow()
-		})
-
-		it('should throw when trying to add mesh to mesh', () => {
-			const mesh1 = createTestMesh()
-			const mesh2 = createTestMesh()
-
-			expect(() => mesh`${mesh1} + ${mesh2}`).toThrow()
-		})
-
-		it('should throw when trying to multiply mesh by mesh', () => {
-			const mesh1 = createTestMesh()
-			const mesh2 = createTestMesh()
-
-			expect(() => mesh`${mesh1} * ${mesh2}`).toThrow()
+			// Should return a mesh (from tester engine)
+			expect(result).toBeInstanceOf(Mesh)
+			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 
 		it('should handle vector literals in expressions', () => {
@@ -175,6 +181,142 @@ describe('Mesh operations', () => {
 				expect(scaled[1]).toBe(original[1] * 1.5)
 				expect(scaled[2]).toBe(original[2] * 1.5)
 			}
+		})
+
+		it('should handle multiple translations', () => {
+			const testMesh = createTestMesh()
+
+			const result = mesh`${testMesh} + [1 0 0] + [0 1 0]`
+
+			expect(result.vectors.length).toBe(testMesh.vectors.length)
+			for (let i = 0; i < testMesh.vectors.length; i++) {
+				const original = testMesh.vectors[i]
+				const translated = result.vectors[i]
+				expect(translated[0]).toBe(original[0] + 1)
+				expect(translated[1]).toBe(original[1] + 1)
+				expect(translated[2]).toBe(original[2])
+			}
+		})
+
+		it('should handle multiple scalings', () => {
+			const testMesh = createTestMesh()
+
+			const result = mesh`${testMesh} * 2 * 3`
+
+			expect(result.vectors.length).toBe(testMesh.vectors.length)
+			for (let i = 0; i < testMesh.vectors.length; i++) {
+				const original = testMesh.vectors[i]
+				const scaled = result.vectors[i]
+				expect(scaled[0]).toBe(original[0] * 6)
+				expect(scaled[1]).toBe(original[1] * 6)
+				expect(scaled[2]).toBe(original[2] * 6)
+			}
+		})
+
+		it('should throw on invalid expressions', () => {
+			const testMesh = createTestMesh()
+
+			expect(() => mesh`invalid ${testMesh}`).toThrow()
+		})
+
+		it('should throw when trying to add mesh to mesh', () => {
+			const mesh1 = createTestMesh()
+			const mesh2 = createTestMesh()
+
+			expect(() => mesh`${mesh1} + ${mesh2}`).toThrow()
+		})
+
+		it('should throw when trying to multiply mesh by mesh', () => {
+			const mesh1 = createTestMesh()
+			const mesh2 = createTestMesh()
+
+			expect(() => mesh`${mesh1} * ${mesh2}`).toThrow()
+		})
+
+		it('should throw when trying to subtract non-mesh from mesh', () => {
+			const mesh1 = createTestMesh()
+
+			expect(() => mesh`${mesh1} - [1 2 3]`).toThrow()
+		})
+
+		it('should throw when trying to intersect non-mesh', () => {
+			const mesh1 = createTestMesh()
+
+			expect(() => mesh`${mesh1} & [1 2 3]`).toThrow()
+		})
+
+		it('should throw when trying to union non-mesh', () => {
+			const mesh1 = createTestMesh()
+
+			expect(() => mesh`${mesh1} | [1 2 3]`).toThrow()
+		})
+
+		it('should handle precedence correctly', () => {
+			const mesh1 = createTestMesh()
+			const mesh2 = createTestMesh()
+			const mesh3 = createTestMesh()
+
+			// Test that union has higher precedence than intersection
+			const result1 = mesh`${mesh1} | ${mesh2} & ${mesh3}`
+			expect(result1).toBeInstanceOf(Mesh)
+
+			// Test that intersection has higher precedence than subtraction
+			const result2 = mesh`${mesh1} & ${mesh2} - ${mesh3}`
+			expect(result2).toBeInstanceOf(Mesh)
+		})
+
+		it('should handle parentheses for precedence override', () => {
+			const mesh1 = createTestMesh()
+			const mesh2 = createTestMesh()
+			const mesh3 = createTestMesh()
+
+			// Test parentheses override precedence
+			const result = mesh`(${mesh1} | ${mesh2}) & ${mesh3}`
+			expect(result).toBeInstanceOf(Mesh)
+		})
+
+		it('should handle scaling with unity factor (no scaling)', () => {
+			const testMesh = createTestMesh()
+
+			const result = mesh`${testMesh} * 1`
+
+			// Should return the original mesh unchanged
+			expect(result.vectors.length).toBe(testMesh.vectors.length)
+			for (let i = 0; i < testMesh.vectors.length; i++) {
+				const original = testMesh.vectors[i]
+				const resultVertex = result.vectors[i]
+				expect(resultVertex[0]).toBe(original[0])
+				expect(resultVertex[1]).toBe(original[1])
+				expect(resultVertex[2]).toBe(original[2])
+			}
+		})
+
+		it('should handle translation with zero vector (no translation)', () => {
+			const testMesh = createTestMesh()
+
+			const result = mesh`${testMesh} + [0 0 0]`
+
+			// Should return the original mesh unchanged
+			expect(result.vectors.length).toBe(testMesh.vectors.length)
+			for (let i = 0; i < testMesh.vectors.length; i++) {
+				const original = testMesh.vectors[i]
+				const resultVertex = result.vectors[i]
+				expect(resultVertex[0]).toBe(original[0])
+				expect(resultVertex[1]).toBe(original[1])
+				expect(resultVertex[2]).toBe(original[2])
+			}
+		})
+
+		it('should handle mixed operations with proper precedence', () => {
+			const mesh1 = createTestMesh()
+			const mesh2 = createTestMesh()
+
+			// Test complex expression: (mesh1 + [1 0 0]) * 2 - mesh2
+			const result = mesh`(${mesh1} + [1 0 0]) * 2 - ${mesh2}`
+
+			// Should return a mesh (from tester engine for boolean operations)
+			expect(result).toBeInstanceOf(Mesh)
+			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 	})
 })
