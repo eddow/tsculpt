@@ -1,5 +1,6 @@
 import { cached } from '../ts/decorators'
 import { VectorMap } from '../vectorSet'
+import { v3 } from './builders'
 import type { Vector3 } from './bunches'
 
 type FaceIndices = [number, number, number]
@@ -48,5 +49,11 @@ export class Mesh extends BaseMesh implements IMesh {
 	}
 	map(fct: (v: Vector3) => Vector3): Mesh {
 		return new Mesh(this.faces, this.set.vectors.map(fct))
+	}
+	translate(t: Vector3): Mesh {
+		return this.map((v) => v3`${v} + ${t}`)
+	}
+	scale(s: Vector3 | number): Mesh {
+		return this.map((v) => v3`${v} * ${s}`)
 	}
 }

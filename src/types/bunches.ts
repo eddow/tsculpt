@@ -1,3 +1,6 @@
+import { vecProd } from "@tsculpt/expression"
+import { zip } from "@tsculpt/ts/arrays"
+
 // Type for vectors of any dimension
 export function zeroedArray(length: number, org: readonly number[], ones: number[]): number[] {
 	return new Array(length).fill(0).map((_, i) => org[i] ?? (ones.includes(i) ? 1 : 0))
@@ -35,6 +38,15 @@ export class Vector extends Array<number> {
 	}
 	override reverse(): this {
 		throw new Error('Immutable vector')
+	}
+	add(v: Vector): Vector {
+		return Vector.from(zip(this as number[], v as number[]).map(([a, b]) => a + b))
+	}
+	sub(v: Vector): Vector {
+		return Vector.from(zip(this as number[], v as number[]).map(([a, b]) => a - b))
+	}
+	prod(v: number | readonly number[]): Vector {
+		return Vector.from(vecProd(this as number[], v) as number[])
 	}
 }
 export class Vector2 extends Vector {

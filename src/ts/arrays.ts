@@ -3,7 +3,7 @@ type ElementTypes<T extends readonly unknown[]> = {
 	[K in keyof T]: T[K] extends readonly (infer U)[] ? U : T[K]
 }
 
-export function zip<T extends readonly unknown[][]>(...args: T): ElementTypes<T>[] {
+export function zip<T extends (readonly unknown[])[]>(...args: T): ElementTypes<T>[] {
 	const minLength = Math.min(...args.map(arr => arr.length))
 	const result: ElementTypes<T>[] = []
 

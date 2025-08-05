@@ -1,11 +1,17 @@
+import { zip } from '@tsculpt/ts/arrays'
 import { NumberBunch, Vector } from '../types/bunches'
 import { TemplateParser } from './templated'
+
+export function vecProd(a: number | readonly number[], b: number | readonly number[]): number | readonly number[] {
+	if (typeof a === 'number') return typeof b === 'number' ? a * b : b.map((v) => v * a)
+	return typeof b === 'number' ? a.map((v) => v * b) : zip(a, b).map(([a, b]) => a * b)
+}
 
 export class SemanticError extends Error {}
 
 type LinearParameter = { type: 'parameter'; index: number }
 type LinearSum = { type: 'sum'; terms: LinearExpression[] }
-type LinearProd = { type: 'prod'; factor: number; factors: LinearExpression[] }
+type LinearProd = { type: 'prod'; factor: number | readonly number[]; factors: LinearExpression[] }
 type LinearInline = { type: 'vec'; coords: number[] }
 type LinearExpression = LinearParameter | LinearSum | LinearProd | LinearInline
 
@@ -39,9 +45,12 @@ function recur(
 		case 'sum': {
 			let result = [] as number[]
 			for (const term of expr.terms) {
-				const calc = recur(term, values)
-				if (!(calc instanceof Vector))
-					throw new SemanticError(`Cannot sum non-vector values: ${calc}`)
+				let calc = recur(term, values)
+				if (!(calc instanceof Vector)) {
+					if (Array.isArray(calc) && calc.every((x) => typeof x === 'number'))
+						calc = Vector.from(calc)
+					else throw new SemanticError(`Cannot sum non-vector values: ${calc}`)
+				}
 				while (result.length < calc.length) result.push(0)
 				result = result.map((r, i) => r + (calc[i] ?? 0))
 			}
@@ -52,12 +61,13 @@ function recur(
 			let vector: readonly number[] | undefined
 			for (const factor of expr.factors) {
 				const calc = recur(factor, values)
-				if (typeof calc === 'number') numeric *= calc
+				if (typeof calc === 'number') numeric = vecProd(numeric, calc)
 				else if (vector) throw new SemanticError(`Cannot multiply vectors: ${calc}`)
 				else vector = calc
 			}
 			if (!vector) throw new SemanticError(`No vector in expression: ${expr}`)
-			return Vector.from(vector.map((v) => v * numeric))
+			const m = vecProd(numeric, vector)
+			return Array.isArray(m) ? Vector.from(m) : m
 		}
 		case 'vec':
 			return Vector.from(expr.coords)
@@ -79,11 +89,11 @@ const formulas = new TemplateParser<
 			'+': (...operands) => sum(...operands),
 			'-': (a, b) => sum(a, neg(b)),
 			'*'(...operands) {
-				let factor = 1
+				let factor: number | readonly number[] = 1
 				const factors: LinearExpression[] = []
 				for (const operand of operands) {
 					if (operand.type === 'prod') {
-						factor *= operand.factor
+						factor = vecProd(factor, operand.factor)
 						factors.push(...operand.factors)
 					} else factors.push(operand)
 				}
@@ -98,7 +108,7 @@ const formulas = new TemplateParser<
 			},
 			{
 				rex: /\[([\d \.-]+)\]/s,
-				build: (match) => ({ type: 'vec', coords: match[1].split(/\s+/).map(Number) }),
+				build: (match) => ({ type: 'vec', coords: Vector.from(match[1].split(/\s+/).map(Number)) }),
 			},
 		],
 		surroundings: [{ open: '(', close: ')' }],

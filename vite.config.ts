@@ -10,6 +10,7 @@ export default defineConfig({
 		alias: {
 			'@': fileURLToPath(new URL('./viewer', import.meta.url)),
 			'@tsculpt': fileURLToPath(new URL('./src', import.meta.url)),
+			'@booleans': fileURLToPath(new URL('./src/booleans/jscad.ts', import.meta.url)),
 		},
 	},
 	css: {
@@ -35,6 +36,9 @@ export default defineConfig({
 	},
 	test: {
 		include: ['src/**/*.test.ts'],
+		alias: {
+			'@booleans': fileURLToPath(new URL('./src/booleans/tester.ts', import.meta.url)),
+		},
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'html'],

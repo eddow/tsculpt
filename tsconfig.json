@@ -24,7 +24,8 @@
 		"baseUrl": ".",
 		"paths": {
 			"@tsculpt": ["./src"],
-			"@tsculpt/*": ["./src/*"]
+			"@tsculpt/*": ["./src/*"],
+			"@booleans": ["./src/booleans/tester.ts"]
 		}
 	}
 }
