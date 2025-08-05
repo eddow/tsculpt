@@ -1,4 +1,4 @@
-import { Matrix, NumberBunch, Vector } from '../types/bunches'
+import { NumberBunch, Vector } from '../types/bunches'
 import { TemplateParser } from './templated'
 
 export class SemanticError extends Error {}
@@ -6,7 +6,8 @@ export class SemanticError extends Error {}
 type LinearParameter = { type: 'parameter'; index: number }
 type LinearSum = { type: 'sum'; terms: LinearExpression[] }
 type LinearProd = { type: 'prod'; factor: number; factors: LinearExpression[] }
-type LinearExpression = LinearParameter | LinearSum | LinearProd
+type LinearInline = { type: 'vec'; coords: number[] }
+type LinearExpression = LinearParameter | LinearSum | LinearProd | LinearInline
 
 function neg(a: LinearExpression): LinearExpression {
 	switch (a.type) {
@@ -28,7 +29,7 @@ function sum(...operands: LinearExpression[]): LinearExpression {
 		? resultingOperands[0]
 		: { type: 'sum', terms: resultingOperands }
 }
-function calculate(
+function recur(
 	expr: LinearExpression,
 	values: (number | readonly number[])[]
 ): number | readonly number[] {
@@ -38,8 +39,9 @@ function calculate(
 		case 'sum': {
 			let result = [] as number[]
 			for (const term of expr.terms) {
-				const calc = calculate(term, values)
-				if (!(calc instanceof Vector)) throw new SemanticError(`Cannot sum non-vector values: ${calc}`)
+				const calc = recur(term, values)
+				if (!(calc instanceof Vector))
+					throw new SemanticError(`Cannot sum non-vector values: ${calc}`)
 				while (result.length < calc.length) result.push(0)
 				result = result.map((r, i) => r + (calc[i] ?? 0))
 			}
@@ -49,14 +51,16 @@ function calculate(
 			let numeric = expr.factor
 			let vector: readonly number[] | undefined
 			for (const factor of expr.factors) {
-				const calc = calculate(factor, values)
+				const calc = recur(factor, values)
 				if (typeof calc === 'number') numeric *= calc
-				else if (vector) throw new SemanticError(`Cannot vectors: ${calc}`)
+				else if (vector) throw new SemanticError(`Cannot multiply vectors: ${calc}`)
 				else vector = calc
 			}
 			if (!vector) throw new SemanticError(`No vector in expression: ${expr}`)
 			return Vector.from(vector.map((v) => v * numeric))
 		}
+		case 'vec':
+			return Vector.from(expr.coords)
 	}
 }
 
@@ -92,14 +96,18 @@ const formulas = new TemplateParser<
 				rex: /(?:\d+(:?\.\d+)?)|(?:\.\d+)/,
 				build: (match) => ({ type: 'prod', factor: Number(match[0]), factors: [] }),
 			},
+			{
+				rex: /\[([\d \.-]+)\]/s,
+				build: (match) => ({ type: 'vec', coords: match[1].split(/\s+/).map(Number) }),
+			},
 		],
-		surroundings: [{ open: '(', close: ')', build: (expr) => expr }],
+		surroundings: [{ open: '(', close: ')' }],
 	},
 	(index) => ({ type: 'parameter', index }),
-	calculate
+	recur
 )
 
-function expectClass<T>(value: unknown, type: new (...args: any[]) => T) {
+function expectClass<T>(value: unknown, type: abstract new (...args: any[]) => T) {
 	if (!(value instanceof type))
 		throw new SemanticError(
 			`Expected ${type.name}, got: ${
@@ -110,7 +118,4 @@ function expectClass<T>(value: unknown, type: new (...args: any[]) => T) {
 }
 export function vector(expr: TemplateStringsArray, ...values: readonly NumberBunch[]) {
 	return expectClass(formulas.calculate(expr, ...values), Vector)
-}
-export function matrix(expr: TemplateStringsArray, ...values: readonly NumberBunch[]) {
-	return expectClass(formulas.calculate(expr, ...values), Matrix)
 }

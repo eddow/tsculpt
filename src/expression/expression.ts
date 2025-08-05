@@ -14,7 +14,7 @@ export type AST<Built> = OperationExpression<Built> | BuiltExpression<Built>
 interface Surrounding<Built> {
 	open: string
 	close: string
-	build: (operand: Built) => Built
+	build?: (operand: Built) => Built
 }
 export type ParseSpecs<Built> = {
 	precedence: { [symbol: string]: 'binary' | 'nary' }[]
@@ -279,7 +279,7 @@ export class Parser<Built> {
 				}
 				reading.index++ // consume right parenthesis
 
-				return { type: 'built', value: build(this.build(expr)) }
+				return { type: 'built', value: build ? build(this.build(expr)) : this.build(expr) }
 			}
 
 			case 'atomic':

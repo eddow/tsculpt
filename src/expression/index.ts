@@ -1,1 +1,1 @@
-export * from './formulas'
+export * from './vectors'

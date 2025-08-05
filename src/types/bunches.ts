@@ -1,13 +1,19 @@
 // Type for vectors of any dimension
-export function zeroedArray(length: number, org: readonly number[]): number[] {
-	return new Array(length).fill(0).map((_, i) => org[i] ?? 0)
+export function zeroedArray(length: number, org: readonly number[], ones: number[]): number[] {
+	return new Array(length).fill(0).map((_, i) => org[i] ?? (ones.includes(i) ? 1 : 0))
+}
+function error<T>(message: string): T {
+	throw new Error(message)
 }
 export class Vector extends Array<number> {
 	static from(v: readonly number[]): Vector {
-		return v.length === 2 ? new Vector2(...v) :
-			v.length === 3 ? new Vector3(...v) :
-			v.length === 4 ? new Vector4(...v) :
-			new Vector(...v)
+		return v.length === 2
+			? new Vector2(...v)
+			: v.length === 3
+				? new Vector3(...v)
+				: v.length === 4
+					? new Vector4(...v)
+					: error(`Invalid vector size: ${v.length}`)
 	}
 	override push(): number {
 		throw new Error('Immutable vector')
@@ -33,7 +39,7 @@ export class Vector extends Array<number> {
 }
 export class Vector2 extends Vector {
 	constructor(...v: readonly number[]) {
-		super(...zeroedArray(2, v))
+		super(...zeroedArray(2, v, [1]))
 	}
 	override get length() {
 		return 2
@@ -48,7 +54,7 @@ export class Vector2 extends Vector {
 
 export class Vector3 extends Vector {
 	constructor(...v: readonly number[]) {
-		super(...zeroedArray(3, v))
+		super(...zeroedArray(3, v, [2]))
 	}
 	override get length() {
 		return 3
@@ -66,7 +72,7 @@ export class Vector3 extends Vector {
 
 export class Vector4 extends Vector {
 	constructor(...v: readonly number[]) {
-		super(...zeroedArray(4, v))
+		super(...zeroedArray(4, v, [3]))
 	}
 	override get length() {
 		return 4
@@ -84,40 +90,52 @@ export class Vector4 extends Vector {
 		return this[3]
 	}
 }
-
-export class Matrix extends Array<number> {
+export abstract class Matrix extends Array<number> {
 	static from(v: readonly number[]): Matrix {
-		return v.length === 4 ? new Matrix2(...v) :
-			v.length === 9 ? new Matrix3(...v) :
-			v.length === 16 ? new Matrix4(...v) :
-			new Matrix(...v)
+		return v.length === 4
+			? new Matrix2(...v)
+			: v.length === 9
+				? new Matrix3(...v)
+				: v.length === 16
+					? new Matrix4(...v)
+					: error(`Invalid matrix size: ${v.length}`)
 	}
+	abstract m(r: number, c: number): number
 }
 
 export class Matrix2 extends Matrix {
 	constructor(...v: readonly number[]) {
-		super(...zeroedArray(4, v))
+		super(...zeroedArray(4, v, [0, 3]))
 	}
 	override get length() {
 		return 4
+	}
+	override m(r: number, c: number): number {
+		return this[r * 2 + c]
 	}
 }
 
 export class Matrix3 extends Matrix {
 	constructor(...v: readonly number[]) {
-		super(...zeroedArray(9, v))
+		super(...zeroedArray(9, v, [0, 4, 8]))
 	}
 	override get length() {
 		return 9
+	}
+	override m(r: number, c: number): number {
+		return this[r * 3 + c]
 	}
 }
 
 export class Matrix4 extends Matrix {
 	constructor(...v: readonly number[]) {
-		super(...zeroedArray(16, v))
+		super(...zeroedArray(16, v, [0, 5, 10, 15]))
 	}
 	override get length() {
 		return 16
+	}
+	override m(r: number, c: number): number {
+		return this[r * 4 + c]
 	}
 }
 
