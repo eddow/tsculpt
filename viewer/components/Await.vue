@@ -1,11 +1,10 @@
 <script lang="ts">
-
-import { computed, ComputedRef, Ref, ref, isRef } from 'vue'
-import ErrorView from './ErrorView.vue'
 import ProgressSpinner from 'primevue/progressspinner'
+import { ComputedRef, Ref, computed, isRef, ref } from 'vue'
+import ErrorView from './ErrorView.vue'
 
 export const waiting = Symbol('waiting')
-export type AwaitedValue<T> = T|typeof waiting|Error
+export type AwaitedValue<T> = T | typeof waiting | Error
 export type AwaitedRef<T> = Ref<AwaitedValue<T>>
 const promiseCache = new WeakMap<Promise<any>, Ref<any>>()
 
@@ -17,63 +16,69 @@ const promiseCache = new WeakMap<Promise<any>, Ref<any>>()
  * @returns A ref that will be updated with the value of the promise, the waiting symbol if the promise is not resolved yet, or the error if the promise is rejected.
  */
 function awaitedPromise<T>(promise?: Promise<T>): AwaitedRef<T> {
-	if(!promise) return ref(waiting) as AwaitedRef<T>
+	if (!promise) return ref(waiting) as AwaitedRef<T>
 	const cached = promiseCache.get(promise)
 	if (cached) {
 		return cached as AwaitedRef<T>
 	}
 
 	const rv: AwaitedRef<T> = ref(waiting) as AwaitedRef<T>
-	promise.then(value => rv.value = value).catch(error => rv.value = error)
+	promise
+		.then((value) => {
+			rv.value = value
+		})
+		.catch((error) => {
+			rv.value = asError(error)
+		})
 	promiseCache.set(promise, rv)
 	return rv
 }
 
 export function asError(err: any): Error {
-	if(err instanceof Error) return err
-	if(typeof err === 'string') return new Error(err)
+	if (err instanceof Error) return err
+	if (typeof err === 'string') return new Error(err)
 	return new Error(String(err))
 }
 
 export function awaited<T>(source?: any): AwaitedValue<T> {
-	if(!source) return waiting
-	while(true) {
-		if(source instanceof Promise)
-			source = awaitedPromise(source).value
-		else if(isRef(source))
-			source = source.value
-		else if(typeof source === 'function') {
+	if (!source) return waiting
+	while (true) {
+		if (source instanceof Promise) source = awaitedPromise(source).value
+		else if (isRef(source)) source = source.value
+		else if (typeof source === 'function') {
 			try {
 				source = source()
-			} catch(err) {
+			} catch (err) {
 				return asError(err)
 			}
-		} else
-			return source as AwaitedValue<T>
+		} else return source as AwaitedValue<T>
 	}
+}
+
+export function hasResult<T>(value: AwaitedValue<T>): value is T {
+	return value !== waiting && !(value instanceof Error)
 }
 
 type AcceptedWaitable<T> =
 	| T
 	| Ref<AcceptedWaitable<T>>
 	| Promise<AcceptedWaitable<T>>
-	| (()=> AcceptedWaitable<T>)
+	| (() => AcceptedWaitable<T>)
 
 export const thenComputed = <I, O = I>(
 	promise: AcceptedWaitable<I>,
-	fn: (input: I)=> O = (x: I)=> x as unknown as O
+	fn: (input: I) => O = (x: I) => x as unknown as O
 ): ComputedRef<AwaitedValue<O>> =>
-	computed(()=> {
+	computed(() => {
 		const awaitedInput = awaited<I>(promise)
-		if(awaitedInput === waiting) return waiting
-		if(awaitedInput instanceof Error) return awaitedInput
+		if (awaitedInput === waiting) return waiting
+		if (awaitedInput instanceof Error) return awaitedInput
 		try {
 			return fn(awaitedInput)
-		} catch(err) {
+		} catch (err) {
 			return asError(err)
 		}
 	})
-
 </script>
 <script setup lang="ts" generic="T">
 

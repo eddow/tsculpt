@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { mesh } from './mesh'
-import { Mesh } from '../types/mesh'
 import { Vector3 } from '../types/bunches'
+import { Mesh } from '../types/mesh'
+import { mesh } from './mesh'
 
 // Helper function to create a simple test mesh
 function createTestMesh(): Mesh {
@@ -9,11 +9,11 @@ function createTestMesh(): Mesh {
 		new Vector3(0, 0, 0),
 		new Vector3(1, 0, 0),
 		new Vector3(0, 1, 0),
-		new Vector3(1, 1, 0)
+		new Vector3(1, 1, 0),
 	]
 	const faces: [Vector3, Vector3, Vector3][] = [
 		[vertices[0], vertices[1], vertices[2]],
-		[vertices[1], vertices[3], vertices[2]]
+		[vertices[1], vertices[3], vertices[2]],
 	]
 	return new Mesh(faces)
 }

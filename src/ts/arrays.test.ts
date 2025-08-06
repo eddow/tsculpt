@@ -10,7 +10,7 @@ describe('zip function', () => {
 		expect(result).toEqual([
 			[1, 'a'],
 			[2, 'b'],
-			[3, 'c']
+			[3, 'c'],
 		])
 
 		// Type check: result should be [number, string][]
@@ -28,7 +28,7 @@ describe('zip function', () => {
 		expect(result).toEqual([
 			[1, 'a', true],
 			[2, 'b', false],
-			[3, 'c', true]
+			[3, 'c', true],
 		])
 
 		// Type check: result should be [number, string, boolean][]
@@ -45,7 +45,7 @@ describe('zip function', () => {
 
 		expect(result).toEqual([
 			[1, 'a'],
-			[2, 'b']
+			[2, 'b'],
 		])
 	})
 
@@ -63,7 +63,7 @@ describe('zip function', () => {
 		expect(result).toEqual([
 			[1, 'a', { id: 1 }],
 			[2, 'b', { id: 2 }],
-			[3, 'c', { id: 3 }]
+			[3, 'c', { id: 3 }],
 		])
 
 		// Type check: result should be [number, string, { id: number }][]

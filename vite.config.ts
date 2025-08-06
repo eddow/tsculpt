@@ -2,8 +2,8 @@
 import { URL, fileURLToPath } from 'node:url'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
-import paramMetadataInjector from './viewer/vite-plugin-param-metadata'
 import meshPlugin from './files/vite-plugin-mesh'
+import paramMetadataInjector from './viewer/vite-plugin-param-metadata'
 
 export default defineConfig({
 	plugins: [vue(), paramMetadataInjector(), meshPlugin()],

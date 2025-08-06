@@ -1,4 +1,4 @@
-import { Mesh, type IMesh } from '@tsculpt/types'
+import { type IMesh, Mesh } from '@tsculpt/types'
 import { v3 } from '@tsculpt/types/builders'
 import type { Vector3 } from '@tsculpt/types/bunches'
 import { Box3, Vector3 as ThreeVector3 } from 'three'
@@ -56,7 +56,7 @@ export function analyzeGeometry(mesh: IMesh): GeometryStats {
 		const cross = [
 			edge1[1] * edge2[2] - edge1[2] * edge2[1],
 			edge1[2] * edge2[0] - edge1[0] * edge2[2],
-			edge1[0] * edge2[1] - edge1[1] * edge2[0]
+			edge1[0] * edge2[1] - edge1[1] * edge2[0],
 		]
 
 		const area = Math.sqrt(cross[0] * cross[0] + cross[1] * cross[1] + cross[2] * cross[2]) / 2
@@ -71,9 +71,10 @@ export function analyzeGeometry(mesh: IMesh): GeometryStats {
 		const v3 = mesh.vectors[face[2]]
 
 		// Signed volume of tetrahedron
-		const det = v1[0] * (v2[1] * v3[2] - v2[2] * v3[1]) +
-					v1[1] * (v2[2] * v3[0] - v2[0] * v3[2]) +
-					v1[2] * (v2[0] * v3[1] - v2[1] * v3[0])
+		const det =
+			v1[0] * (v2[1] * v3[2] - v2[2] * v3[1]) +
+			v1[1] * (v2[2] * v3[0] - v2[0] * v3[2]) +
+			v1[2] * (v2[0] * v3[1] - v2[1] * v3[0])
 
 		volume += det / 6
 	}
@@ -89,10 +90,10 @@ export function analyzeGeometry(mesh: IMesh): GeometryStats {
 		}
 	}
 
-	const isWatertight = Array.from(edgeMap.values()).every(count => count === 2)
+	const isWatertight = Array.from(edgeMap.values()).every((count) => count === 2)
 
 	// Check if manifold (no non-manifold edges)
-	const isManifold = Array.from(edgeMap.values()).every(count => count <= 2)
+	const isManifold = Array.from(edgeMap.values()).every((count) => count <= 2)
 
 	return {
 		vertexCount,
@@ -101,13 +102,13 @@ export function analyzeGeometry(mesh: IMesh): GeometryStats {
 			min: [min.x, min.y, min.z],
 			max: [max.x, max.y, max.z],
 			size: [size.x, size.y, size.z],
-			center: [center.x, center.y, center.z]
+			center: [center.x, center.y, center.z],
 		},
 		surfaceArea,
 		volume: Math.abs(volume),
 		hasNormals: false, // Your mesh format doesn't store normals
 		hasUVs: false, // Your mesh format doesn't store UVs
 		isWatertight,
-		isManifold
+		isManifold,
 	}
 }

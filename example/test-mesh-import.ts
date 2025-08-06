@@ -1,9 +1,9 @@
 // Test mesh import functionality
 // This file tests importing the existing STL files in the example directory
 
+import model from './model.stl'
 // Import the existing test files
 import testCube from './test-cube.stl'
-import model from './model.stl'
 
 console.log('Test cube mesh:', testCube)
 console.log('Model mesh:', model)

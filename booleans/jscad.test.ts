@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import engine from './jscad'
-import { Mesh } from '../src/types/mesh'
 import { Vector3 } from '../src/types/bunches'
+import { Mesh } from '../src/types/mesh'
+import engine from './jscad'
 
 // Helper function to create a simple test mesh
 function createTestMesh(): Mesh {
@@ -9,11 +9,11 @@ function createTestMesh(): Mesh {
 		new Vector3(0, 0, 0),
 		new Vector3(1, 0, 0),
 		new Vector3(0, 1, 0),
-		new Vector3(1, 1, 0)
+		new Vector3(1, 1, 0),
 	]
 	const faces: [Vector3, Vector3, Vector3][] = [
 		[vertices[0], vertices[1], vertices[2]],
-		[vertices[1], vertices[3], vertices[2]]
+		[vertices[1], vertices[3], vertices[2]],
 	]
 	return new Mesh(faces)
 }
@@ -41,7 +41,7 @@ describe('JscadEngine', () => {
 		expect(meshResult.vectors.length).toBeGreaterThan(0)
 	})
 
-		it('should perform subtraction operations', () => {
+	it('should perform subtraction operations', () => {
 		const mesh1 = createTestMesh()
 		const mesh2 = createTestMesh()
 

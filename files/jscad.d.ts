@@ -8,7 +8,10 @@ type JSCADGeometry = {
 }
 type JSCADResult = JSCADGeometry | JSCADGeometry[]
 declare module '@jscad/stl-deserializer' {
-	export function deserialize(options: { output?: string, filename?: string }, data: Buffer): JSCADResult
+	export function deserialize(
+		options: { output?: string; filename?: string },
+		data: Buffer
+	): JSCADResult
 }
 
 declare module '@jscad/stl-serializer' {
@@ -16,7 +19,10 @@ declare module '@jscad/stl-serializer' {
 }
 
 declare module '@jscad/obj-deserializer' {
-	export function deserialize(options: { output?: string, filename?: string }, data: Buffer): JSCADResult
+	export function deserialize(
+		options: { output?: string; filename?: string },
+		data: Buffer
+	): JSCADResult
 }
 
 declare module '@jscad/obj-serializer' {
@@ -24,19 +30,31 @@ declare module '@jscad/obj-serializer' {
 }
 
 declare module '@jscad/amf-deserializer' {
-	export function deserialize(options: { output?: string, filename?: string }, data: Buffer): JSCADResult
+	export function deserialize(
+		options: { output?: string; filename?: string },
+		data: Buffer
+	): JSCADResult
 }
 
 declare module '@jscad/dxf-deserializer' {
-	export function deserialize(options: { output?: string, filename?: string }, data: Buffer): JSCADResult
+	export function deserialize(
+		options: { output?: string; filename?: string },
+		data: Buffer
+	): JSCADResult
 }
 
 declare module '@jscad/svg-deserializer' {
-	export function deserialize(options: { output?: string, filename?: string }, data: Buffer): JSCADResult
+	export function deserialize(
+		options: { output?: string; filename?: string },
+		data: Buffer
+	): JSCADResult
 }
 
 declare module '@jscad/x3d-deserializer' {
-	export function deserialize(options: { output?: string, filename?: string }, data: Buffer): JSCADResult
+	export function deserialize(
+		options: { output?: string; filename?: string },
+		data: Buffer
+	): JSCADResult
 }
 
 declare module '@jscad/amf-serializer' {

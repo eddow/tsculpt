@@ -7,12 +7,11 @@ const { geom3, poly3 } = geometries
 
 type AMesh = IMesh | Geom3
 export function toJscad(mesh: AMesh) {
-	if('verticed' in mesh) {
+	if ('verticed' in mesh) {
 		const polys = mesh.verticed.map((face) => poly3.create(face as unknown as Vec3[]))
 		return geom3.create(polys)
-	} else {
-		return mesh
 	}
+	return mesh
 }
 
 // TODO fanning only works for convex polygons
@@ -25,16 +24,13 @@ function triangles(vertices: Vec3[]) {
 }
 
 export function fromJscad(geom: AMesh) {
-	if('verticed' in geom) {
-		return new Mesh(geom.verticed)
-	} else {
-		const polys = geom.polygons.reduce(
-			(acc, p) => {
-				acc.push(...triangles(p.vertices))
-				return acc
-			},
-			[] as [Vector3, Vector3, Vector3][]
-		)
-		return new Mesh(polys)
-	}
+	if ('verticed' in geom) return new Mesh(geom.verticed)
+	const polys = geom.polygons.reduce(
+		(acc, p) => {
+			acc.push(...triangles(p.vertices))
+			return acc
+		},
+		[] as [Vector3, Vector3, Vector3][]
+	)
+	return new Mesh(polys)
 }

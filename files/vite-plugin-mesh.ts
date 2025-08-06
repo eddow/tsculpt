@@ -1,7 +1,7 @@
+import { readFileSync } from 'node:fs'
+import { basename, extname } from 'node:path'
 import type { Plugin } from 'vite'
-import { readFileSync } from 'fs'
-import { extname, basename } from 'path'
-import { getHandler, generateMeshSource, generateFakeMeshSource } from './index.js'
+import { generateFakeMeshSource, generateMeshSource, getHandler } from './index.js'
 
 export default function meshPlugin(): Plugin {
 	return {
@@ -28,7 +28,7 @@ export default function meshPlugin(): Plugin {
 
 				return {
 					code: generatedSource,
-					map: null
+					map: null,
 				}
 			} catch (error) {
 				console.warn(`Failed to process mesh file ${id}:`, error)
@@ -39,7 +39,7 @@ export default function meshPlugin(): Plugin {
 
 				return {
 					code: fakeSource,
-					map: null
+					map: null,
 				}
 			}
 		},
@@ -74,6 +74,6 @@ export default function meshPlugin(): Plugin {
 				}
 			}
 			return null
-		}
+		},
 	}
 }

@@ -58,11 +58,11 @@ import { module, Module } from '../lib/source'
 const route = useRoute()
 const hash = computed(() => route.hash.slice(1) || 'default')
 const viewerRef = ref<InstanceType<typeof Viewer>>()
+import Await, { thenComputed, waiting } from '@/components/Await.vue'
+import ErrorView from '@/components/ErrorView.vue'
 import { localStored } from '@/lib/stores'
 import { Factory, MaybeFactory, MaybePromise } from '@/lib/utils'
 import { defaultGlobals, withGlobals } from '@tsculpt/globals'
-import Await, { thenComputed, waiting } from '@/components/Await.vue'
-import ErrorView from '@/components/ErrorView.vue'
 
 type DisplayMode = 'solid' | 'wireframe' | 'solid-edges'
 const displaySettings = localStored('viewer-display', {
@@ -98,7 +98,7 @@ function noErrorBefore(location: any) {
 	return !error.value?.location || error.value.location > `${location}`
 }
 
-const loadedModule = thenComputed<Module>(()=> module(`/${props.path}.sculpt.ts`))
+const loadedModule = thenComputed<Module>(() => module(`/${props.path}.sculpt.ts`))
 function handleError(err: any, location: LoadLocation) {
 	error.value = { err, location }
 }

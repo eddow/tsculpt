@@ -11,7 +11,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { waiting } from './Await.vue'
-// TODO: when rendering, normals should be per triangles, not per point
+
 const colors = {
 	dark: {
 		background: 0x242424,
@@ -291,15 +291,21 @@ function updateGeometry() {
 	}
 
 	if (props.viewed.vectors && props.viewed.faces) {
-		const vertices = new Float32Array(props.viewed.vectors.flat())
-		geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+		// For flat normals, duplicate vertices for each face
+		const faceVertices: number[] = []
 
-		if (props.viewed.faces) {
-			const indices = new Uint32Array(props.viewed.faces.flat())
-			geometry.setIndex(new THREE.BufferAttribute(indices, 1))
+		for (const face of props.viewed.faces) {
+			for (const vertexIndex of face) {
+				const vertex = props.viewed.vectors[vertexIndex]
+				faceVertices.push(vertex[0], vertex[1], vertex[2])
+			}
 		}
 
-		geometry.computeVertexNormals()
+		const vertices = new Float32Array(faceVertices)
+		geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+
+		// Don't use indices since vertices are already duplicated per face
+		geometry.computeVertexNormals() // This gives flat normals since vertices aren't shared
 		geometry.computeBoundingSphere()
 	}
 

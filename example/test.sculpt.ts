@@ -9,6 +9,6 @@ export default ({
 // TODO Weird thing happen (really long generation + no edges visible) when radius going from 15 to 16
 export default function scene({ radius = 5 as Decimal<1, 100>, center = [0, 0, 0] as Vector3 }) {
 	const s1 = sphere({ radius, center })
-	const b1 = box({ size: radius * .8, center })
+	const b1 = box({ size: radius * 0.8, center })
 	return mesh`${b1} - ${s1}`
 }

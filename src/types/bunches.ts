@@ -1,5 +1,5 @@
-import { vecProd } from "@tsculpt/expression"
-import { zip } from "@tsculpt/ts/arrays"
+import { vecProd } from '@tsculpt/expression'
+import { zip } from '@tsculpt/ts/arrays'
 
 // Type for vectors of any dimension
 export function zeroedArray(length: number, org: readonly number[], ones: number[]): number[] {

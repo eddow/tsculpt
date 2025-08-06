@@ -1,4 +1,4 @@
-import { Mesh } from "../types"
+import { Mesh } from '../types'
 
 export abstract class InternalMesh {
 	abstract toMesh(): Mesh
@@ -11,11 +11,7 @@ export abstract class Engine {
 	abstract intersect(...meshes: AMesh[]): AMesh
 	abstract subtract(mesh1: AMesh, mesh2: AMesh): AMesh
 	result(aMesh: AMesh): Mesh {
-		if(aMesh instanceof InternalMesh) {
-			return aMesh.toMesh()
-		} else {
-			return aMesh
-		}
+		return aMesh instanceof InternalMesh ? aMesh.toMesh() : aMesh
 	}
 }
 

@@ -37,7 +37,7 @@
 			"suspicious": {
 				"noExplicitAny": "off",
 				"noDebugger": "warn",
-				"noConsole": "info"
+				"noConsole": "off"
 			},
 			"performance": {
 				"noAccumulatingSpread": "off"

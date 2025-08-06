@@ -1,4 +1,4 @@
-import { AMesh, Engine, InternalMesh } from "../src/booleans/index"
+import { AMesh, Engine, InternalMesh } from '../src/booleans/index'
 import { Mesh, Vector3 } from '../src/types'
 
 // Fake mesh for testing purposes
@@ -9,14 +9,8 @@ export class FakeMesh extends InternalMesh {
 
 	toMesh(): Mesh {
 		// Create a simple test mesh with a single triangle
-		const vertices: Vector3[] = [
-			new Vector3(0, 0, 0),
-			new Vector3(1, 0, 0),
-			new Vector3(0, 1, 0)
-		]
-		const faces: [Vector3, Vector3, Vector3][] = [
-			[vertices[0], vertices[1], vertices[2]]
-		]
+		const vertices: Vector3[] = [new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(0, 1, 0)]
+		const faces: [Vector3, Vector3, Vector3][] = [[vertices[0], vertices[1], vertices[2]]]
 		return new Mesh(faces)
 	}
 }

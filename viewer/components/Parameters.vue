@@ -59,8 +59,8 @@ import AccordionHeader from 'primevue/accordionheader'
 import AccordionPanel from 'primevue/accordionpanel'
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
-import Parameter from './Parameter.vue'
 import { waiting } from './Await.vue'
+import Parameter from './Parameter.vue'
 
 const shown = localStored('parameters-shown', ['parameters'])
 const props = defineProps<{

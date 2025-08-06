@@ -10,9 +10,9 @@ function vector3ToArray(v: Vector3): number[] {
 
 export default (
 	extension: string,
-	serialize: (geom3: JSCADGeometry)=> ArrayBuffer,
-	deserialize: (options: { output?: string, filename?: string }, data: Buffer)=> JSCADResult): FileHandler =>
-({
+	serialize: (geom3: JSCADGeometry) => ArrayBuffer,
+	deserialize: (options: { output?: string; filename?: string }, data: Buffer) => JSCADResult
+): FileHandler => ({
 	extension,
 
 	read(data: ArrayBuffer | string): MeshData {
@@ -30,7 +30,7 @@ export default (
 		}
 
 		// Use JSCAD STL deserializer
-		const result = deserialize({output: 'geometry'}, buffer)
+		const result = deserialize({ output: 'geometry' }, buffer)
 		const geom3 = Array.isArray(result) ? result[0] : result
 
 		// Convert JSCAD geometry to our format
@@ -49,7 +49,7 @@ export default (
 				const face: [Vector3, Vector3, Vector3] = [
 					arrayToVector3(vertices[0]),
 					arrayToVector3(vertices[i + 1]),
-					arrayToVector3(vertices[i + 2])
+					arrayToVector3(vertices[i + 2]),
 				]
 				faces.push(face)
 			}
@@ -60,22 +60,18 @@ export default (
 
 	write(meshData: MeshData): ArrayBuffer {
 		// Convert our format to JSCAD geometry
-		const polygons = meshData.faces.map(face => ({
-			vertices: [
-				vector3ToArray(face[0]),
-				vector3ToArray(face[1]),
-				vector3ToArray(face[2])
-			],
-			plane: [0, 0, 1, 0] // Default plane, will be calculated by JSCAD
+		const polygons = meshData.faces.map((face) => ({
+			vertices: [vector3ToArray(face[0]), vector3ToArray(face[1]), vector3ToArray(face[2])],
+			plane: [0, 0, 1, 0], // Default plane, will be calculated by JSCAD
 		}))
 
 		const geom3 = {
 			polygons,
 			transforms: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-			color: undefined
+			color: undefined,
 		}
 
 		// Use JSCAD serializer
 		return serialize(geom3)
-	}
+	},
 })
