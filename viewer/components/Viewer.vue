@@ -6,11 +6,11 @@
 
 <script setup lang="ts">
 import { isDark } from '@/lib/stores'
-import { waiting } from '@/lib/utils'
 import type { IMesh } from '@tsculpt'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { waiting } from './Await.vue'
 // TODO: when rendering, normals should be per triangles, not per point
 const colors = {
 	dark: {

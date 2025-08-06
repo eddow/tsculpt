@@ -75,7 +75,7 @@ export default (
 			color: undefined
 		}
 
-		// Use JSCAD STL serializer
+		// Use JSCAD serializer
 		return serialize(geom3)
 	}
 })

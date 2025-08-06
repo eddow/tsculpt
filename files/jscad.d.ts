@@ -22,3 +22,35 @@ declare module '@jscad/obj-deserializer' {
 declare module '@jscad/obj-serializer' {
 	export function serialize(geom3: JSCADGeometry): ArrayBuffer
 }
+
+declare module '@jscad/amf-deserializer' {
+	export function deserialize(options: { output?: string, filename?: string }, data: Buffer): JSCADResult
+}
+
+declare module '@jscad/dxf-deserializer' {
+	export function deserialize(options: { output?: string, filename?: string }, data: Buffer): JSCADResult
+}
+
+declare module '@jscad/svg-deserializer' {
+	export function deserialize(options: { output?: string, filename?: string }, data: Buffer): JSCADResult
+}
+
+declare module '@jscad/x3d-deserializer' {
+	export function deserialize(options: { output?: string, filename?: string }, data: Buffer): JSCADResult
+}
+
+declare module '@jscad/amf-serializer' {
+	export function serialize(geom3: JSCADGeometry): ArrayBuffer
+}
+
+declare module '@jscad/dxf-serializer' {
+	export function serialize(geom3: JSCADGeometry): ArrayBuffer
+}
+
+declare module '@jscad/svg-serializer' {
+	export function serialize(geom3: JSCADGeometry): ArrayBuffer
+}
+
+declare module '@jscad/x3d-serializer' {
+	export function serialize(geom3: JSCADGeometry): ArrayBuffer
+}

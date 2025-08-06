@@ -1,37 +1,47 @@
 <template>
-	<div v-if="error" class="error">
-		<h2>Error on {{ error.location }}</h2>
-		<pre>{{ error.err }}</pre>
-		<div v-if="error.err.stack" class="stack-trace">
-			<h3>Stack Trace:</h3>
-			<pre>{{ error.err.stack }}</pre>
+	<Await :await="loadedModule">
+		<div v-if="error" class="error">
+			<h2>Error on {{ error.location }}</h2>
+			<pre>{{ error.err }}</pre>
+			<div v-if="error.err.stack" class="stack-trace">
+				<h3>Stack Trace:</h3>
+				<pre>{{ error.err.stack }}</pre>
+			</div>
+			<div v-if="error.err.message" class="error-message">
+				<h3>Error Message:</h3>
+				<pre>{{ error.err.message }}</pre>
+			</div>
+			<div v-if="error.err.fileName || error.err.lineNumber" class="error-location">
+				<h3>Location:</h3>
+				<pre>{{ error.err.fileName }}:{{ error.err.lineNumber }}</pre>
+			</div>
 		</div>
-		<div v-if="error.err.message" class="error-message">
-			<h3>Error Message:</h3>
-			<pre>{{ error.err.message }}</pre>
-		</div>
-		<div v-if="error.err.fileName || error.err.lineNumber" class="error-location">
-			<h3>Location:</h3>
-			<pre>{{ error.err.fileName }}:{{ error.err.lineNumber }}</pre>
-		</div>
-	</div>
-	<Splitter v-else class="full-size" stateStorage="none">
-		<SplitterPanel :size="100">
-			<Viewer
-				:viewed="factory === waiting ? waiting : mesh"
-				:display-mode="displaySettings.mode"
-				:show-axes="displaySettings.showAxes"
-				ref="viewerRef"
-			/>
-		</SplitterPanel>
-		<SplitterPanel v-if="displaySettings.showParameters" :size="20" :style="{ minWidth: '300px' }">
-			<Parameters
-				:viewed="factory === waiting ? waiting : mesh"
-				v-model:parameters="parameters"
-				:parameters-config="parametersConfig"
-			/>
-		</SplitterPanel>
-	</Splitter>
+		<Splitter v-else class="full-size" stateStorage="none">
+			<SplitterPanel :size="100">
+				<Viewer
+					:viewed="factory === waiting ? waiting : mesh"
+					:display-mode="displaySettings.mode"
+					:show-axes="displaySettings.showAxes"
+					ref="viewerRef"
+				/>
+			</SplitterPanel>
+			<SplitterPanel v-if="displaySettings.showParameters" :size="20" :style="{ minWidth: '300px' }">
+				<Parameters
+					:viewed="factory === waiting ? waiting : mesh"
+					v-model:parameters="parameters"
+					:parameters-config="parametersConfig"
+				/>
+			</SplitterPanel>
+		</Splitter>
+		<template #error="{ error }">
+			<ErrorView :error="error">
+				<h2>Cannot load module</h2>
+				<p>
+					Click <a href="/">here</a> to go back to the home page.
+				</p>
+			</ErrorView>
+		</template>
+	</Await>
 </template>
 
 <script setup lang="ts">
@@ -42,15 +52,17 @@ import { type GenerationParameters, type IMesh, ParametersConfig } from '@tsculp
 import type { MenuItem } from 'primevue/menuitem'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { ComputedRef, type Ref, computed, inject, ref, watch } from 'vue'
+import { type Ref, computed, inject, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { module, Module } from '../lib/source'
 const route = useRoute()
 const hash = computed(() => route.hash.slice(1) || 'default')
 const viewerRef = ref<InstanceType<typeof Viewer>>()
 import { localStored } from '@/lib/stores'
-import { Factory, MaybeFactory, MaybePromise, waiting } from '@/lib/utils'
+import { Factory, MaybeFactory, MaybePromise } from '@/lib/utils'
 import { defaultGlobals, withGlobals } from '@tsculpt/globals'
+import Await, { thenComputed, waiting } from '@/components/Await.vue'
+import ErrorView from '@/components/ErrorView.vue'
 
 type DisplayMode = 'solid' | 'wireframe' | 'solid-edges'
 const displaySettings = localStored('viewer-display', {
@@ -77,7 +89,6 @@ const error = ref<{
 	location: LoadLocation
 } | null>(null)
 
-const loadedModule = ref<Module | typeof waiting>(waiting)
 const factory = ref<Factory<MaybePromise<IMesh>> | typeof waiting>(waiting)
 const parameters = ref<GenerationParameters>({ ...defaultGlobals })
 const parametersConfig = ref<ParametersConfig | false>(false)
@@ -86,32 +97,16 @@ const mesh = ref<IMesh | typeof waiting>(waiting)
 function noErrorBefore(location: any) {
 	return !error.value?.location || error.value.location > `${location}`
 }
-const moduleRef: ComputedRef<Ref<Promise<Module>>> = computed(() =>
-	module(`/${props.path}.sculpt.ts`)
-)
-const loadingModule = computed(() => moduleRef.value.value)
+
+const loadedModule = thenComputed<Module>(()=> module(`/${props.path}.sculpt.ts`))
 function handleError(err: any, location: LoadLocation) {
-	// biome-ignore lint: We want it debuggable
-	console.error(err)
 	error.value = { err, location }
 }
-watch(
-	loadingModule,
-	async (loadingModule) => {
-		loadedModule.value = waiting
-		try {
-			loadedModule.value = await loadingModule
-		} catch (err) {
-			handleError(err, '1-module')
-		}
-	},
-	{ immediate: true }
-)
 watch(
 	[loadedModule, hash],
 	async ([loadedModule, hash]) => {
 		factory.value = waiting
-		if (noErrorBefore(2) && loadedModule !== waiting) {
+		if (noErrorBefore(2) && loadedModule !== waiting && !(loadedModule instanceof Error)) {
 			error.value = null
 			try {
 				const entry = loadedModule[hash] as MaybeFactory<MaybePromise<IMesh>>
