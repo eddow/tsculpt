@@ -11,7 +11,7 @@ import type { IMesh } from '@tsculpt'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-
+// TODO: when rendering, normals should be per triangles, not per point
 const colors = {
 	dark: {
 		background: 0x242424,

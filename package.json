@@ -15,6 +15,10 @@
 	},
 	"dependencies": {
 		"@jscad/modeling": "^2.12.5",
+		"@jscad/obj-deserializer": "^2.0.30",
+		"@jscad/obj-serializer": "^2.1.20",
+		"@jscad/stl-deserializer": "^2.1.27",
+		"@jscad/stl-serializer": "^2.1.20",
 		"@primeuix/themes": "^1.1.1",
 		"@types/three": "^0.177.0",
 		"@types/ws": "^8.18.1",

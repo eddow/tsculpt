@@ -3,9 +3,10 @@ import { URL, fileURLToPath } from 'node:url'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import paramMetadataInjector from './viewer/vite-plugin-param-metadata'
+import meshPlugin from './files/vite-plugin-mesh'
 
 export default defineConfig({
-	plugins: [vue(), paramMetadataInjector()],
+	plugins: [vue(), paramMetadataInjector(), meshPlugin()],
 	resolve: {
 		alias: {
 			'@': fileURLToPath(new URL('./viewer', import.meta.url)),
