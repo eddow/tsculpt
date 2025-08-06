@@ -1,3 +1,14 @@
+<script lang="ts">
+const menuDataSymbol = Symbol('menuItems')
+export interface MenuData {
+	hashes: Ref<string[]>
+	extraMenuItems: Ref<MenuItem[]>
+	hash: Ref<string>
+}
+export function useMenuItems() {
+	return inject(menuDataSymbol) as MenuData
+}
+</script>
 <template>
 	<div class="layout" :class="{ 'dark': isDark }">
 		<Menubar :model="menuItems">
@@ -12,11 +23,44 @@
 <script setup lang="ts">
 import { isDark, toggleTheme } from '@/lib/stores'
 import type { MenuItem } from 'primevue/menuitem'
-import { provide, ref } from 'vue'
+import { computed, inject, provide, Ref, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { router } from './router'
+const route = useRoute()
+const extraMenuItems = ref<MenuItem[]>([])
+const hashes = ref<string[]>([])
+const hash = computed(() => route.hash.slice(1) || 'default')
 
-const menuItems = ref<MenuItem[]>([])
-
-provide('menuItems', menuItems)
+provide(menuDataSymbol, {
+	extraMenuItems,
+	hashes,
+	hash
+})
+const menuItems = computed(() => [
+	{
+		label: 'Source',
+		items: [
+			{
+				label: 'Choose file',
+				icon: 'pi pi-fw pi-list',
+				command: () => {
+					router.push('/')
+				},
+			},
+			... hashes.value.length > 0 ? [
+				{ separator: true },
+				...hashes.value.map((gotoHash) => ({
+					label: gotoHash,
+					icon: gotoHash === hash.value ? 'pi pi-fw pi-check' : 'pi pi-fw pi-file',
+					command: () => {
+						router.push(`#${gotoHash}`)
+					},
+				})),
+			] : []
+		],
+	},
+	...extraMenuItems.value
+])
 </script>
 
 <style lang="sass">

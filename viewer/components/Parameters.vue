@@ -59,12 +59,12 @@ import AccordionHeader from 'primevue/accordionheader'
 import AccordionPanel from 'primevue/accordionpanel'
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
-import { waiting } from './Await.vue'
+import { AwaitedValue, hasResult, waiting } from './Await.vue'
 import Parameter from './Parameter.vue'
 
 const shown = localStored('parameters-shown', ['parameters'])
 const props = defineProps<{
-	viewed: IMesh | typeof waiting
+	viewed: AwaitedValue<IMesh>
 	parameters: GenerationParameters
 	parametersConfig: ParametersConfig | false
 }>()
@@ -72,7 +72,7 @@ const props = defineProps<{
 const emit = defineEmits<(e: 'update:parameters', value: GenerationParameters) => void>()
 const statistics = computed(() => {
 	const viewed = props.viewed
-	if (viewed === waiting) return []
+	if (!hasResult(viewed)) return []
 	const stats = {
 		vertices: viewed.vectors.length,
 		faces: viewed.faces.length,

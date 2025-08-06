@@ -1,68 +1,71 @@
+<script lang="ts">
+
+import Parameters from '@/components/Parameters.vue'
+import Viewer from '@/components/Viewer.vue'
+import { type GenerationParameters, type IMesh, ParametersConfig } from '@tsculpt'
+import Splitter from 'primevue/splitter'
+import SplitterPanel from 'primevue/splitterpanel'
+import { computed, ref, watch } from 'vue'
+import { module } from '../lib/source'
+import { awaited, erroneous, hasResult, thenComputed, waiting } from '@/components/Await.vue'
+import ErrorView from '@/components/ErrorView.vue'
+import { localStored } from '@/lib/stores'
+import { defaultGlobals, withGlobals } from '@tsculpt/globals'
+import { useMenuItems } from '@/App.vue'
+import Spinner from '@/components/Spinner.vue'
+
+export type MaybePromise<T> = Promise<T> | T
+export type Factory<T> = ((params?: GenerationParameters) => T )& { params: ParametersConfig }
+export type MaybeFactory<T> = T | Factory<T>
+
+</script>
 <template>
-	<Await :await="loadedModule">
-		<div v-if="error" class="error">
-			<h2>Error on {{ error.location }}</h2>
-			<pre>{{ error.err }}</pre>
-			<div v-if="error.err.stack" class="stack-trace">
-				<h3>Stack Trace:</h3>
-				<pre>{{ error.err.stack }}</pre>
-			</div>
-			<div v-if="error.err.message" class="error-message">
-				<h3>Error Message:</h3>
-				<pre>{{ error.err.message }}</pre>
-			</div>
-			<div v-if="error.err.fileName || error.err.lineNumber" class="error-location">
-				<h3>Location:</h3>
-				<pre>{{ error.err.fileName }}:{{ error.err.lineNumber }}</pre>
-			</div>
+
+	<ErrorView v-if="erroneous(loadedModule)" :error="loadedModule">
+		<h2>Cannot load module</h2>
+		<p>
+			Click <a href="/">here</a> to go back to the modules list.
+		</p>
+	</ErrorView>
+
+	<ErrorView v-else-if="erroneous(factory)" :error="factory">
+		<h2>Cannot load export <pre>{{ hash }}</pre></h2>
+		<div>
+			<p>Available exports:</p>
+			<ul>
+				<li v-for="hash in hashes" :key="hash">
+					<a :href="hash === 'default' ? '#' : `#${hash}`">{{ hash }}</a>
+				</li>
+			</ul>
 		</div>
-		<Splitter v-else class="full-size" stateStorage="none">
-			<SplitterPanel :size="100">
-				<Viewer
-					:viewed="factory === waiting ? waiting : mesh"
-					:display-mode="displaySettings.mode"
-					:show-axes="displaySettings.showAxes"
-					ref="viewerRef"
-				/>
-			</SplitterPanel>
-			<SplitterPanel v-if="displaySettings.showParameters" :size="20" :style="{ minWidth: '300px' }">
-				<Parameters
-					:viewed="factory === waiting ? waiting : mesh"
-					v-model:parameters="parameters"
-					:parameters-config="parametersConfig"
-				/>
-			</SplitterPanel>
-		</Splitter>
-		<template #error="{ error }">
-			<ErrorView :error="error">
-				<h2>Cannot load module</h2>
-				<p>
-					Click <a href="/">here</a> to go back to the home page.
-				</p>
-			</ErrorView>
-		</template>
-	</Await>
+	</ErrorView>
+	<Spinner v-else-if="factory === waiting" :size="10" />
+	<Splitter v-else class="full-size" stateStorage="none">
+		<SplitterPanel :size="100">
+			<Viewer
+				v-if="hasResult(mesh)"
+				:viewed="mesh"
+				:display-mode="displaySettings.mode"
+				:show-axes="displaySettings.showAxes"
+				ref="viewerRef"
+			/>
+			<ErrorView v-if="erroneous(mesh)" :error="mesh" />
+			<Spinner v-else icon="cog" :size="10" />
+		</SplitterPanel>
+		<SplitterPanel v-if="displaySettings.showParameters" :size="20" :style="{ minWidth: '300px' }">
+			<Parameters
+				:viewed="mesh"
+				v-model:parameters="parameters"
+				:parameters-config="parametersConfig"
+			/>
+		</SplitterPanel>
+	</Splitter>
 </template>
 
 <script setup lang="ts">
-import Parameters from '@/components/Parameters.vue'
-import Viewer from '@/components/Viewer.vue'
-import { router } from '@/router'
-import { type GenerationParameters, type IMesh, ParametersConfig } from '@tsculpt'
-import type { MenuItem } from 'primevue/menuitem'
-import Splitter from 'primevue/splitter'
-import SplitterPanel from 'primevue/splitterpanel'
-import { type Ref, computed, inject, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { module, Module } from '../lib/source'
-const route = useRoute()
-const hash = computed(() => route.hash.slice(1) || 'default')
+
 const viewerRef = ref<InstanceType<typeof Viewer>>()
-import Await, { thenComputed, waiting } from '@/components/Await.vue'
-import ErrorView from '@/components/ErrorView.vue'
-import { localStored } from '@/lib/stores'
-import { Factory, MaybeFactory, MaybePromise } from '@/lib/utils'
-import { defaultGlobals, withGlobals } from '@tsculpt/globals'
+const {extraMenuItems, hashes, hash} = useMenuItems()
 
 type DisplayMode = 'solid' | 'wireframe' | 'solid-edges'
 const displaySettings = localStored('viewer-display', {
@@ -83,65 +86,31 @@ watch(
 const props = defineProps<{
 	path: string
 }>()
-type LoadLocation = '1-module' | '2-load' | '3-call'
-const error = ref<{
-	err: any
-	location: LoadLocation
-} | null>(null)
 
-const factory = ref<Factory<MaybePromise<IMesh>> | typeof waiting>(waiting)
 const parameters = ref<GenerationParameters>({ ...defaultGlobals })
 const parametersConfig = ref<ParametersConfig | false>(false)
-const mesh = ref<IMesh | typeof waiting>(waiting)
 
-function noErrorBefore(location: any) {
-	return !error.value?.location || error.value.location > `${location}`
-}
+const loadedModule = thenComputed(true, () => module(`/${props.path}.sculpt.ts`))
+watch(
+	thenComputed(loadedModule, (loadedModule) => Object.keys(loadedModule)),
+	(moduleHashes) => {
+		hashes.value = hasResult(moduleHashes) ? moduleHashes : []
+	}
+)
+const factory = thenComputed(loadedModule, (loadedModule) => {
+	const entry = loadedModule[hash.value] as MaybeFactory<MaybePromise<IMesh>>
+	if (!entry) throw new Error(`No export found for ${hash}`)
+	if (typeof entry === 'function') {
+		// `params` come from `vite-plugin-param-metadata`
+		parametersConfig.value = entry.params || {}
+		return () => withGlobals(() => entry(parameters.value), parameters.value)
+	}
+	parametersConfig.value = {}
+	return () => entry
+})
 
-const loadedModule = thenComputed<Module>(() => module(`/${props.path}.sculpt.ts`))
-function handleError(err: any, location: LoadLocation) {
-	error.value = { err, location }
-}
-watch(
-	[loadedModule, hash],
-	async ([loadedModule, hash]) => {
-		factory.value = waiting
-		if (noErrorBefore(2) && loadedModule !== waiting && !(loadedModule instanceof Error)) {
-			error.value = null
-			try {
-				const entry = loadedModule[hash] as MaybeFactory<MaybePromise<IMesh>>
-				if (!entry) throw new Error(`No export found for ${hash}`)
-				if (typeof entry === 'function') {
-					// @ts-expect-error `params` come from `vite-plugin-param-metadata`
-					parametersConfig.value = entry.params || {}
-					factory.value = () => withGlobals(() => entry(parameters.value), parameters.value)
-				} else factory.value = () => entry
-			} catch (err) {
-				handleError(err, '2-load')
-				factory.value = () => {
-					throw err
-				}
-			}
-		}
-	},
-	{ immediate: true }
-)
-watch(
-	[factory, parameters],
-	async ([factory, parameters]) => {
-		mesh.value = waiting
-		if (noErrorBefore(3) && factory !== waiting) {
-			error.value = null
-			try {
-				mesh.value = await factory(parameters)
-			} catch (err) {
-				handleError(err, '3-call')
-			}
-		}
-	},
-	{ immediate: true }
-)
-const menuItems: Ref<MenuItem[]> | undefined = inject('menuItems')
+const build = thenComputed(factory, (factory) => factory())
+const mesh = computed(()=> awaited(build))
 
 function display(mode: DisplayMode) {
 	displaySettings.value.mode = mode
@@ -155,33 +124,12 @@ function toggleParameters() {
 	displaySettings.value.showParameters = !displaySettings.value.showParameters
 }
 
-if (menuItems) {
+if (extraMenuItems) {
 	watch(
-		[loadedModule, hash, displaySettings],
-		async ([loadedModule, hash, displaySettings]) => {
+		[loadedModule, displaySettings],
+		async ([loadedModule, displaySettings]) => {
 			if (loadedModule === waiting) return
-			const hashes = Object.keys(loadedModule)
-			menuItems.value = [
-				{
-					label: 'Source',
-					items: [
-						{
-							label: 'Choose file',
-							icon: 'pi pi-fw pi-list',
-							command: () => {
-								router.push('/')
-							},
-						},
-						{ separator: true },
-						...hashes.map((gotoHash) => ({
-							label: gotoHash,
-							icon: gotoHash === hash ? 'pi pi-fw pi-check' : 'pi pi-fw pi-file',
-							command: () => {
-								router.push(`#${gotoHash}`)
-							},
-						})),
-					],
-				},
+			extraMenuItems.value = [
 				{
 					label: 'Display',
 					items: [
@@ -225,8 +173,10 @@ if (menuItems) {
 }
 </script>
 
-<style lang="sass">
+<style lang="sass" scoped>
 .full-size
 	height: 100%
 	width: 100%
+.pi-spin
+	font-size: 16rem
 </style>

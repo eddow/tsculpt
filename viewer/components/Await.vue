@@ -40,18 +40,12 @@ export function asError(err: any): Error {
 	return new Error(String(err))
 }
 
-export function awaited<T>(source?: any): AwaitedValue<T> {
+export function awaited<T>(source?: AcceptedWaitable<T>): AwaitedValue<T> {
 	if (!source) return waiting
 	while (true) {
 		if (source instanceof Promise) source = awaitedPromise(source).value
 		else if (isRef(source)) source = source.value
-		else if (typeof source === 'function') {
-			try {
-				source = source()
-			} catch (err) {
-				return asError(err)
-			}
-		} else return source as AwaitedValue<T>
+		else return source as AwaitedValue<T>
 	}
 }
 
@@ -59,11 +53,15 @@ export function hasResult<T>(value: AwaitedValue<T>): value is T {
 	return value !== waiting && !(value instanceof Error)
 }
 
+export function erroneous(result: any): result is Error {
+	if(result instanceof Error) console.log(result)
+	return result instanceof Error
+}
+
 type AcceptedWaitable<T> =
-	| T
+	| AwaitedValue<T>
 	| Ref<AcceptedWaitable<T>>
 	| Promise<AcceptedWaitable<T>>
-	| (() => AcceptedWaitable<T>)
 
 export const thenComputed = <I, O = I>(
 	promise: AcceptedWaitable<I>,
@@ -74,7 +72,9 @@ export const thenComputed = <I, O = I>(
 		if (awaitedInput === waiting) return waiting
 		if (awaitedInput instanceof Error) return awaitedInput
 		try {
-			return fn(awaitedInput)
+			// Do *not* `awaited` the result of `fn` here,
+			// otherwise resolving the promise will re-evaluate the computed and the function
+			return /*awaited(*/fn(awaitedInput)//)
 		} catch (err) {
 			return asError(err)
 		}
@@ -87,11 +87,6 @@ const props = defineProps<{
 }>()
 
 const result = thenComputed<T, T>(computed(()=> props.await) as AcceptedWaitable<T>)
-
-function erroneous(result: any) {
-	if(result instanceof Error) console.log(result)
-	return result instanceof Error
-}
 
 defineSlots<{
 	default: (props: { result: T }) => any

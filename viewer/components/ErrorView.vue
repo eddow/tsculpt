@@ -1,32 +1,22 @@
 <script setup lang="ts">
-import Accordion from 'primevue/accordion'
-import AccordionContent from 'primevue/accordioncontent'
-import AccordionHeader from 'primevue/accordionheader'
-import AccordionPanel from 'primevue/accordionpanel'
-import { ref } from 'vue'
+import Panel from 'primevue/panel'
 
 const props = defineProps<{
 	error: Error
-	shown?: ('error' | 'stack')[]
 }>()
 const slots = defineSlots<{
 	default?: () => any
 }>()
-const shown = ref(props.shown ?? (slots.default ? [] : ['error']))
 </script>
 <template>
 	<div class="error">
 		<slot />
-		<Accordion multiple :value="shown">
-			<AccordionPanel value="error">
-				<AccordionHeader>Error</AccordionHeader>
-				<AccordionContent>{{ error.message }}</AccordionContent>
-			</AccordionPanel>
-			<AccordionPanel value="stack">
-				<AccordionHeader>Stack</AccordionHeader>
-				<AccordionContent>{{ error.stack }}</AccordionContent>
-			</AccordionPanel>
-		</Accordion>
+		<Panel header="Error" toggleable :collapsed="!slots.default">
+			<pre>{{ props.error.message }}</pre>
+			<Panel header="Stack" toggleable collapsed>
+				<code>{{ props.error.stack }}</code>
+			</Panel>
+		</Panel>
 	</div>
 </template>
 <style lang="sass" scoped>

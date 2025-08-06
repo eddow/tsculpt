@@ -10,7 +10,6 @@ import type { IMesh } from '@tsculpt'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { waiting } from './Await.vue'
 
 const colors = {
 	dark: {
@@ -34,7 +33,7 @@ const colors = {
 }
 
 const props = defineProps<{
-	viewed: IMesh | typeof waiting
+	viewed: IMesh
 	displayMode: 'solid' | 'wireframe' | 'solid-edges'
 	showAxes: boolean
 }>()
@@ -264,31 +263,6 @@ function updateGeometry() {
 	const geometry = new THREE.BufferGeometry()
 	const theme = isDark.value ? colors.dark : colors.light
 
-	if (props.viewed === waiting) {
-		// Show placeholder cube while waiting
-		const cubeGeometry = new THREE.BoxGeometry(1, 1, 1)
-		const material = new THREE.MeshStandardMaterial({
-			color: theme.mesh,
-			wireframe: props.displayMode === 'wireframe',
-			opacity: 0.3,
-			transparent: true,
-		})
-		mesh = new THREE.Mesh(cubeGeometry, material)
-		scene.add(mesh)
-
-		// Add edges for solid-edges mode
-		const edgesGeometry = new THREE.EdgesGeometry(cubeGeometry)
-		const edgesMaterial = new THREE.LineBasicMaterial({
-			color: theme.edges,
-			linewidth: 1,
-			opacity: 0.3,
-			transparent: true,
-		})
-		edges = new THREE.LineSegments(edgesGeometry, edgesMaterial)
-		edges.visible = props.displayMode === 'solid-edges'
-		scene.add(edges)
-		return
-	}
 
 	if (props.viewed.vectors && props.viewed.faces) {
 		// For flat normals, duplicate vertices for each face
@@ -376,7 +350,7 @@ watch(
 	() => props.viewed,
 	(newMesh) => {
 		updateGeometry()
-		if (newMesh !== waiting && !hasSeenRealMesh) {
+		if (!hasSeenRealMesh) {
 			hasSeenRealMesh = true
 			resetCamera()
 		}
