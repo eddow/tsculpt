@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
-import { basename, extname } from 'node:path'
+import { extname } from 'node:path'
 import type { Plugin } from 'vite'
-import { generateFakeMeshSource, generateMeshSource, getHandler } from './index.js'
+import { generateFakeMeshSource, generateMeshSource, getHandler } from '../io/index.js'
 
 export default function meshPlugin(): Plugin {
 	return {
@@ -23,8 +23,7 @@ export default function meshPlugin(): Plugin {
 				const meshData = handler.read(fileBuffer)
 
 				// Generate TypeScript source
-				const meshName = basename(id, ext)
-				const generatedSource = generateMeshSource(meshData, meshName)
+				const generatedSource = generateMeshSource(meshData)
 
 				return {
 					code: generatedSource,
@@ -34,8 +33,7 @@ export default function meshPlugin(): Plugin {
 				console.warn(`Failed to process mesh file ${id}:`, error)
 
 				// Fallback to fake mesh
-				const meshName = basename(id, ext)
-				const fakeSource = generateFakeMeshSource(meshName)
+				const fakeSource = generateFakeMeshSource()
 
 				return {
 					code: fakeSource,
@@ -65,12 +63,10 @@ export default function meshPlugin(): Plugin {
 				try {
 					const fileBuffer = readFileSync(filePath)
 					const meshData = handler.read(fileBuffer)
-					const meshName = basename(filePath, ext)
-					return generateMeshSource(meshData, meshName)
+					return generateMeshSource(meshData)
 				} catch (error) {
 					console.warn(`Failed to load mesh file ${filePath}:`, error)
-					const meshName = basename(filePath, ext)
-					return generateFakeMeshSource(meshName)
+					return generateFakeMeshSource()
 				}
 			}
 			return null

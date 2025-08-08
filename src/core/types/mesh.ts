@@ -2,6 +2,10 @@ import { cached } from '../ts/decorators'
 import { VectorMap } from '../vectorSet'
 import { vecSum, Vector, type Vector3 } from './bunches'
 
+// TODO: manage here intermediate meshes:
+// - JSCad merge on boolean operations
+// - half transformed mesh (mesh + m4x4)
+
 type FaceIndices = [number, number, number]
 
 export interface IMesh {

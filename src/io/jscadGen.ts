@@ -1,10 +1,10 @@
-import { type FileHandler, type MeshData, type Vector3 } from './index.js'
+import { FaceData, type FileHandler, type MeshData, type Vector3Data } from './index.js'
 
-function arrayToVector3(arr: number[]): Vector3 {
+function arrayToVector3(arr: number[]): Vector3Data {
 	return [arr[0], arr[2], arr[1]] // Swap Y and Z
 }
 
-function vector3ToArray(v: Vector3): number[] {
+function vector3ToArray(v: Vector3Data): number[] {
 	return [v[0], v[2], v[1]] // Swap Y and Z
 }
 
@@ -34,7 +34,7 @@ export default (
 		const geom3 = Array.isArray(result) ? result[0] : result
 
 		// Convert JSCAD geometry to our format
-		const faces: [Vector3, Vector3, Vector3][] = []
+		const faces: [Vector3Data, Vector3Data, Vector3Data][] = []
 
 		if (!geom3 || !geom3.polygons) {
 			console.warn('No geometry or polygons found in STL file')
@@ -46,7 +46,7 @@ export default (
 
 			// Triangulate the polygon (assuming it's already triangles for STL)
 			for (let i = 0; i < vertices.length - 2; i++) {
-				const face: [Vector3, Vector3, Vector3] = [
+				const face: [Vector3Data, Vector3Data, Vector3Data] = [
 					arrayToVector3(vertices[0]),
 					arrayToVector3(vertices[i + 2]),
 					arrayToVector3(vertices[i + 1]),
@@ -59,9 +59,14 @@ export default (
 	},
 
 	write(meshData: MeshData): ArrayBuffer {
+		const { vertices } = meshData
+		const v3a = vertices ?
+			(v: Vector3Data|number) => vector3ToArray(vertices[v as number]) :
+			(v: Vector3Data|number) => vector3ToArray(v as Vector3Data)
+
 		// Convert our format to JSCAD geometry
 		const polygons = meshData.faces.map((face) => ({
-			vertices: [vector3ToArray(face[0]), vector3ToArray(face[2]), vector3ToArray(face[1])],
+			vertices: [v3a(face[0]), v3a(face[2]), v3a(face[1])],
 			plane: [0, 0, 1, 0], // Default plane, will be calculated by JSCAD
 		}))
 

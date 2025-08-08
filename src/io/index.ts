@@ -4,12 +4,13 @@ export interface FileHandler {
 	write: (meshData: MeshData) => ArrayBuffer | string
 }
 
-export interface MeshData {
-	faces: [Vector3, Vector3, Vector3][]
-	vertices?: Vector3[]
-}
+export type Vector3Data = [number, number, number]
+export type FaceData = [Vector3Data, Vector3Data, Vector3Data]
 
-export type Vector3 = [number, number, number]
+export interface MeshData {
+	faces: FaceData[] | Vector3Data[]
+	vertices?: Vector3Data[]
+}
 
 // Registry of all file handlers
 export const fileHandlers: Record<string, FileHandler> = {}
@@ -49,4 +50,4 @@ registerHandler(jscadGen('svg', svgSerialize, svgDeserialize))
 registerHandler(jscadGen('x3d', x3dSerialize, x3dDeserialize))
 
 // Export generator functions
-export * from './generator'
+export * from './generator.js'

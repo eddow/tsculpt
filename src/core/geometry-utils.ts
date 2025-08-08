@@ -1,6 +1,6 @@
-import { type IMesh, Mesh } from '@tsculpt/types'
-import { v3 } from '@tsculpt/types/builders'
-import type { Vector3 } from '@tsculpt/types/bunches'
+
+// TODO: Unused file, use what was produced here for mesh statistics
+import { type IMesh } from '@tsculpt/types'
 import { Box3, Vector3 as ThreeVector3 } from 'three'
 
 /**
@@ -22,7 +22,6 @@ export interface GeometryStats {
 	isWatertight: boolean
 	isManifold: boolean
 }
-
 /**
  * Calculate comprehensive geometry statistics
  */

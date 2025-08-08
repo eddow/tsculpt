@@ -23,9 +23,9 @@
 		"esModuleInterop": true,
 		"baseUrl": ".",
 		"paths": {
-			"@tsculpt": ["./src"],
-			"@tsculpt/*": ["./src/*"],
-			"@booleans": ["booleans/tester.ts"]
+			"@tsculpt": ["./src/core"],
+			"@tsculpt/*": ["./src/core/*"],
+			"@booleans": ["src/booleans/tester.ts"]
 		}
 	}
 }

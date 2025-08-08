@@ -1,5 +1,5 @@
-import { AMesh, Engine, InternalMesh } from '../src/booleans/index'
-import { Mesh, Vector3 } from '../src/types'
+import { AMesh, Engine, InternalMesh } from '@tsculpt/booleans/index'
+import { Mesh, Vector3 } from '@tsculpt/types'
 
 // Fake mesh for testing purposes
 export class FakeMesh extends InternalMesh {
@@ -49,4 +49,4 @@ class TesterEngine extends Engine {
 
 export default new TesterEngine()
 
-export * from '../src/booleans/index'
+export * from '@tsculpt/booleans/index'
