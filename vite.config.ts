@@ -4,9 +4,20 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import meshPlugin from './src/client/vite-plugin-mesh'
 import paramMetadataInjector from './src/client/vite-plugin-param-metadata'
+import Components from 'unplugin-vue-components/vite';
+import {PrimeVueResolver} from '@primevue/auto-import-resolver';
 
 export default defineConfig({
-	plugins: [vue(), paramMetadataInjector(), meshPlugin()],
+	plugins: [
+		vue(),
+		paramMetadataInjector(),
+		meshPlugin(),
+		Components({
+			dirs: ['./src/client/components'],
+			globs: ['src/client/**/*.vue'],
+			resolvers: [PrimeVueResolver()],
+		}),
+	],
 	resolve: {
 		alias: {
 			'@': fileURLToPath(new URL('./src/client', import.meta.url)),
@@ -29,7 +40,13 @@ export default defineConfig({
 	build: {
 		rollupOptions: {
 			output: {
-				manualChunks: undefined,
+				manualChunks: {
+					primevue: ['primevue'],
+					themes: ['@primeuix/themes'],
+					vue: ['vue', 'vue-router'],
+					three: ['three'],
+					jscad: ['@jscad/modeling'],
+				},
 			},
 		},
 		outDir: 'dist',

@@ -60,9 +60,9 @@ export default (
 
 	write(meshData: MeshData): ArrayBuffer {
 		const { vertices } = meshData
-		const v3a = vertices ?
-			(v: Vector3Data|number) => vector3ToArray(vertices[v as number]) :
-			(v: Vector3Data|number) => vector3ToArray(v as Vector3Data)
+		const v3a = vertices
+			? (v: Vector3Data | number) => vector3ToArray(vertices[v as number])
+			: (v: Vector3Data | number) => vector3ToArray(v as Vector3Data)
 
 		// Convert our format to JSCAD geometry
 		const polygons = meshData.faces.map((face) => ({

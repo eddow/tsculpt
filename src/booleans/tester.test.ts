@@ -1,6 +1,5 @@
+import { AMesh, Mesh, Vector3 } from '@tsculpt/types'
 import { describe, expect, it } from 'vitest'
-import { Vector3 } from '../src/types/bunches'
-import { Mesh } from '../src/types/mesh'
 import engine, { FakeMesh } from './tester'
 
 // Helper function to create a simple test mesh
@@ -148,20 +147,10 @@ describe('TesterEngine', () => {
 			const mesh2 = createTestMesh()
 
 			const fakeResult = engine.union(mesh1, mesh2)
-			const realMesh = engine.result(fakeResult)
 
-			expect(realMesh).toBeInstanceOf(Mesh)
-			expect(realMesh.vectors.length).toBe(3) // Single triangle
-			expect(realMesh.faces.length).toBe(1)
-		})
-
-		it('should convert regular Mesh to Mesh', () => {
-			const mesh1 = createTestMesh()
-
-			const realMesh = engine.result(mesh1)
-
-			expect(realMesh).toBeInstanceOf(Mesh)
-			expect(realMesh).toBe(mesh1) // Should be the same instance
+			expect(fakeResult).toBeInstanceOf(AMesh)
+			expect(fakeResult.vectors.length).toBe(3) // Single triangle
+			expect(fakeResult.faces.length).toBe(1)
 		})
 	})
 

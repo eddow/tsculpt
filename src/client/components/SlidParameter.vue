@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
-import Slider from 'primevue/slider'
 import { computed, ref, watch } from 'vue'
 
 interface Props {

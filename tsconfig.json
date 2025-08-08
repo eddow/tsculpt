@@ -23,6 +23,8 @@
 		"esModuleInterop": true,
 		"baseUrl": ".",
 		"paths": {
+			"@": ["./src/client"],
+			"@/*": ["./src/client/*"],
 			"@tsculpt": ["./src/core"],
 			"@tsculpt/*": ["./src/core/*"],
 			"@booleans": ["src/booleans/tester.ts"]

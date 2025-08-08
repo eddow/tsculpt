@@ -1,23 +1,19 @@
 <script lang="ts">
-
-import Parameters from '@/components/Parameters.vue'
-import Viewer from '@/components/Viewer.vue'
-import { type GenerationParameters, type IMesh, ParametersConfig } from '@tsculpt'
-import Splitter from 'primevue/splitter'
-import SplitterPanel from 'primevue/splitterpanel'
-import { computed, ref, watch } from 'vue'
-import { module } from '../lib/source'
+import { useMenuItems } from '@/App.vue'
 import { awaited, erroneous, hasResult, thenComputed, waiting } from '@/components/Await.vue'
 import ErrorView from '@/components/ErrorView.vue'
-import { localStored } from '@/lib/stores'
-import { defaultGlobals, withGlobals } from '@tsculpt/globals'
-import { useMenuItems } from '@/App.vue'
+import Parameters from '@/components/Parameters.vue'
 import Spinner from '@/components/Spinner.vue'
+import Viewer from '@/components/Viewer.vue'
+import { localStored } from '@/lib/stores'
+import { AMesh, type GenerationParameters, ParametersConfig } from '@tsculpt'
+import { defaultGlobals, withGlobals } from '@tsculpt/globals'
+import { computed, ref, watch } from 'vue'
+import { module } from '../lib/source'
 
 export type MaybePromise<T> = Promise<T> | T
-export type Factory<T> = ((params?: GenerationParameters) => T )& { params: ParametersConfig }
+export type Factory<T> = ((params?: GenerationParameters) => T) & { params: ParametersConfig }
 export type MaybeFactory<T> = T | Factory<T>
-
 </script>
 <template>
 
@@ -98,7 +94,7 @@ watch(
 	}
 )
 const factory = thenComputed(loadedModule, (loadedModule) => {
-	const entry = loadedModule[hash.value] as MaybeFactory<MaybePromise<IMesh>>
+	const entry = loadedModule[hash.value] as MaybeFactory<MaybePromise<AMesh>>
 	if (!entry) throw new Error(`No export found for ${hash.value}`)
 	if (typeof entry === 'function') {
 		// `params` come from `vite-plugin-param-metadata`
@@ -109,7 +105,7 @@ const factory = thenComputed(loadedModule, (loadedModule) => {
 	return () => entry
 })
 // TODO: render in a worker
-const build = thenComputed(factory, (factory) => new Promise<IMesh>(resolve => resolve(factory())))
+const build = thenComputed(factory, (factory) => new Promise<AMesh>(resolve => resolve(factory())))
 const mesh = computed(()=> awaited(build))
 
 function display(mode: DisplayMode) {

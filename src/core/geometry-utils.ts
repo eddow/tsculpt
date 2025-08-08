@@ -1,6 +1,5 @@
-
 // TODO: Unused file, use what was produced here for mesh statistics
-import { type IMesh } from '@tsculpt/types'
+import { type AMesh } from '@tsculpt/types'
 import { Box3, Vector3 as ThreeVector3 } from 'three'
 
 /**
@@ -25,7 +24,7 @@ export interface GeometryStats {
 /**
  * Calculate comprehensive geometry statistics
  */
-export function analyzeGeometry(mesh: IMesh): GeometryStats {
+export function analyzeGeometry(mesh: AMesh): GeometryStats {
 	// Basic counts
 	const vertexCount = mesh.vectors.length
 	const faceCount = mesh.faces.length

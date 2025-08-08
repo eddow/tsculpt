@@ -70,12 +70,18 @@ export class Vector extends Array<number> {
 
 	static min<V extends Vector>(...vs: V[]): V {
 		return Vector.from(
-			vs.reduce((a, b) => coordMap(a, b, Math.min), [Infinity, Infinity, Infinity])
+			vs.reduce(
+				(a, b) => coordMap(a, b, Math.min),
+				[Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY]
+			)
 		) as V
 	}
 	static max<V extends Vector>(...vs: V[]): V {
 		return Vector.from(
-			vs.reduce((a, b) => coordMap(a, b, Math.max), [-Infinity, -Infinity, -Infinity])
+			vs.reduce(
+				(a, b) => coordMap(a, b, Math.max),
+				[Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY]
+			)
 		) as V
 	}
 	static normalize<V extends Vector>(v: V): V {
@@ -85,8 +91,9 @@ export class Vector extends Array<number> {
 
 	static add<V extends Vector>(...v: V[]): V {
 		return Vector.from(
-			zip(...(v as number[][]))
-				.map((coords) => coords.reduce((a: number, b: number) => a + b, 0)) as number[]
+			zip(...(v as number[][])).map((coords) =>
+				coords.reduce((a: number, b: number) => a + b, 0)
+			) as number[]
 		) as V
 	}
 	static sub<V extends Vector>(a: V, b: V): V {
@@ -101,8 +108,9 @@ export class Vector extends Array<number> {
 		}
 		if (vectors.length === 0) throw new Error('No vector in multiplication')
 		return Vector.from(
-			zip(...(vectors as number[][]))
-				.map((coords) => coords.reduce((a: number, b: number) => a * b, numeric)) as number[]
+			zip(...(vectors as number[][])).map((coords) =>
+				coords.reduce((a: number, b: number) => a * b, numeric)
+			) as number[]
 		) as V
 	}
 }

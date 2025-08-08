@@ -2,16 +2,14 @@ import { generation } from './globals'
 import { Vector3, v3 } from './types'
 import { Mesh } from './types/mesh'
 
-type BoxSpec =
-	| [{ radius?: number | Vector3, center?: Vector3 }]
-	| [Vector3, Vector3]
+type BoxSpec = [{ radius?: number | Vector3; center?: Vector3 }] | [Vector3, Vector3]
 
-function bSpec(spec: BoxSpec): { radius: number | Vector3, center: Vector3 } {
+function bSpec(spec: BoxSpec): { radius: number | Vector3; center: Vector3 } {
 	if (spec.length === 1) {
-		const {radius, center} = {
+		const { radius, center } = {
 			radius: 1,
 			center: v3(0, 0, 0),
-			...spec[0]
+			...spec[0],
 		}
 		return { radius, center }
 	}
@@ -30,7 +28,7 @@ export function box(...spec: BoxSpec): Mesh {
 		[-1, -1, 1],
 		[1, -1, 1],
 		[1, 1, 1],
-		[-1, 1, 1],
+		[-1, 1, 1]
 	).map((v) => v3`${radius} * ${v} + ${center}`)
 
 	const faceIndices: [number, number, number][] = [
@@ -62,7 +60,7 @@ export function geodesicSphere({
 	// =5 = question, >5 = gpu better, <5 = cpu better
 	subdivisions = 1,
 	center = v3(0, 0, 0),
-}: { radius: number | Vector3, subdivisions: number, center: Vector3 }): Mesh {
+}: { radius: number | Vector3; subdivisions: number; center: Vector3 }): Mesh {
 	function midpoint(a: Vector3, b: Vector3): Vector3 {
 		return Vector3.normalize(v3`${a} + ${b}`)
 	}
@@ -82,7 +80,7 @@ export function geodesicSphere({
 		[t, 0, -1],
 		[t, 0, 1],
 		[-t, 0, -1],
-		[-t, 0, 1],
+		[-t, 0, 1]
 	).map((v) => v3`${v} / ${tSize}`)
 
 	// Initial icosahedron faces

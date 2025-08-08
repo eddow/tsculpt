@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { v3 } from '../types/builders'
 import { Vector3 } from '../types/bunches'
-import { Mesh } from '../types/mesh'
+import { AMesh, Mesh } from '../types/mesh'
 import { mesh } from './linear'
 
 // Helper function to create a simple test mesh
@@ -76,7 +76,7 @@ describe('Mesh operations', () => {
 			const result = mesh`${mesh1} - ${mesh2}`
 
 			// Should return a mesh (from tester engine)
-			expect(result).toBeInstanceOf(Mesh)
+			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 
@@ -87,7 +87,7 @@ describe('Mesh operations', () => {
 			const result = mesh`${mesh1} & ${mesh2}`
 
 			// Should return a mesh (from tester engine)
-			expect(result).toBeInstanceOf(Mesh)
+			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 
@@ -98,7 +98,7 @@ describe('Mesh operations', () => {
 			const result = mesh`${mesh1} | ${mesh2}`
 
 			// Should return a mesh (from tester engine)
-			expect(result).toBeInstanceOf(Mesh)
+			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 
@@ -110,7 +110,7 @@ describe('Mesh operations', () => {
 			const result = mesh`${mesh1} | ${mesh2} | ${mesh3}`
 
 			// Should return a mesh (from tester engine)
-			expect(result).toBeInstanceOf(Mesh)
+			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 
@@ -122,7 +122,7 @@ describe('Mesh operations', () => {
 			const result = mesh`${mesh1} & ${mesh2} & ${mesh3}`
 
 			// Should return a mesh (from tester engine)
-			expect(result).toBeInstanceOf(Mesh)
+			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 
@@ -150,7 +150,7 @@ describe('Mesh operations', () => {
 			const result = mesh`(${mesh1} + [1 0 0]) & ${mesh2} | ${mesh3}`
 
 			// Should return a mesh (from tester engine)
-			expect(result).toBeInstanceOf(Mesh)
+			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 
@@ -259,11 +259,11 @@ describe('Mesh operations', () => {
 
 			// Test that union has higher precedence than intersection
 			const result1 = mesh`${mesh1} | ${mesh2} & ${mesh3}`
-			expect(result1).toBeInstanceOf(Mesh)
+			expect(result1).toBeInstanceOf(AMesh)
 
 			// Test that intersection has higher precedence than subtraction
 			const result2 = mesh`${mesh1} & ${mesh2} - ${mesh3}`
-			expect(result2).toBeInstanceOf(Mesh)
+			expect(result2).toBeInstanceOf(AMesh)
 		})
 
 		it('should handle parentheses for precedence override', () => {
@@ -273,7 +273,7 @@ describe('Mesh operations', () => {
 
 			// Test parentheses override precedence
 			const result = mesh`(${mesh1} | ${mesh2}) & ${mesh3}`
-			expect(result).toBeInstanceOf(Mesh)
+			expect(result).toBeInstanceOf(AMesh)
 		})
 
 		it('should handle scaling with unity factor (no scaling)', () => {
@@ -316,7 +316,7 @@ describe('Mesh operations', () => {
 			const result = mesh`(${mesh1} + [1 0 0]) * 2 - ${mesh2}`
 
 			// Should return a mesh (from tester engine for boolean operations)
-			expect(result).toBeInstanceOf(Mesh)
+			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 	})

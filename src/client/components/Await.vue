@@ -1,5 +1,4 @@
 <script lang="ts">
-import ProgressSpinner from 'primevue/progressspinner'
 import { ComputedRef, Ref, computed, isRef, ref } from 'vue'
 import ErrorView from './ErrorView.vue'
 
@@ -54,14 +53,11 @@ export function hasResult<T>(value: AwaitedValue<T>): value is T {
 }
 
 export function erroneous(result: any): result is Error {
-	if(result instanceof Error) console.log(result)
+	if (result instanceof Error) console.log(result)
 	return result instanceof Error
 }
 
-type AcceptedWaitable<T> =
-	| AwaitedValue<T>
-	| Ref<AcceptedWaitable<T>>
-	| Promise<AcceptedWaitable<T>>
+type AcceptedWaitable<T> = AwaitedValue<T> | Ref<AcceptedWaitable<T>> | Promise<AcceptedWaitable<T>>
 
 export const thenComputed = <I, O = I>(
 	promise: AcceptedWaitable<I>,
@@ -74,7 +70,7 @@ export const thenComputed = <I, O = I>(
 		try {
 			// Do *not* `awaited` the result of `fn` here,
 			// otherwise resolving the promise will re-evaluate the computed and the function
-			return /*awaited(*/fn(awaitedInput)//)
+			return /*awaited(*/ fn(awaitedInput) //)
 		} catch (err) {
 			return asError(err)
 		}

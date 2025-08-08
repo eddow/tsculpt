@@ -1,24 +1,15 @@
 import { Color, Geom3, Poly3 } from '@jscad/modeling/src/geometries/types'
-import { AMesh, Engine, InternalMesh } from '@tsculpt/booleans/index'
+import { type Engine, triangles } from '@tsculpt/booleans'
 
 import { booleans, geometries } from '@jscad/modeling'
 import { Mat4 } from '@jscad/modeling/src/maths/mat4'
-import { triangles } from '@tsculpt/booleans/utils'
-import { Mesh, Vector3 } from '@tsculpt/types'
 import { Vec3 } from '@jscad/modeling/src/maths/vec3'
+import { AMesh, IntermediateMesh, Mesh, Vector3 } from '@tsculpt/types'
 const { union, intersect, subtract } = booleans
 
 const { geom3, poly3 } = geometries
 
-type AJscadMesh = Mesh | Geom3
-function toJscad(mesh: AJscadMesh) {
-	if ('verticed' in mesh) {
-		const polys = mesh.verticed.map((face) => poly3.create(face as unknown as Vec3[]))
-		return geom3.create(polys)
-	}
-	return mesh
-}
-class JscadMesh extends InternalMesh implements Geom3 {
+class JscadMesh extends IntermediateMesh implements Geom3 {
 	get polygons(): Poly3[] {
 		return this.mesh.polygons
 	}
@@ -44,11 +35,16 @@ class JscadMesh extends InternalMesh implements Geom3 {
 	}
 }
 
+function jscadMesh(mesh: AMesh): JscadMesh {
+	if (mesh instanceof JscadMesh) return mesh
+	const polys = mesh.verticed.map((face) => poly3.create(face as unknown as Vec3[]))
+	return new JscadMesh(geom3.create(polys))
+}
 function jscadMeshes(meshes: AMesh[]): JscadMesh[] {
-	return meshes.map((m) => (m instanceof JscadMesh ? m : new JscadMesh(toJscad(m as Mesh))))
+	return meshes.map(jscadMesh)
 }
 
-class JscadEngine extends Engine {
+class JscadEngine implements Engine {
 	union(...meshes: AMesh[]): AMesh {
 		const ops = jscadMeshes(meshes)
 		return new JscadMesh(union(...ops))
@@ -67,4 +63,4 @@ class JscadEngine extends Engine {
 
 export default new JscadEngine()
 
-export * from '@tsculpt/booleans/index'
+export * from '@tsculpt/booleans'

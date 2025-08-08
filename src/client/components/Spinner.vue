@@ -2,14 +2,16 @@
 <script setup lang="ts">
 import { withDefaults } from 'vue'
 
-const props = withDefaults(defineProps<{
-	size?: number
-	icon?: 'cog' | 'spinner' | 'sync' | 'refresh'
-}>(), {
-	size: 2,
-	icon: 'spinner'
-})
-
+const props = withDefaults(
+	defineProps<{
+		size?: number
+		icon?: 'cog' | 'spinner' | 'sync' | 'refresh'
+	}>(),
+	{
+		size: 2,
+		icon: 'spinner',
+	}
+)
 </script>
 <template>
 	<div class="spinner-container">

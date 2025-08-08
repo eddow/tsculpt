@@ -1,6 +1,6 @@
+import { Vector3 } from '@tsculpt/types/bunches'
+import { AMesh, Mesh } from '@tsculpt/types/mesh'
 import { describe, expect, it } from 'vitest'
-import { Vector3 } from '../src/types/bunches'
-import { Mesh } from '../src/types/mesh'
 import engine from './jscad'
 
 // Helper function to create a simple test mesh
@@ -24,10 +24,9 @@ describe('JscadEngine', () => {
 		const mesh2 = createTestMesh()
 
 		const result = engine.union(mesh1, mesh2)
-		const meshResult = engine.result(result)
 
-		expect(meshResult).toBeInstanceOf(Mesh)
-		expect(meshResult.vectors.length).toBeGreaterThan(0)
+		expect(result).toBeInstanceOf(AMesh)
+		expect(result.vectors.length).toBeGreaterThan(0)
 	})
 
 	it('should perform intersection operations', () => {
@@ -35,10 +34,9 @@ describe('JscadEngine', () => {
 		const mesh2 = createTestMesh()
 
 		const result = engine.intersect(mesh1, mesh2)
-		const meshResult = engine.result(result)
 
-		expect(meshResult).toBeInstanceOf(Mesh)
-		expect(meshResult.vectors.length).toBeGreaterThan(0)
+		expect(result).toBeInstanceOf(AMesh)
+		expect(result.vectors.length).toBeGreaterThan(0)
 	})
 
 	it('should perform subtraction operations', () => {
@@ -46,11 +44,10 @@ describe('JscadEngine', () => {
 		const mesh2 = createTestMesh()
 
 		const result = engine.subtract(mesh1, mesh2)
-		const meshResult = engine.result(result)
 
-		expect(meshResult).toBeInstanceOf(Mesh)
+		expect(result).toBeInstanceOf(AMesh)
 		// Subtraction of identical meshes might result in empty mesh
-		expect(meshResult.vectors.length).toBeGreaterThanOrEqual(0)
+		expect(result.vectors.length).toBeGreaterThanOrEqual(0)
 	})
 
 	it('should handle multiple meshes in union', () => {
@@ -59,10 +56,9 @@ describe('JscadEngine', () => {
 		const mesh3 = createTestMesh()
 
 		const result = engine.union(mesh1, mesh2, mesh3)
-		const meshResult = engine.result(result)
 
-		expect(meshResult).toBeInstanceOf(Mesh)
-		expect(meshResult.vectors.length).toBeGreaterThan(0)
+		expect(result).toBeInstanceOf(AMesh)
+		expect(result.vectors.length).toBeGreaterThan(0)
 	})
 
 	it('should handle multiple meshes in intersection', () => {
@@ -71,9 +67,8 @@ describe('JscadEngine', () => {
 		const mesh3 = createTestMesh()
 
 		const result = engine.intersect(mesh1, mesh2, mesh3)
-		const meshResult = engine.result(result)
 
-		expect(meshResult).toBeInstanceOf(Mesh)
-		expect(meshResult.vectors.length).toBeGreaterThan(0)
+		expect(result).toBeInstanceOf(AMesh)
+		expect(result.vectors.length).toBeGreaterThan(0)
 	})
 })

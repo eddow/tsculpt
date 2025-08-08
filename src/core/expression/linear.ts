@@ -1,6 +1,6 @@
-import booleans, { isMesh, type AMesh } from '@booleans'
-import { isUnity, vecProd, Vector, Vector2, Vector3 } from '../types/bunches'
-import { Mesh } from '../types/mesh'
+import booleans from '@booleans'
+import { Vector, Vector2, Vector3, isUnity, vecProd } from '../types/bunches'
+import { AMesh, Mesh } from '../types/mesh'
 import { TemplateParser } from './templated'
 export class SemanticError extends Error {}
 
@@ -36,22 +36,21 @@ function recur(
 			let mesh: AMesh | undefined
 			for (const operand of expr.operands) {
 				const result = recur(operand, values)
-				if (isMesh(result)) {
-					if (mesh)
-						throw new SemanticError(`Cannot scale multiple meshes: ${mesh} and ${result}`)
+				if (result instanceof AMesh) {
+					if (mesh) throw new SemanticError(`Cannot scale multiple meshes: ${mesh} and ${result}`)
 					mesh = result
 				} else factor = vecProd(factor, result)
 			}
 			if (isUnity(factor)) return mesh || 1
 			const scale = Array.isArray(factor) ? (Vector.from(factor) as Vector3) : (factor as number)
-			return mesh ? booleans.result(mesh).scale(scale) : scale
+			return mesh ? mesh.scale(scale) : scale
 		}
 		case 'translate': {
 			let vector: Vector = Vector.from([0, 0, 0])
 			let mesh: AMesh | undefined
 			for (const term of expr.terms) {
 				const result = recur(term, values)
-				if (isMesh(result)) {
+				if (result instanceof AMesh) {
 					if (mesh)
 						throw new SemanticError(`Cannot translate multiple meshes: ${mesh} and ${result}`)
 					mesh = result
@@ -59,12 +58,12 @@ function recur(
 					throw new SemanticError(`Cannot translate by number: ${result}`)
 				else vector = Vector.add(vector, result)
 			}
-			return mesh ? booleans.result(mesh).translate(vector as Vector3) : vector as Vector3
+			return mesh ? mesh.translate(vector as Vector3) : (vector as Vector3)
 		}
 		case 'subtract': {
 			const a = recur(expr.operands[0], values)
 			const b = recur(expr.operands[1], values)
-			if (isMesh(a) && isMesh(b)) return booleans.subtract(a, b)
+			if (a instanceof AMesh && b instanceof AMesh) return booleans.subtract(a, b)
 			if (typeof a === 'number' && typeof b === 'number') return a - b
 			if (Array.isArray(a) && Array.isArray(b)) return Vector.sub(a, b)
 			throw new SemanticError(`Bad operand to subtract: ${a} and ${b}`)
@@ -79,7 +78,8 @@ function recur(
 			const meshes: AMesh[] = []
 			for (const operand of expr.operands) {
 				const result = recur(operand, values)
-				if (!isMesh(result)) throw new SemanticError(`Bad operand to intersect: ${result}`)
+				if (!(result instanceof AMesh))
+					throw new SemanticError(`Bad operand to intersect: ${result}`)
 				meshes.push(result)
 			}
 			return booleans.intersect(...meshes)
@@ -88,7 +88,7 @@ function recur(
 			const meshes: AMesh[] = []
 			for (const operand of expr.operands) {
 				const result = recur(operand, values)
-				if (!isMesh(result)) throw new SemanticError(`Bad operand to union: ${result}`)
+				if (!(result instanceof AMesh)) throw new SemanticError(`Bad operand to union: ${result}`)
 				meshes.push(result)
 			}
 			return booleans.union(...meshes)
@@ -181,13 +181,13 @@ const formulas = new TemplateParser<
 	recur
 )
 
-function expectMesh(value: unknown): Mesh {
-	if (!isMesh(value)) {
+function expectMesh(value: unknown): AMesh {
+	if (!(value instanceof AMesh)) {
 		throw new SemanticError(
 			`Expected Mesh, got: ${typeof value === 'object' ? value?.constructor.name : typeof value}`
 		)
 	}
-	return booleans.result(value as AMesh)
+	return value as AMesh
 }
 function expectClass<T>(value: unknown, type: abstract new (...args: any[]) => T) {
 	if (!(value instanceof type))

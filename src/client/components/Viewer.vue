@@ -5,11 +5,11 @@
 </template>
 
 <script setup lang="ts">
-import { isDark } from '@/lib/stores'
-import type { IMesh } from '@tsculpt'
+import type { AMesh } from '@tsculpt/types'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { isDark } from '../lib/stores'
 
 const colors = {
 	dark: {
@@ -33,7 +33,7 @@ const colors = {
 }
 
 const props = defineProps<{
-	viewed: IMesh
+	viewed: AMesh
 	displayMode: 'solid' | 'wireframe' | 'solid-edges'
 	showAxes: boolean
 }>()
@@ -257,6 +257,7 @@ function showAxes(show: boolean) {
 }
 
 function updateGeometry() {
+	if (!scene) return
 	if (mesh) scene.remove(mesh)
 	if (edges) scene.remove(edges)
 

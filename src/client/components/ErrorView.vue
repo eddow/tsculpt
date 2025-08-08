@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Panel from 'primevue/panel'
 
 const props = defineProps<{
 	error: Error

@@ -1,8 +1,8 @@
-import { AMesh, Engine, InternalMesh } from '@tsculpt/booleans/index'
-import { Mesh, Vector3 } from '@tsculpt/types'
+import type { Engine } from '@tsculpt/booleans'
+import { AMesh, IntermediateMesh, Mesh, Vector3 } from '@tsculpt/types'
 
 // Fake mesh for testing purposes
-export class FakeMesh extends InternalMesh {
+export class FakeMesh extends IntermediateMesh {
 	constructor(public readonly id: string) {
 		super()
 	}
@@ -15,7 +15,7 @@ export class FakeMesh extends InternalMesh {
 	}
 }
 
-class TesterEngine extends Engine {
+class TesterEngine implements Engine {
 	private operationCount = 0
 
 	union(...meshes: AMesh[]): AMesh {
@@ -49,4 +49,4 @@ class TesterEngine extends Engine {
 
 export default new TesterEngine()
 
-export * from '@tsculpt/booleans/index'
+export * from '@tsculpt/booleans'
