@@ -1,5 +1,5 @@
-import { vecProd } from '@tsculpt/expression'
 import { zip } from '@tsculpt/ts/arrays'
+import { cached } from '@tsculpt/ts/decorators'
 
 // Type for vectors of any dimension
 export function zeroedArray(length: number, org: readonly number[], ones: number[]): number[] {
@@ -7,6 +7,29 @@ export function zeroedArray(length: number, org: readonly number[], ones: number
 }
 function error<T>(message: string): T {
 	throw new Error(message)
+}
+
+export function vecProd(
+	a: number | readonly number[],
+	b: number | readonly number[]
+): number | readonly number[] {
+	if (typeof a === 'number') return typeof b === 'number' ? a * b : b.map((v) => v * a)
+	return typeof b === 'number' ? a.map((v) => v * b) : zip(a, b).map(([a, b]) => a * b)
+}
+export function vecSum(
+	a: number | readonly number[],
+	b: number | readonly number[]
+): number | readonly number[] {
+	if (typeof a === 'number') return typeof b === 'number' ? a + b : b.map((v) => v + a)
+	return typeof b === 'number' ? a.map((v) => v + b) : zip(a, b).map(([a, b]) => a + b)
+}
+
+export function isUnity(factor: number | readonly number[]): boolean {
+	return Array.isArray(factor) ? factor.every((v) => v === 1) : factor === 1
+}
+
+function coordMap(a: number[], b: number[], f: (a: number, b: number) => number): number[] {
+	return zip(a, b).map(([a, b]) => f(a, b))
 }
 export class Vector extends Array<number> {
 	static from(v: readonly number[]): Vector {
@@ -39,17 +62,54 @@ export class Vector extends Array<number> {
 	override reverse(): this {
 		throw new Error('Immutable vector')
 	}
-	add(v: Vector): Vector {
-		return Vector.from(zip(this as number[], v as number[]).map(([a, b]) => a + b))
+
+	@cached
+	get size() {
+		return Math.sqrt(this.reduce((sum, x) => sum + x * x, 0))
 	}
-	sub(v: Vector): Vector {
-		return Vector.from(zip(this as number[], v as number[]).map(([a, b]) => a - b))
+
+	static min<V extends Vector>(...vs: V[]): V {
+		return Vector.from(
+			vs.reduce((a, b) => coordMap(a, b, Math.min), [Infinity, Infinity, Infinity])
+		) as V
 	}
-	prod(v: number | readonly number[]): Vector {
-		return Vector.from(vecProd(this as number[], v) as number[])
+	static max<V extends Vector>(...vs: V[]): V {
+		return Vector.from(
+			vs.reduce((a, b) => coordMap(a, b, Math.max), [-Infinity, -Infinity, -Infinity])
+		) as V
+	}
+	static normalize<V extends Vector>(v: V): V {
+		const size = v.size
+		return Vector.from(v.map((x) => x / size)) as V
+	}
+
+	static add<V extends Vector>(...v: V[]): V {
+		return Vector.from(
+			zip(...(v as number[][]))
+				.map((coords) => coords.reduce((a: number, b: number) => a + b, 0)) as number[]
+		) as V
+	}
+	static sub<V extends Vector>(a: V, b: V): V {
+		return Vector.from(zip(a as number[], b as number[]).map(([a, b]) => a - b)) as V
+	}
+	static prod<V extends Vector>(...vs: (V | number)[]): V {
+		const vectors: V[] = []
+		let numeric = 1
+		for (const v of vs) {
+			if (typeof v === 'number') numeric *= v
+			else vectors.push(v)
+		}
+		if (vectors.length === 0) throw new Error('No vector in multiplication')
+		return Vector.from(
+			zip(...(vectors as number[][]))
+				.map((coords) => coords.reduce((a: number, b: number) => a * b, numeric)) as number[]
+		) as V
 	}
 }
 export class Vector2 extends Vector {
+	static array(...vs: readonly [number, number][]): Vector2[] {
+		return vs.map((v) => new Vector2(...v))
+	}
 	constructor(...v: readonly number[]) {
 		super(...zeroedArray(2, v, [1]))
 	}
@@ -65,6 +125,9 @@ export class Vector2 extends Vector {
 }
 
 export class Vector3 extends Vector {
+	static array(...vs: readonly [number, number, number][]): Vector3[] {
+		return vs.map((v) => new Vector3(...v))
+	}
 	constructor(...v: readonly number[]) {
 		super(...zeroedArray(3, v, [2]))
 	}
@@ -83,6 +146,9 @@ export class Vector3 extends Vector {
 }
 
 export class Vector4 extends Vector {
+	static array(...vs: readonly [number, number, number, number][]): Vector4[] {
+		return vs.map((v) => new Vector4(...v))
+	}
 	constructor(...v: readonly number[]) {
 		super(...zeroedArray(4, v, [3]))
 	}

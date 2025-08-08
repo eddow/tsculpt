@@ -16,7 +16,7 @@ export default function paramMetadataInjector(): Plugin {
 		name: 'vite-plugin-param-metadata',
 		enforce: 'pre',
 		async transform(code, id) {
-			if (!id.endsWith('.sculpt.ts') && !id.endsWith('sphere.ts')) return
+			if (!id.endsWith('.sculpt.ts')) return
 
 			const project = new Project()
 			const sourceFile = project.createSourceFile('sculpt.ts', code, { overwrite: true })

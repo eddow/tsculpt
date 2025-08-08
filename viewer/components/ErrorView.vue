@@ -11,7 +11,7 @@ const slots = defineSlots<{
 <template>
 	<div class="error">
 		<slot />
-		<Panel header="Error" toggleable :collapsed="!slots.default">
+		<Panel header="Error" toggleable :collapsed="!!slots.default">
 			<pre>{{ props.error.message }}</pre>
 			<Panel header="Stack" toggleable collapsed>
 				<code>{{ props.error.stack }}</code>

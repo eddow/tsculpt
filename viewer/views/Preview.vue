@@ -29,7 +29,7 @@ export type MaybeFactory<T> = T | Factory<T>
 	</ErrorView>
 
 	<ErrorView v-else-if="erroneous(factory)" :error="factory">
-		<h2>Cannot load export <pre>{{ hash }}</pre></h2>
+		<h2>Cannot load export <code>{{ hash }}</code></h2>
 		<div>
 			<p>Available exports:</p>
 			<ul>
@@ -99,7 +99,7 @@ watch(
 )
 const factory = thenComputed(loadedModule, (loadedModule) => {
 	const entry = loadedModule[hash.value] as MaybeFactory<MaybePromise<IMesh>>
-	if (!entry) throw new Error(`No export found for ${hash}`)
+	if (!entry) throw new Error(`No export found for ${hash.value}`)
 	if (typeof entry === 'function') {
 		// `params` come from `vite-plugin-param-metadata`
 		parametersConfig.value = entry.params || {}
@@ -108,8 +108,8 @@ const factory = thenComputed(loadedModule, (loadedModule) => {
 	parametersConfig.value = {}
 	return () => entry
 })
-
-const build = thenComputed(factory, (factory) => factory())
+// TODO: render in a worker
+const build = thenComputed(factory, (factory) => new Promise<IMesh>(resolve => resolve(factory())))
 const mesh = computed(()=> awaited(build))
 
 function display(mode: DisplayMode) {

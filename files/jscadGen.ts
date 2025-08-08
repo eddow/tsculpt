@@ -1,11 +1,11 @@
 import { type FileHandler, type MeshData, type Vector3 } from './index.js'
 
 function arrayToVector3(arr: number[]): Vector3 {
-	return arr as Vector3
+	return [arr[0], arr[2], arr[1]] // Swap Y and Z
 }
 
 function vector3ToArray(v: Vector3): number[] {
-	return v as number[]
+	return [v[0], v[2], v[1]] // Swap Y and Z
 }
 
 export default (
@@ -48,8 +48,8 @@ export default (
 			for (let i = 0; i < vertices.length - 2; i++) {
 				const face: [Vector3, Vector3, Vector3] = [
 					arrayToVector3(vertices[0]),
-					arrayToVector3(vertices[i + 1]),
 					arrayToVector3(vertices[i + 2]),
+					arrayToVector3(vertices[i + 1]),
 				]
 				faces.push(face)
 			}
@@ -61,7 +61,7 @@ export default (
 	write(meshData: MeshData): ArrayBuffer {
 		// Convert our format to JSCAD geometry
 		const polygons = meshData.faces.map((face) => ({
-			vertices: [vector3ToArray(face[0]), vector3ToArray(face[1]), vector3ToArray(face[2])],
+			vertices: [vector3ToArray(face[0]), vector3ToArray(face[2]), vector3ToArray(face[1])],
 			plane: [0, 0, 1, 0], // Default plane, will be calculated by JSCAD
 		}))
 

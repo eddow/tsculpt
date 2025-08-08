@@ -1,8 +1,6 @@
-import { vecProd, vecSum } from '@tsculpt/expression'
 import { cached } from '../ts/decorators'
 import { VectorMap } from '../vectorSet'
-import { v3 } from './builders'
-import type { Vector3 } from './bunches'
+import { vecSum, Vector, type Vector3 } from './bunches'
 
 type FaceIndices = [number, number, number]
 
@@ -16,7 +14,7 @@ abstract class BaseMesh implements IMesh {
 	abstract readonly faces: readonly FaceIndices[]
 	abstract readonly vectors: readonly Vector3[]
 
-	@cached()
+	@cached
 	get verticed() {
 		return this.faces.map((face) => face.map((i) => this.vectors[i]) as [Vector3, Vector3, Vector3])
 	}
@@ -43,7 +41,7 @@ export class Mesh extends BaseMesh implements IMesh {
 		} else
 			this.faces = (faces as [Vector3, Vector3, Vector3][]).map(
 				(face) => face.map((v) => this.set.index(v)) as FaceIndices
-			)
+			).filter((face) => face[0] !== face[1] && face[1] !== face[2] && face[2] !== face[0])
 	}
 	get vectors() {
 		return this.set.vectors
@@ -54,7 +52,14 @@ export class Mesh extends BaseMesh implements IMesh {
 	translate(t: Vector3): Mesh {
 		return this.map((v) => vecSum(v, t) as Vector3)
 	}
-	scale(s: Vector3 | number): Mesh {
-		return this.map((v) => vecProd(v, s) as Vector3)
+	scale(s: number | Vector3): Mesh {
+		return this.map((v) => Vector.prod(v, s))
+	}
+
+	bbox(): {min: Vector3, max: Vector3} {
+		return {
+			min: Vector.min(...this.vectors),
+			max: Vector.max(...this.vectors),
+		}
 	}
 }

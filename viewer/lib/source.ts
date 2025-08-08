@@ -12,8 +12,8 @@ export function module(path: string) {
 	moduleCache.set(module, rv)
 	async function refresh(source: any) {
 		rv.value = source?.modules[path]()
-		import.meta.hot?.accept(refresh)
+		import.meta.hot?.accept(path, refresh)
 	}
-	import.meta.hot?.accept(refresh)
+	import.meta.hot?.accept(path, refresh)
 	return rv as Ref<Promise<Module>>
 }

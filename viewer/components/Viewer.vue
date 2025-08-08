@@ -123,7 +123,7 @@ function init() {
 	// Camera setup
 	const width = container.value.clientWidth
 	const height = container.value.clientHeight
-	camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000)
+	camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 10000)
 	camera.position.copy(cameraState.value.position)
 
 	// Renderer setup
@@ -263,7 +263,6 @@ function updateGeometry() {
 	const geometry = new THREE.BufferGeometry()
 	const theme = isDark.value ? colors.dark : colors.light
 
-
 	if (props.viewed.vectors && props.viewed.faces) {
 		// For flat normals, duplicate vertices for each face
 		const faceVertices: number[] = []
@@ -348,7 +347,7 @@ onBeforeUnmount(() => {
 // Watch for geometry changes
 watch(
 	() => props.viewed,
-	(newMesh) => {
+	() => {
 		updateGeometry()
 		if (!hasSeenRealMesh) {
 			hasSeenRealMesh = true
