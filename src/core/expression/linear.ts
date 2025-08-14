@@ -181,14 +181,6 @@ const formulas = new TemplateParser<
 	recur
 )
 
-function expectMesh(value: unknown): AMesh {
-	if (!(value instanceof AMesh)) {
-		throw new SemanticError(
-			`Expected Mesh, got: ${typeof value === 'object' ? value?.constructor.name : typeof value}`
-		)
-	}
-	return value as AMesh
-}
 function expectClass<T>(value: unknown, type: abstract new (...args: any[]) => T) {
 	if (!(value instanceof type))
 		throw new SemanticError(
@@ -200,7 +192,7 @@ function expectClass<T>(value: unknown, type: abstract new (...args: any[]) => T
 }
 export function mesh(expr: TemplateStringsArray, ...values: readonly (Mesh | LinearPrimitive)[]) {
 	const result = formulas.calculate(expr, ...values)
-	return expectMesh(result)
+	return expectClass(result, AMesh)
 }
 
 export function vector(expr: TemplateStringsArray, ...values: readonly LinearPrimitive[]) {

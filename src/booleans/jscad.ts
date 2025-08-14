@@ -2,6 +2,7 @@ import { Color, Geom3, Poly3 } from '@jscad/modeling/src/geometries/types'
 import { type Engine, triangles } from '@tsculpt/booleans'
 
 import { booleans, geometries } from '@jscad/modeling'
+import { hull } from '@jscad/modeling/src/operations/hulls'
 import { Mat4 } from '@jscad/modeling/src/maths/mat4'
 import { Vec3 } from '@jscad/modeling/src/maths/vec3'
 import { AMesh, IntermediateMesh, Mesh, Vector3 } from '@tsculpt/types'
@@ -58,6 +59,11 @@ class JscadEngine implements Engine {
 	subtract(mesh1: AMesh, mesh2: AMesh): AMesh {
 		const [op1, op2] = jscadMeshes([mesh1, mesh2])
 		return new JscadMesh(subtract(op1, op2))
+	}
+
+	hull(...meshes: AMesh[]): AMesh {
+		const ops = jscadMeshes(meshes)
+		return new JscadMesh(hull(...ops))
 	}
 }
 

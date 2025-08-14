@@ -1,5 +1,5 @@
 import { AMesh, Mesh, Vector3 } from '@tsculpt/types'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import engine, { FakeMesh } from './tester'
 
 // Helper function to create a simple test mesh
@@ -18,6 +18,10 @@ function createTestMesh(): Mesh {
 }
 
 describe('TesterEngine', () => {
+	beforeEach(() => {
+		engine.resetOperationCount()
+	})
+
 	describe('operation tracking', () => {
 		it('should start with zero operations', () => {
 			expect(engine.getOperationCount()).toBe(0)
@@ -46,6 +50,15 @@ describe('TesterEngine', () => {
 			const mesh2 = createTestMesh()
 
 			engine.subtract(mesh1, mesh2)
+
+			expect(engine.getOperationCount()).toBe(1)
+		})
+
+		it('should increment operation count for hull', () => {
+			const mesh1 = createTestMesh()
+			const mesh2 = createTestMesh()
+
+			engine.hull(mesh1, mesh2)
 
 			expect(engine.getOperationCount()).toBe(1)
 		})
@@ -105,6 +118,16 @@ describe('TesterEngine', () => {
 			expect((result as FakeMesh).id).toBe('subtract_1_mesh1_mesh2')
 		})
 
+		it('should return FakeMesh for hull operations', () => {
+			const mesh1 = createTestMesh()
+			const mesh2 = createTestMesh()
+
+			const result = engine.hull(mesh1, mesh2)
+
+			expect(result).toBeInstanceOf(FakeMesh)
+			expect((result as FakeMesh).id).toBe('hull_1_2_meshes')
+		})
+
 		it('should handle multiple meshes in union', () => {
 			const mesh1 = createTestMesh()
 			const mesh2 = createTestMesh()
@@ -127,6 +150,17 @@ describe('TesterEngine', () => {
 			expect((result as FakeMesh).id).toBe('intersect_1_3_meshes')
 		})
 
+		it('should handle multiple meshes in hull', () => {
+			const mesh1 = createTestMesh()
+			const mesh2 = createTestMesh()
+			const mesh3 = createTestMesh()
+
+			const result = engine.hull(mesh1, mesh2, mesh3)
+
+			expect(result).toBeInstanceOf(FakeMesh)
+			expect((result as FakeMesh).id).toBe('hull_1_3_meshes')
+		})
+
 		it('should generate unique IDs for sequential operations', () => {
 			const mesh1 = createTestMesh()
 			const mesh2 = createTestMesh()
@@ -134,10 +168,12 @@ describe('TesterEngine', () => {
 			const result1 = engine.union(mesh1, mesh2)
 			const result2 = engine.intersect(mesh1, mesh2)
 			const result3 = engine.subtract(mesh1, mesh2)
+			const result4 = engine.hull(mesh1, mesh2)
 
 			expect((result1 as FakeMesh).id).toBe('union_1_2_meshes')
 			expect((result2 as FakeMesh).id).toBe('intersect_2_2_meshes')
 			expect((result3 as FakeMesh).id).toBe('subtract_3_mesh1_mesh2')
+			expect((result4 as FakeMesh).id).toBe('hull_4_2_meshes')
 		})
 	})
 

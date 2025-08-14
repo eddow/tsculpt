@@ -1,6 +1,6 @@
 import { cached } from '../ts/decorators'
 import { VectorMap } from '../vectorSet'
-import { Vector, type Vector3, vecSum } from './bunches'
+import { Vector, Vector3, Matrix4 } from './bunches'
 
 type Numbers3 = readonly [number, number, number]
 
@@ -15,11 +15,24 @@ export abstract class AMesh {
 	map(fct: (v: Vector3) => Vector3): Mesh {
 		return new Mesh(this.faces, this.vectors.map(fct))
 	}
-	translate(t: Vector3): Mesh {
-		return this.map((v) => vecSum(v, t) as Vector3)
+	translate(t: Vector3): AMesh {
+		const translationMatrix = new Matrix4(
+			1, 0, 0, t[0],
+			0, 1, 0, t[1],
+			0, 0, 1, t[2],
+			0, 0, 0, 1
+		)
+		return this.transform(translationMatrix)
 	}
-	scale(s: number | Vector3): Mesh {
-		return this.map((v) => Vector.prod(v, s))
+	scale(s: number | Vector3): AMesh {
+		const scaleVector = typeof s === 'number' ? new Vector3(s, s, s) : s
+		const scaleMatrix = new Matrix4(
+			scaleVector[0], 0, 0, 0,
+			0, scaleVector[1], 0, 0,
+			0, 0, scaleVector[2], 0,
+			0, 0, 0, 1
+		)
+		return this.transform(scaleMatrix)
 	}
 
 	bbox(): { min: Vector3; max: Vector3 } {
@@ -27,6 +40,86 @@ export abstract class AMesh {
 			min: Vector.min(...this.vectors),
 			max: Vector.max(...this.vectors),
 		}
+	}
+
+	// Transformation methods that create MatrixedMesh instances
+	transform(matrix: Matrix4): AMesh {
+		return new MatrixedMesh(this, matrix)
+	}
+
+	rotateX(angle: number): AMesh {
+		const cos = Math.cos(angle)
+		const sin = Math.sin(angle)
+		const rotationMatrix = new Matrix4(
+			1, 0, 0, 0,
+			0, cos, -sin, 0,
+			0, sin, cos, 0,
+			0, 0, 0, 1
+		)
+		return this.transform(rotationMatrix)
+	}
+
+	rotateY(angle: number): AMesh {
+		const cos = Math.cos(angle)
+		const sin = Math.sin(angle)
+		const rotationMatrix = new Matrix4(
+			cos, 0, sin, 0,
+			0, 1, 0, 0,
+			-sin, 0, cos, 0,
+			0, 0, 0, 1
+		)
+		return this.transform(rotationMatrix)
+	}
+
+	rotateZ(angle: number): AMesh {
+		const cos = Math.cos(angle)
+		const sin = Math.sin(angle)
+		const rotationMatrix = new Matrix4(
+			cos, -sin, 0, 0,
+			sin, cos, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		)
+		return this.transform(rotationMatrix)
+	}
+
+	rotate(axis: Vector3, angle?: number): AMesh {
+		// If no angle provided, use the length of the axis vector
+		const rotationAngle = angle ?? axis.size
+
+		// Special case: if axis is [0, 0, z], use rotateZ
+		if (axis[0] === 0 && axis[1] === 0 && axis[2] !== 0) {
+			return this.rotateZ(rotationAngle)
+		}
+
+		// Special case: if axis is [x, 0, 0], use rotateX
+		if (axis[0] !== 0 && axis[1] === 0 && axis[2] === 0) {
+			return this.rotateX(rotationAngle)
+		}
+
+		// Special case: if axis is [0, y, 0], use rotateY
+		if (axis[0] === 0 && axis[1] !== 0 && axis[2] === 0) {
+			return this.rotateY(rotationAngle)
+		}
+
+		// General case: rotate around arbitrary axis using Rodrigues' rotation formula
+		// Normalize the axis
+		const normalizedAxis = Vector.normalize(axis)
+		const x = normalizedAxis[0]
+		const y = normalizedAxis[1]
+		const z = normalizedAxis[2]
+
+		const cos = Math.cos(rotationAngle)
+		const sin = Math.sin(rotationAngle)
+		const oneMinusCos = 1 - cos
+
+		const rotationMatrix = new Matrix4(
+			cos + x * x * oneMinusCos, x * y * oneMinusCos - z * sin, x * z * oneMinusCos + y * sin, 0,
+			y * x * oneMinusCos + z * sin, cos + y * y * oneMinusCos, y * z * oneMinusCos - x * sin, 0,
+			z * x * oneMinusCos - y * sin, z * y * oneMinusCos + x * sin, cos + z * z * oneMinusCos, 0,
+			0, 0, 0, 1
+		)
+		return this.transform(rotationMatrix)
 	}
 }
 
@@ -70,5 +163,58 @@ export abstract class IntermediateMesh extends AMesh {
 	get vectors() {
 		if (!this._mesh) this._mesh = this.toMesh()
 		return this._mesh.vectors
+	}
+}
+
+// Internal MatrixedMesh class - not exported
+class MatrixedMesh extends IntermediateMesh {
+	private matrix: Matrix4
+
+	constructor(
+		private readonly sourceMesh: AMesh,
+		matrix: Matrix4 = new Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+	) {
+		super()
+		this.matrix = matrix
+	}
+
+	protected toMesh(): Mesh {
+		// Apply matrix transformation to all vertices
+		const transformedVectors = this.sourceMesh.vectors.map((v) => this.applyMatrix(v))
+		return new Mesh(this.sourceMesh.faces, transformedVectors)
+	}
+
+	private applyMatrix(v: Vector3): Vector3 {
+		// Apply 4x4 transformation matrix to 3D vector
+		// Treat the vector as homogeneous coordinates [x, y, z, 1]
+		const x = v[0] * this.matrix.m(0, 0) + v[1] * this.matrix.m(0, 1) + v[2] * this.matrix.m(0, 2) + this.matrix.m(0, 3)
+		const y = v[0] * this.matrix.m(1, 0) + v[1] * this.matrix.m(1, 1) + v[2] * this.matrix.m(1, 2) + this.matrix.m(1, 3)
+		const z = v[0] * this.matrix.m(2, 0) + v[1] * this.matrix.m(2, 1) + v[2] * this.matrix.m(2, 2) + this.matrix.m(2, 3)
+		const w = v[0] * this.matrix.m(3, 0) + v[1] * this.matrix.m(3, 1) + v[2] * this.matrix.m(3, 2) + this.matrix.m(3, 3)
+
+		// Perspective divide if w != 1
+		if (w !== 1 && w !== 0) {
+			return new Vector3(x / w, y / w, z / w)
+		}
+		return new Vector3(x, y, z)
+	}
+
+	// Override transformation methods to work with existing matrix
+	override transform(matrix: Matrix4): AMesh {
+		return new MatrixedMesh(this.sourceMesh, this.multiplyMatrix(matrix))
+	}
+
+	private multiplyMatrix(other: Matrix4): Matrix4 {
+		const result = new Matrix4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+		for (let i = 0; i < 4; i++) {
+			for (let j = 0; j < 4; j++) {
+				let sum = 0
+				for (let k = 0; k < 4; k++) {
+					sum += other.m(i, k) * this.matrix.m(k, j)
+				}
+				result[i * 4 + j] = sum
+			}
+		}
+		return result
 	}
 }

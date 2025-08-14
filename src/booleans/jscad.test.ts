@@ -50,6 +50,16 @@ describe('JscadEngine', () => {
 		expect(result.vectors.length).toBeGreaterThanOrEqual(0)
 	})
 
+	it('should perform hull operations', () => {
+		const mesh1 = createTestMesh()
+		const mesh2 = createTestMesh()
+
+		const result = engine.hull(mesh1, mesh2)
+
+		expect(result).toBeInstanceOf(AMesh)
+		expect(result.vectors.length).toBeGreaterThan(0)
+	})
+
 	it('should handle multiple meshes in union', () => {
 		const mesh1 = createTestMesh()
 		const mesh2 = createTestMesh()
@@ -67,6 +77,17 @@ describe('JscadEngine', () => {
 		const mesh3 = createTestMesh()
 
 		const result = engine.intersect(mesh1, mesh2, mesh3)
+
+		expect(result).toBeInstanceOf(AMesh)
+		expect(result.vectors.length).toBeGreaterThan(0)
+	})
+
+	it('should handle multiple meshes in hull', () => {
+		const mesh1 = createTestMesh()
+		const mesh2 = createTestMesh()
+		const mesh3 = createTestMesh()
+
+		const result = engine.hull(mesh1, mesh2, mesh3)
 
 		expect(result).toBeInstanceOf(AMesh)
 		expect(result.vectors.length).toBeGreaterThan(0)

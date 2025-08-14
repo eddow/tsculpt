@@ -36,6 +36,12 @@ class TesterEngine implements Engine {
 		return new FakeMesh(`subtract_${this.operationCount}_mesh1_mesh2`)
 	}
 
+	hull(...meshes: AMesh[]): AMesh {
+		this.operationCount++
+		// Return a fake mesh with operation info
+		return new FakeMesh(`hull_${this.operationCount}_${meshes.length}_meshes`)
+	}
+
 	// Helper method to get operation count for testing
 	getOperationCount(): number {
 		return this.operationCount
