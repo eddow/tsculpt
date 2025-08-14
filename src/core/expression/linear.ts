@@ -1,7 +1,7 @@
 import booleans from '@booleans'
 import { Vector, Vector2, Vector3, isUnity, vecProd } from '../types/bunches'
 import { AMesh, Mesh } from '../types/mesh'
-import { TemplateParser } from './templated'
+import { TemplateParser, paramMarker } from './templated'
 export class SemanticError extends Error {}
 
 type LinearParameter = { type: 'parameter'; index: number }
@@ -13,6 +13,7 @@ type LinearRotate = { type: 'rotate'; mesh: LinearExpression; axis: LinearExpres
 type LinearIntersect = { type: 'intersect'; operands: LinearExpression[] }
 type LinearUnion = { type: 'union'; operands: LinearExpression[] }
 type LinearLiteral = { type: 'literal'; value: number | Vector3 }
+type LinearVectorWithParams = { type: 'vectorWithParams'; components: (number | LinearExpression)[] }
 type LinearExpression =
 	| LinearParameter
 	| LinearScale
@@ -23,6 +24,7 @@ type LinearExpression =
 	| LinearIntersect
 	| LinearUnion
 	| LinearLiteral
+	| LinearVectorWithParams
 
 function recur(
 	expr: LinearExpression,
@@ -124,6 +126,21 @@ function recur(
 			}
 			return booleans.union(...meshes)
 		}
+		case 'vectorWithParams': {
+			const components: number[] = []
+			for (const component of expr.components) {
+				if (typeof component === 'number') {
+					components.push(component)
+				} else {
+					const result = recur(component, values)
+					if (typeof result !== 'number') {
+						throw new SemanticError(`Vector component must be a number: ${result}`)
+					}
+					components.push(result)
+				}
+			}
+			return Vector.from(components) as Vector3
+		}
 	}
 }
 
@@ -203,16 +220,51 @@ const formulas = new TemplateParser<
 				operands,
 			}),
 		},
-		atomics: [
+						atomics: [
+						{
+				rex: new RegExp(`\\[([\\d \\-.]*\\${paramMarker}.[\\d \\-.]*)\\]`, 'sy'),
+				build: (match) => {
+					const content = match[1]
+					const components: (number | LinearExpression)[] = []
+					const parts = content.split(/\s+/)
+
+					for (const part of parts) {
+						if (part.includes(paramMarker)) {
+							// This part contains a parameter marker
+							const paramMatch = part.match(new RegExp(`\\${paramMarker}(.)`))
+							if (paramMatch) {
+								const codePoint = paramMatch[1].codePointAt(0)!
+								components.push({ type: 'parameter', index: codePoint })
+							} else {
+								// Mixed content like "0.5§0" - extract the number and parameter
+								const numberMatch = part.match(/^([\d.-]+)/)
+								if (numberMatch) {
+									components.push(parseFloat(numberMatch[1]))
+								}
+								const paramMatch2 = part.match(new RegExp(`\\${paramMarker}(.)`))
+								if (paramMatch2) {
+									const codePoint = paramMatch2[1].codePointAt(0)!
+									components.push({ type: 'parameter', index: codePoint })
+								}
+							}
+						} else if (part.trim()) {
+							// Regular number
+							components.push(parseFloat(part))
+						}
+					}
+
+					return { type: 'vectorWithParams', components }
+				},
+			},
 			{
-				rex: /\[([\d \.-]+)\]/s,
+				rex: /\[([\d \.-]+)\]/sy,
 				build: (match) => ({
 					type: 'literal',
 					value: Vector.from(match[1].split(/\s+/).map(Number)) as Vector3,
 				}),
 			},
 			{
-				rex: /(?:\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(?:\.\d+(?:[eE][+-]?\d+)?)/,
+				rex: /(?:\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(?:\.\d+(?:[eE][+-]?\d+)?)/y,
 				build: (match) => ({ type: 'literal', value: Number(match[0]) }),
 			},
 		],

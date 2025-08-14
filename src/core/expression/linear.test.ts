@@ -391,6 +391,48 @@ describe('Mesh operations', () => {
 
 			expect(hasChanges).toBe(true)
 		})
+
+		it('should handle vector literals with parameters in z', () => {
+			const zValue = 5.5
+
+			const result = mesh`${createTestMesh()} + [0 0 ${zValue}]`
+
+			expect(result).toBeInstanceOf(AMesh)
+			expect(result.vectors.length).toBe(createTestMesh().vectors.length)
+
+			// Check that the translation was applied correctly
+			const originalVectors = createTestMesh().vectors
+			const translatedVectors = result.vectors
+
+			for (let i = 0; i < originalVectors.length; i++) {
+				const original = originalVectors[i]
+				const translated = translatedVectors[i]
+				expect(translated.x).toBe(original.x + 0)
+				expect(translated.y).toBe(original.y + 0)
+				expect(translated.z).toBe(original.z + zValue)
+			}
+		})
+
+		it('should handle vector literals with parameters in y', () => {
+			const yValue = 5.5
+
+			const result = mesh`${createTestMesh()} + [0 ${yValue} 0]`
+
+			expect(result).toBeInstanceOf(AMesh)
+			expect(result.vectors.length).toBe(createTestMesh().vectors.length)
+
+			// Check that the translation was applied correctly
+			const originalVectors = createTestMesh().vectors
+			const translatedVectors = result.vectors
+
+			for (let i = 0; i < originalVectors.length; i++) {
+				const original = originalVectors[i]
+				const translated = translatedVectors[i]
+				expect(translated.x).toBe(original.x + 0)
+				expect(translated.y).toBe(original.y + yValue)
+				expect(translated.z).toBe(original.z + 0)
+			}
+		})
 	})
 })
 

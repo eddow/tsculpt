@@ -1,6 +1,6 @@
 import { ParseSpecs, Parser } from './expression'
 
-const paramMarker = '\u200B'
+export const paramMarker = '\u200B'
 export class TemplateParser<Built, Value, Result> extends Parser<Built> {
 	constructor(
 		specs: ParseSpecs<Built>,
