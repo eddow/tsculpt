@@ -319,6 +319,78 @@ describe('Mesh operations', () => {
 			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
+
+		it('should handle rotation with ^ operator', () => {
+			const testMesh = createTestMesh()
+
+			const result = mesh`${testMesh} ^ [0 0 1.5]`
+
+			expect(result).toBeInstanceOf(AMesh)
+			expect(result.vectors.length).toBe(testMesh.vectors.length)
+		})
+
+		it('should rotate a cube and verify the result', () => {
+			// Create a simple cube mesh
+			const vertices = [
+				new Vector3(0, 0, 0),
+				new Vector3(1, 0, 0),
+				new Vector3(1, 1, 0),
+				new Vector3(0, 1, 0),
+				new Vector3(0, 0, 1),
+				new Vector3(1, 0, 1),
+				new Vector3(1, 1, 1),
+				new Vector3(0, 1, 1),
+			]
+
+			const faces: [Vector3, Vector3, Vector3][] = [
+				// Bottom face
+				[vertices[0], vertices[1], vertices[2]],
+				[vertices[0], vertices[2], vertices[3]],
+				// Top face
+				[vertices[4], vertices[6], vertices[5]],
+				[vertices[4], vertices[7], vertices[6]],
+				// Front face
+				[vertices[0], vertices[4], vertices[5]],
+				[vertices[0], vertices[5], vertices[1]],
+				// Back face
+				[vertices[2], vertices[6], vertices[7]],
+				[vertices[2], vertices[7], vertices[3]],
+				// Left face
+				[vertices[0], vertices[3], vertices[7]],
+				[vertices[0], vertices[7], vertices[4]],
+				// Right face
+				[vertices[1], vertices[5], vertices[6]],
+				[vertices[1], vertices[6], vertices[2]],
+			]
+
+			const cube = new Mesh(faces)
+
+			// Rotate the cube around Z axis by π/2 radians (90 degrees)
+			const rotatedCube = mesh`${cube} ^ [0 0 1.5708]`
+
+			expect(rotatedCube).toBeInstanceOf(AMesh)
+			expect(rotatedCube.vectors.length).toBe(cube.vectors.length)
+
+			// Verify that the rotation actually changed the mesh
+			// (the vectors should be different after rotation)
+			const originalVectors = cube.vectors
+			const rotatedVectors = rotatedCube.vectors
+
+			// Check that at least some vectors are different (indicating rotation occurred)
+			let hasChanges = false
+			for (let i = 0; i < originalVectors.length; i++) {
+				const original = originalVectors[i]
+				const rotated = rotatedVectors[i]
+				if (Math.abs(original.x - rotated.x) > 0.001 ||
+					Math.abs(original.y - rotated.y) > 0.001 ||
+					Math.abs(original.z - rotated.z) > 0.001) {
+					hasChanges = true
+					break
+				}
+			}
+
+			expect(hasChanges).toBe(true)
+		})
 	})
 })
 

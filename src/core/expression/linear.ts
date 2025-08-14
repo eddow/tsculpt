@@ -9,6 +9,7 @@ type LinearScale = { type: 'scale'; factor: number | number[]; operands: LinearE
 type LinearTranslate = { type: 'translate'; terms: LinearExpression[] }
 type LinearSubtract = { type: 'subtract'; operands: [LinearExpression, LinearExpression] }
 type LinearInvert = { type: 'invert'; operand: LinearExpression }
+type LinearRotate = { type: 'rotate'; mesh: LinearExpression; axis: LinearExpression; angle?: LinearExpression }
 type LinearIntersect = { type: 'intersect'; operands: LinearExpression[] }
 type LinearUnion = { type: 'union'; operands: LinearExpression[] }
 type LinearLiteral = { type: 'literal'; value: number | Vector3 }
@@ -18,6 +19,7 @@ type LinearExpression =
 	| LinearTranslate
 	| LinearSubtract
 	| LinearInvert
+	| LinearRotate
 	| LinearIntersect
 	| LinearUnion
 	| LinearLiteral
@@ -73,6 +75,35 @@ function recur(
 			if (typeof result === 'number') return 1 / result
 			if (Array.isArray(result)) return Vector.from(result.map((v) => 1 / v)) as Vector3
 			throw new SemanticError(`Cannot invert non-number and non-vector: ${result}`)
+		}
+		case 'rotate': {
+			const mesh = recur(expr.mesh, values)
+			const axis = recur(expr.axis, values)
+			const angle = expr.angle ? recur(expr.angle, values) : undefined
+
+			// The mesh should be an AMesh
+			if (!(mesh instanceof AMesh)) {
+				throw new SemanticError(`Cannot rotate non-mesh: ${mesh}`)
+			}
+
+			// The axis should be a vector
+			if (!Array.isArray(axis)) {
+				throw new SemanticError(`Rotation axis must be a vector: ${axis}`)
+			}
+			const rotationAxis = axis as Vector3
+
+			// If angle is provided, use it; otherwise use the length of the axis vector
+			let rotationAngle: number
+			if (angle !== undefined) {
+				if (typeof angle !== 'number') {
+					throw new SemanticError(`Rotation angle must be a number: ${angle}`)
+				}
+				rotationAngle = angle
+			} else {
+				rotationAngle = rotationAxis.size
+			}
+
+			return mesh.rotate(rotationAxis, rotationAngle)
 		}
 		case 'intersect': {
 			const meshes: AMesh[] = []
@@ -131,6 +162,14 @@ function scale(...operands: LinearExpression[]): LinearExpression {
 		: { type: 'scale', factor, operands: resultingOperands }
 }
 
+function rotate(mesh: LinearExpression, axis: LinearExpression, angle?: LinearExpression): LinearExpression {
+	// This creates a rotate expression where:
+	// - mesh is the mesh to rotate
+	// - axis is the rotation axis (vector)
+	// - angle is optional (if not provided, use axis length)
+	return { type: 'rotate', mesh, axis, angle }
+}
+
 export type LinearPrimitive = Vector2 | Vector3 | number
 
 const formulas = new TemplateParser<
@@ -143,6 +182,7 @@ const formulas = new TemplateParser<
 			{ '|': 'nary', '&': 'nary' },
 			{ '+': 'nary', '-': 'binary' },
 			{ '*': 'nary', '/': 'binary' },
+			{ '^': 'binary' },
 		],
 		emptyOperator: '*',
 		operations: {
@@ -153,6 +193,7 @@ const formulas = new TemplateParser<
 				type: 'subtract',
 				operands: [a, b],
 			}),
+			'^': (a: LinearExpression, b: LinearExpression) => rotate(a, b), // Only uses vector length as angle
 			'&': (...operands) => ({
 				type: 'intersect',
 				operands,
