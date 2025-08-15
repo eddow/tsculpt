@@ -2,9 +2,9 @@ import { Color, Geom3, Poly3 } from '@jscad/modeling/src/geometries/types'
 import { type Engine, triangles } from '@tsculpt/booleans'
 
 import { booleans, geometries } from '@jscad/modeling'
-import { hull } from '@jscad/modeling/src/operations/hulls'
 import { Mat4 } from '@jscad/modeling/src/maths/mat4'
 import { Vec3 } from '@jscad/modeling/src/maths/vec3'
+import { hull } from '@jscad/modeling/src/operations/hulls'
 import { AMesh, IntermediateMesh, Mesh, Vector3 } from '@tsculpt/types'
 const { union, intersect, subtract } = booleans
 

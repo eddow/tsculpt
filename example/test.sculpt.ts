@@ -1,5 +1,5 @@
-import { type Decimal, type Vector3, mesh, hull } from '@tsculpt'
-import { box, sphere } from '@tsculpt/geometry'
+import { type Decimal, type Vector3, hull, mesh } from '@tsculpt'
+import { box, sphere } from '@tsculpt'
 /*TODO:
 export default ({
 	radius = 15 as Decimal<0>,

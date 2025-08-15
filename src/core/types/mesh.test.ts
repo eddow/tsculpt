@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { Mesh, AMesh } from './mesh'
-import { Vector3, Matrix4 } from './bunches'
+import { Matrix4, Vector3 } from './bunches'
+import { AMesh, Mesh } from './mesh'
 
 // Helper function to create a simple test mesh
 function createTestMesh(): Mesh {
@@ -42,10 +42,22 @@ describe('Transformation Methods', () => {
 		it('should apply custom transformation matrix', () => {
 			const sourceMesh = createTestMesh()
 			const translationMatrix = new Matrix4(
-				1, 0, 0, 2, // Translate by 2 in X
-				0, 1, 0, 0,
-				0, 0, 1, 0,
-				0, 0, 0, 1
+				1,
+				0,
+				0,
+				2, // Translate by 2 in X
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+				1
 			)
 			const transformedMesh = sourceMesh.transform(translationMatrix)
 
@@ -184,12 +196,7 @@ describe('Transformation Methods', () => {
 
 		it('should apply custom transformation matrix', () => {
 			const sourceMesh = createTestMesh()
-			const customMatrix = new Matrix4(
-				2, 0, 0, 0,
-				0, 2, 0, 0,
-				0, 0, 2, 0,
-				0, 0, 0, 1
-			)
+			const customMatrix = new Matrix4(2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1)
 			const transformed = sourceMesh.transform(customMatrix)
 
 			expect(transformed).toBeInstanceOf(AMesh)
@@ -197,7 +204,7 @@ describe('Transformation Methods', () => {
 	})
 
 	describe('chaining transformations', () => {
-				it('should chain transformations correctly', () => {
+		it('should chain transformations correctly', () => {
 			const sourceMesh = createTestMesh()
 
 			// Apply multiple transformations
@@ -229,7 +236,7 @@ describe('Transformation Methods', () => {
 	})
 
 	describe('lazy evaluation', () => {
-				it('should not compute vertices until accessed', () => {
+		it('should not compute vertices until accessed', () => {
 			const sourceMesh = createTestMesh()
 			const transformed = sourceMesh.translate(new Vector3(1, 0, 0))
 

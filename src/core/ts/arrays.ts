@@ -4,6 +4,7 @@ type ElementTypes<T extends readonly unknown[]> = {
 }
 
 export function zip<T extends (readonly unknown[])[]>(...args: T): ElementTypes<T>[] {
+	if (!args.length) return []
 	const minLength = Math.min(...args.map((arr) => arr.length))
 	const result: ElementTypes<T>[] = []
 

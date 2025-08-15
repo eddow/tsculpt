@@ -1,6 +1,6 @@
 import { cached } from '../ts/decorators'
 import { VectorMap } from '../vectorSet'
-import { Vector, Vector3, Matrix4 } from './bunches'
+import { Matrix4, Vector, Vector3 } from './bunches'
 
 type Numbers3 = readonly [number, number, number]
 
@@ -16,21 +16,28 @@ export abstract class AMesh {
 		return new Mesh(this.faces, this.vectors.map(fct))
 	}
 	translate(t: Vector3): AMesh {
-		const translationMatrix = new Matrix4(
-			1, 0, 0, t[0],
-			0, 1, 0, t[1],
-			0, 0, 1, t[2],
-			0, 0, 0, 1
-		)
+		const translationMatrix = new Matrix4(1, 0, 0, t[0], 0, 1, 0, t[1], 0, 0, 1, t[2], 0, 0, 0, 1)
 		return this.transform(translationMatrix)
 	}
 	scale(s: number | Vector3): AMesh {
 		const scaleVector = typeof s === 'number' ? new Vector3(s, s, s) : s
 		const scaleMatrix = new Matrix4(
-			scaleVector[0], 0, 0, 0,
-			0, scaleVector[1], 0, 0,
-			0, 0, scaleVector[2], 0,
-			0, 0, 0, 1
+			scaleVector[0],
+			0,
+			0,
+			0,
+			0,
+			scaleVector[1],
+			0,
+			0,
+			0,
+			0,
+			scaleVector[2],
+			0,
+			0,
+			0,
+			0,
+			1
 		)
 		return this.transform(scaleMatrix)
 	}
@@ -50,36 +57,21 @@ export abstract class AMesh {
 	rotateX(angle: number): AMesh {
 		const cos = Math.cos(angle)
 		const sin = Math.sin(angle)
-		const rotationMatrix = new Matrix4(
-			1, 0, 0, 0,
-			0, cos, -sin, 0,
-			0, sin, cos, 0,
-			0, 0, 0, 1
-		)
+		const rotationMatrix = new Matrix4(1, 0, 0, 0, 0, cos, -sin, 0, 0, sin, cos, 0, 0, 0, 0, 1)
 		return this.transform(rotationMatrix)
 	}
 
 	rotateY(angle: number): AMesh {
 		const cos = Math.cos(angle)
 		const sin = Math.sin(angle)
-		const rotationMatrix = new Matrix4(
-			cos, 0, sin, 0,
-			0, 1, 0, 0,
-			-sin, 0, cos, 0,
-			0, 0, 0, 1
-		)
+		const rotationMatrix = new Matrix4(cos, 0, sin, 0, 0, 1, 0, 0, -sin, 0, cos, 0, 0, 0, 0, 1)
 		return this.transform(rotationMatrix)
 	}
 
 	rotateZ(angle: number): AMesh {
 		const cos = Math.cos(angle)
 		const sin = Math.sin(angle)
-		const rotationMatrix = new Matrix4(
-			cos, -sin, 0, 0,
-			sin, cos, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1
-		)
+		const rotationMatrix = new Matrix4(cos, -sin, 0, 0, sin, cos, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 		return this.transform(rotationMatrix)
 	}
 
@@ -104,7 +96,7 @@ export abstract class AMesh {
 
 		// General case: rotate around arbitrary axis using Rodrigues' rotation formula
 		// Normalize the axis
-		const normalizedAxis = Vector.normalize(axis)
+		const normalizedAxis = axis.normalized()
 		const x = normalizedAxis[0]
 		const y = normalizedAxis[1]
 		const z = normalizedAxis[2]
@@ -114,10 +106,22 @@ export abstract class AMesh {
 		const oneMinusCos = 1 - cos
 
 		const rotationMatrix = new Matrix4(
-			cos + x * x * oneMinusCos, x * y * oneMinusCos - z * sin, x * z * oneMinusCos + y * sin, 0,
-			y * x * oneMinusCos + z * sin, cos + y * y * oneMinusCos, y * z * oneMinusCos - x * sin, 0,
-			z * x * oneMinusCos - y * sin, z * y * oneMinusCos + x * sin, cos + z * z * oneMinusCos, 0,
-			0, 0, 0, 1
+			cos + x * x * oneMinusCos,
+			x * y * oneMinusCos - z * sin,
+			x * z * oneMinusCos + y * sin,
+			0,
+			y * x * oneMinusCos + z * sin,
+			cos + y * y * oneMinusCos,
+			y * z * oneMinusCos - x * sin,
+			0,
+			z * x * oneMinusCos - y * sin,
+			z * y * oneMinusCos + x * sin,
+			cos + z * z * oneMinusCos,
+			0,
+			0,
+			0,
+			0,
+			1
 		)
 		return this.transform(rotationMatrix)
 	}
@@ -187,10 +191,26 @@ class MatrixedMesh extends IntermediateMesh {
 	private applyMatrix(v: Vector3): Vector3 {
 		// Apply 4x4 transformation matrix to 3D vector
 		// Treat the vector as homogeneous coordinates [x, y, z, 1]
-		const x = v[0] * this.matrix.m(0, 0) + v[1] * this.matrix.m(0, 1) + v[2] * this.matrix.m(0, 2) + this.matrix.m(0, 3)
-		const y = v[0] * this.matrix.m(1, 0) + v[1] * this.matrix.m(1, 1) + v[2] * this.matrix.m(1, 2) + this.matrix.m(1, 3)
-		const z = v[0] * this.matrix.m(2, 0) + v[1] * this.matrix.m(2, 1) + v[2] * this.matrix.m(2, 2) + this.matrix.m(2, 3)
-		const w = v[0] * this.matrix.m(3, 0) + v[1] * this.matrix.m(3, 1) + v[2] * this.matrix.m(3, 2) + this.matrix.m(3, 3)
+		const x =
+			v[0] * this.matrix.m(0, 0) +
+			v[1] * this.matrix.m(0, 1) +
+			v[2] * this.matrix.m(0, 2) +
+			this.matrix.m(0, 3)
+		const y =
+			v[0] * this.matrix.m(1, 0) +
+			v[1] * this.matrix.m(1, 1) +
+			v[2] * this.matrix.m(1, 2) +
+			this.matrix.m(1, 3)
+		const z =
+			v[0] * this.matrix.m(2, 0) +
+			v[1] * this.matrix.m(2, 1) +
+			v[2] * this.matrix.m(2, 2) +
+			this.matrix.m(2, 3)
+		const w =
+			v[0] * this.matrix.m(3, 0) +
+			v[1] * this.matrix.m(3, 1) +
+			v[2] * this.matrix.m(3, 2) +
+			this.matrix.m(3, 3)
 
 		// Perspective divide if w != 1
 		if (w !== 1 && w !== 0) {

@@ -381,9 +381,11 @@ describe('Mesh operations', () => {
 			for (let i = 0; i < originalVectors.length; i++) {
 				const original = originalVectors[i]
 				const rotated = rotatedVectors[i]
-				if (Math.abs(original.x - rotated.x) > 0.001 ||
+				if (
+					Math.abs(original.x - rotated.x) > 0.001 ||
 					Math.abs(original.y - rotated.y) > 0.001 ||
-					Math.abs(original.z - rotated.z) > 0.001) {
+					Math.abs(original.z - rotated.z) > 0.001
+				) {
 					hasChanges = true
 					break
 				}

@@ -9,12 +9,20 @@ function error<T>(message: string): T {
 	throw new Error(message)
 }
 
-export function vecProd(
-	a: number | readonly number[],
-	b: number | readonly number[]
-): number | readonly number[] {
-	if (typeof a === 'number') return typeof b === 'number' ? a * b : b.map((v) => v * a)
-	return typeof b === 'number' ? a.map((v) => v * b) : zip(a, b).map(([a, b]) => a * b)
+export function product<V extends Vector>(...vs: (V | number | readonly number[])[]): V | number {
+	const vectors: V[] = []
+	let numeric = 1
+	for (const v of vs) {
+		if (typeof v === 'number') numeric *= v
+		else vectors.push(Vector.from(v) as V)
+	}
+	return vectors.length
+		? (Vector.from(
+				zip(...(vectors as number[][])).map((coords) =>
+					coords.reduce((a: number, b: number) => a * b, numeric)
+				) as number[]
+			) as V)
+		: numeric
 }
 
 export function isUnity(factor: number | readonly number[]): boolean {
@@ -26,13 +34,15 @@ function coordMap(a: number[], b: number[], f: (a: number, b: number) => number)
 }
 export class Vector extends Array<number> {
 	static from(v: readonly number[]): Vector {
-		return v.length === 2
-			? new Vector2(...v)
-			: v.length === 3
-				? new Vector3(...v)
-				: v.length === 4
-					? new Vector4(...v)
-					: error(`Invalid vector size: ${v.length}`)
+		return v instanceof Vector
+			? v
+			: v.length === 2
+				? new Vector2(...v)
+				: v.length === 3
+					? new Vector3(...v)
+					: v.length === 4
+						? new Vector4(...v)
+						: error(`Invalid vector size: ${v.length}`)
 	}
 	override push(): number {
 		throw new Error('Immutable vector')
@@ -77,9 +87,9 @@ export class Vector extends Array<number> {
 			)
 		) as V
 	}
-	static normalize<V extends Vector>(v: V): V {
-		const size = v.size
-		return Vector.from(v.map((x) => x / size)) as V
+	normalized<V extends Vector>(this: V): V {
+		const size = this.size
+		return Vector.from(this.map((x) => x / size)) as V
 	}
 
 	static add<V extends Vector>(...v: V[]): V {
@@ -92,19 +102,10 @@ export class Vector extends Array<number> {
 	static sub<V extends Vector>(a: V, b: V): V {
 		return Vector.from(zip(a as number[], b as number[]).map(([a, b]) => a - b)) as V
 	}
-	static prod<V extends Vector>(...vs: (V | number)[]): V {
-		const vectors: V[] = []
-		let numeric = 1
-		for (const v of vs) {
-			if (typeof v === 'number') numeric *= v
-			else vectors.push(v)
-		}
-		if (vectors.length === 0) throw new Error('No vector in multiplication')
-		return Vector.from(
-			zip(...(vectors as number[][])).map((coords) =>
-				coords.reduce((a: number, b: number) => a * b, numeric)
-			) as number[]
-		) as V
+
+	static dot<V extends Vector>(...vs: (V | number | readonly number[])[]): V {
+		if (!vs.some((v) => typeof v === 'object')) throw new Error('No vectors in dot product')
+		return product(...vs) as V
 	}
 }
 export class Vector2 extends Vector {
@@ -143,6 +144,17 @@ export class Vector3 extends Vector {
 	}
 	get z() {
 		return this[2]
+	}
+
+	static cross(a: Vector3, b: Vector3): Vector3 {
+		if (a.length !== 3 || b.length !== 3) {
+			throw new Error('Cross product only defined for 3D vectors')
+		}
+		return new Vector3(
+			a[1] * b[2] - a[2] * b[1],
+			a[2] * b[0] - a[0] * b[2],
+			a[0] * b[1] - a[1] * b[0]
+		)
 	}
 }
 

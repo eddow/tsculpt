@@ -1,5 +1,5 @@
 import { AMesh, Mesh, Vector3 } from '@tsculpt/types'
-import { describe, expect, it, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import engine, { FakeMesh } from './tester'
 
 // Helper function to create a simple test mesh

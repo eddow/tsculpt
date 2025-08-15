@@ -1,5 +1,5 @@
 import booleans from '@booleans'
-import { Vector, Vector2, Vector3, isUnity, vecProd } from '../types/bunches'
+import { Vector, Vector2, Vector3, isUnity, product } from '../types/bunches'
 import { AMesh, Mesh } from '../types/mesh'
 import { TemplateParser, paramMarker } from './templated'
 export class SemanticError extends Error {}
@@ -9,11 +9,19 @@ type LinearScale = { type: 'scale'; factor: number | number[]; operands: LinearE
 type LinearTranslate = { type: 'translate'; terms: LinearExpression[] }
 type LinearSubtract = { type: 'subtract'; operands: [LinearExpression, LinearExpression] }
 type LinearInvert = { type: 'invert'; operand: LinearExpression }
-type LinearRotate = { type: 'rotate'; mesh: LinearExpression; axis: LinearExpression; angle?: LinearExpression }
+type LinearRotate = {
+	type: 'rotate'
+	mesh: LinearExpression
+	axis: LinearExpression
+	angle?: LinearExpression
+}
 type LinearIntersect = { type: 'intersect'; operands: LinearExpression[] }
 type LinearUnion = { type: 'union'; operands: LinearExpression[] }
 type LinearLiteral = { type: 'literal'; value: number | Vector3 }
-type LinearVectorWithParams = { type: 'vectorWithParams'; components: (number | LinearExpression)[] }
+type LinearVectorWithParams = {
+	type: 'vectorWithParams'
+	components: (number | LinearExpression)[]
+}
 type LinearExpression =
 	| LinearParameter
 	| LinearScale
@@ -43,7 +51,7 @@ function recur(
 				if (result instanceof AMesh) {
 					if (mesh) throw new SemanticError(`Cannot scale multiple meshes: ${mesh} and ${result}`)
 					mesh = result
-				} else factor = vecProd(factor, result)
+				} else factor = product(factor, result)
 			}
 			if (isUnity(factor)) return mesh || 1
 			const scale = Array.isArray(factor) ? (Vector.from(factor) as Vector3) : (factor as number)
@@ -168,9 +176,9 @@ function scale(...operands: LinearExpression[]): LinearExpression {
 	let factor: number | readonly number[] = 1
 	function add(expr: LinearExpression) {
 		if (expr.type === 'scale') {
-			factor = vecProd(factor, expr.factor)
+			factor = product(factor, expr.factor)
 			for (const term of expr.operands) add(term)
-		} else if (expr.type === 'literal') factor = vecProd(factor, expr.value)
+		} else if (expr.type === 'literal') factor = product(factor, expr.value)
 		else resultingOperands.push(expr)
 	}
 	for (const operand of operands) add(operand)
@@ -179,7 +187,11 @@ function scale(...operands: LinearExpression[]): LinearExpression {
 		: { type: 'scale', factor, operands: resultingOperands }
 }
 
-function rotate(mesh: LinearExpression, axis: LinearExpression, angle?: LinearExpression): LinearExpression {
+function rotate(
+	mesh: LinearExpression,
+	axis: LinearExpression,
+	angle?: LinearExpression
+): LinearExpression {
 	// This creates a rotate expression where:
 	// - mesh is the mesh to rotate
 	// - axis is the rotation axis (vector)
@@ -220,8 +232,8 @@ const formulas = new TemplateParser<
 				operands,
 			}),
 		},
-						atomics: [
-						{
+		atomics: [
+			{
 				rex: new RegExp(`\\[([\\d \\-.]*\\${paramMarker}.[\\d \\-.]*)\\]`, 'sy'),
 				build: (match) => {
 					const content = match[1]
@@ -239,7 +251,7 @@ const formulas = new TemplateParser<
 								// Mixed content like "0.5§0" - extract the number and parameter
 								const numberMatch = part.match(/^([\d.-]+)/)
 								if (numberMatch) {
-									components.push(parseFloat(numberMatch[1]))
+									components.push(Number.parseFloat(numberMatch[1]))
 								}
 								const paramMatch2 = part.match(new RegExp(`\\${paramMarker}(.)`))
 								if (paramMatch2) {
@@ -249,7 +261,7 @@ const formulas = new TemplateParser<
 							}
 						} else if (part.trim()) {
 							// Regular number
-							components.push(parseFloat(part))
+							components.push(Number.parseFloat(part))
 						}
 					}
 

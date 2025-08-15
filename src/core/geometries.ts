@@ -18,6 +18,7 @@ function bSpec(spec: BoxSpec): { radius: number | Vector3; center: Vector3 } {
 	const max = Vector3.max(a, b)
 	return { radius: Vector3.sub(max, min), center: v3`(${min} + ${max}) / 2` }
 }
+
 export function box(...spec: BoxSpec): Mesh {
 	const { radius, center } = bSpec(spec)
 	const vertices = Vector3.array(
@@ -30,12 +31,12 @@ export function box(...spec: BoxSpec): Mesh {
 		[1, 1, 1],
 		[-1, 1, 1]
 	).map((v) => {
-		const scaled = Vector3.prod(v, radius)
+		const scaled = Vector3.dot(v, radius)
 		return Vector3.add(scaled, center)
 	})
 
 	const faceIndices: [number, number, number][] = [
-		// Front face (CCW from outside)F
+		// Front face (CCW from outside)
 		[0, 2, 1],
 		[0, 3, 2],
 		// Back face
@@ -65,7 +66,7 @@ export function geodesicSphere({
 	center = v3(0, 0, 0),
 }: { radius: number | Vector3; subdivisions: number; center: Vector3 }): Mesh {
 	function midpoint(a: Vector3, b: Vector3): Vector3 {
-		return Vector3.normalize(v3`${a} + ${b}`)
+		return v3`${a} + ${b}`.normalized() as Vector3
 	}
 
 	// Start with icosahedron vertices
@@ -146,14 +147,21 @@ export function sphere(...spec: BoxSpec): Mesh {
 	return geodesicSphere({ radius, subdivisions, center })
 }
 
-type CylinderSpec = [{
-	radius?: number | Vector3;
-	height?: number;
-	center?: Vector3;
-	segments?: number;
-}]
+type CylinderSpec = [
+	{
+		radius?: number | Vector3
+		height?: number
+		center?: Vector3
+		segments?: number
+	},
+]
 
-function cylinderSpec(spec: CylinderSpec): { radius: number; height: number; center: Vector3; segments: number } {
+function cylinderSpec(spec: CylinderSpec): {
+	radius: number
+	height: number
+	center: Vector3
+	segments: number
+} {
 	const { radius = 1, height = 2, center = v3(0, 0, 0), segments } = spec[0]
 	const { grain } = generation
 
@@ -166,7 +174,7 @@ function cylinderSpec(spec: CylinderSpec): { radius: number; height: number; cen
 		radius: typeof radius === 'number' ? radius : radius[0],
 		height,
 		center,
-		segments: calculatedSegments
+		segments: calculatedSegments,
 	}
 }
 
@@ -203,21 +211,13 @@ export function cylinder(...spec: CylinderSpec): Mesh {
 	// Bottom face (triangulated)
 	for (let i = 0; i < segments; i++) {
 		const next = (i + 1) % segments
-		faces.push([
-			vertices[bottomCenter],
-			vertices[next],
-			vertices[i]
-		])
+		faces.push([vertices[bottomCenter], vertices[next], vertices[i]])
 	}
 
 	// Top face (triangulated)
 	for (let i = 0; i < segments; i++) {
 		const next = (i + 1) % segments
-		faces.push([
-			vertices[topCenter],
-			vertices[i + segments],
-			vertices[next + segments]
-		])
+		faces.push([vertices[topCenter], vertices[i + segments], vertices[next + segments]])
 	}
 
 	// Side faces (quads triangulated)
@@ -237,18 +237,25 @@ export function cylinder(...spec: CylinderSpec): Mesh {
 	const mesh = new Mesh(faces)
 	return new Mesh(
 		mesh.faces,
-		mesh.vectors.map(v => v3`${v} + ${center}`)
+		mesh.vectors.map((v) => v3`${v} + ${center}`)
 	)
 }
 
-type ConeSpec = [{
-	radius?: number;
-	height?: number;
-	center?: Vector3;
-	segments?: number;
-}]
+type ConeSpec = [
+	{
+		radius?: number
+		height?: number
+		center?: Vector3
+		segments?: number
+	},
+]
 
-function coneSpec(spec: ConeSpec): { radius: number; height: number; center: Vector3; segments: number } {
+function coneSpec(spec: ConeSpec): {
+	radius: number
+	height: number
+	center: Vector3
+	segments: number
+} {
 	const { radius = 1, height = 2, center = v3(0, 0, 0), segments } = spec[0]
 	const { grain } = generation
 
@@ -287,40 +294,40 @@ export function cone(...spec: ConeSpec): Mesh {
 	// Bottom face (triangulated)
 	for (let i = 0; i < segments; i++) {
 		const next = (i + 1) % segments
-		faces.push([
-			vertices[bottomCenter],
-			vertices[next],
-			vertices[i]
-		])
+		faces.push([vertices[bottomCenter], vertices[next], vertices[i]])
 	}
 
 	// Side faces (triangles)
 	for (let i = 0; i < segments; i++) {
 		const next = (i + 1) % segments
-		faces.push([
-			vertices[apex],
-			vertices[i],
-			vertices[next]
-		])
+		faces.push([vertices[apex], vertices[i], vertices[next]])
 	}
 
 	// Apply center offset
 	const mesh = new Mesh(faces)
 	return new Mesh(
 		mesh.faces,
-		mesh.vectors.map(v => v3`${v} + ${center}`)
+		mesh.vectors.map((v) => v3`${v} + ${center}`)
 	)
 }
 
-type TorusSpec = [{
-	radius?: number;
-	thickness?: number;
-	center?: Vector3;
-	segments?: number;
-	ringSegments?: number;
-}]
+type TorusSpec = [
+	{
+		radius?: number
+		thickness?: number
+		center?: Vector3
+		segments?: number
+		ringSegments?: number
+	},
+]
 
-function torusSpec(spec: TorusSpec): { radius: number; thickness: number; center: Vector3; segments: number; ringSegments: number } {
+function torusSpec(spec: TorusSpec): {
+	radius: number
+	thickness: number
+	center: Vector3
+	segments: number
+	ringSegments: number
+} {
 	const { radius = 2, thickness = 0.5, center = v3(0, 0, 0), segments, ringSegments } = spec[0]
 	const { grain } = generation
 
@@ -330,7 +337,13 @@ function torusSpec(spec: TorusSpec): { radius: number; thickness: number; center
 	const calculatedSegments = segments ?? Math.max(8, Math.ceil(outerCircumference / grain))
 	const calculatedRingSegments = ringSegments ?? Math.max(6, Math.ceil(innerCircumference / grain))
 
-	return { radius, thickness, center, segments: calculatedSegments, ringSegments: calculatedRingSegments }
+	return {
+		radius,
+		thickness,
+		center,
+		segments: calculatedSegments,
+		ringSegments: calculatedRingSegments,
+	}
 }
 
 export function torus(...spec: TorusSpec): Mesh {
@@ -381,98 +394,6 @@ export function torus(...spec: TorusSpec): Mesh {
 	const mesh = new Mesh(faces)
 	return new Mesh(
 		mesh.faces,
-		mesh.vectors.map(v => v3`${v} + ${center}`)
-	)
-}
-
-// 2D primitives that can be extruded
-type CircleSpec = [{
-	radius?: number;
-	center?: Vector3;
-	segments?: number;
-}]
-
-function circleSpec(spec: CircleSpec): { radius: number; center: Vector3; segments: number } {
-	const { radius = 1, center = v3(0, 0, 0), segments } = spec[0]
-	const { grain } = generation
-
-	// Calculate segments based on grain size if not provided
-	const circumference = 2 * Math.PI * radius
-	const calculatedSegments = segments ?? Math.max(8, Math.ceil(circumference / grain))
-
-	return { radius, center, segments: calculatedSegments }
-}
-
-export function circle(...spec: CircleSpec): Mesh {
-	const { radius, center, segments } = circleSpec(spec)
-
-	// Create vertices
-	const vertices: Vector3[] = []
-
-	// Circle vertices
-	for (let i = 0; i < segments; i++) {
-		const angle = (2 * Math.PI * i) / segments
-		const x = radius * Math.cos(angle)
-		const y = radius * Math.sin(angle)
-		vertices.push(v3(x, y, 0))
-	}
-
-	// Center vertex
-	vertices.push(v3(0, 0, 0))
-
-	// Create faces (triangulated)
-	const faces: [Vector3, Vector3, Vector3][] = []
-
-	for (let i = 0; i < segments; i++) {
-		const next = (i + 1) % segments
-		faces.push([
-			vertices[segments], // center
-			vertices[i],
-			vertices[next]
-		])
-	}
-
-	// Apply center offset
-	const mesh = new Mesh(faces)
-	return new Mesh(
-		mesh.faces,
-		mesh.vectors.map(v => v3`${v} + ${center}`)
-	)
-}
-
-type SquareSpec = [{
-	size?: number | Vector3;
-	center?: Vector3;
-}]
-
-function squareSpec(spec: SquareSpec): { size: Vector3; center: Vector3 } {
-	const { size = 1, center = v3(0, 0, 0) } = spec[0]
-	const sizeVec = typeof size === 'number' ? v3(size, size, 0) : v3(size[0], size[1], 0)
-	return { size: sizeVec, center }
-}
-
-export function square(...spec: SquareSpec): Mesh {
-	const { size, center } = squareSpec(spec)
-
-	// Create vertices
-	const halfSize = v3`${size} / 2`
-	const vertices = Vector3.array(
-		[-halfSize[0], -halfSize[1], 0],
-		[halfSize[0], -halfSize[1], 0],
-		[halfSize[0], halfSize[1], 0],
-		[-halfSize[0], halfSize[1], 0]
-	)
-
-	// Create faces (single quad triangulated)
-	const faces: [Vector3, Vector3, Vector3][] = [
-		[vertices[0], vertices[1], vertices[2]],
-		[vertices[0], vertices[2], vertices[3]]
-	]
-
-	// Apply center offset
-	const mesh = new Mesh(faces)
-	return new Mesh(
-		mesh.faces,
-		mesh.vectors.map(v => v3`${v} + ${center}`)
+		mesh.vectors.map((v) => v3`${v} + ${center}`)
 	)
 }

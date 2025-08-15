@@ -1,11 +1,11 @@
 /// <reference types="vitest" />
 import { URL, fileURLToPath } from 'node:url'
+import { PrimeVueResolver } from '@primevue/auto-import-resolver'
 import vue from '@vitejs/plugin-vue'
+import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import meshPlugin from './src/client/vite-plugin-mesh'
 import paramMetadataInjector from './src/client/vite-plugin-param-metadata'
-import Components from 'unplugin-vue-components/vite';
-import {PrimeVueResolver} from '@primevue/auto-import-resolver';
 
 export default defineConfig({
 	plugins: [
