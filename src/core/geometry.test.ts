@@ -243,7 +243,7 @@ describe('Geometry Primitives', () => {
 
 		describe('rotateExtrude', () => {
 			it('should rotate extrude a rectangle to create a cylinder', () => {
-				const rectProfile = square({ size: new Vector3(1, 2, 0) })
+				const rectProfile = square({ size: new Vector2(1, 2), center: new Vector2(0.5, 0) })
 				const extruded = rotateExtrude(rectProfile, {})
 
 				expect(extruded.vectors.length).toBeGreaterThan(10)
@@ -255,7 +255,7 @@ describe('Geometry Primitives', () => {
 			})
 
 			it('should rotate extrude with partial angle', () => {
-				const rectProfile = square({ size: new Vector3(1, 2, 0) })
+				const rectProfile = square({ size: new Vector2(1, 2), center: new Vector2(0.5, 0) })
 				const extruded = rotateExtrude(rectProfile, { angle: Math.PI })
 
 				expect(extruded.vectors.length).toBeGreaterThan(5)

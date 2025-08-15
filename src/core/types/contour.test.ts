@@ -45,4 +45,22 @@ describe('Contour', () => {
 		expect(extruded).toBeDefined()
 		expect(rotated).toBeDefined()
 	})
+
+	it('should deduplicate vertices using VectorMap', () => {
+		// Create edges with duplicate vertices (very close to each other)
+		const edges: [Vector2, Vector2][] = [
+			[new Vector2(0, 0), new Vector2(1, 0)],
+			[new Vector2(1, 0), new Vector2(1, 1)],
+			[new Vector2(1, 1), new Vector2(0, 1)],
+			[new Vector2(0, 1), new Vector2(0, 0)],
+			// Add a duplicate vertex very close to (0, 0)
+			[new Vector2(0.0000001, 0.0000001), new Vector2(0.5, 0.5)]
+		]
+
+		const contour = new Contour(edges)
+
+		// Should have exactly 5 unique vertices (the duplicate should be deduplicated)
+		expect(contour.vectors.length).toBe(5)
+		expect(contour.edges.length).toBe(5)
+	})
 })

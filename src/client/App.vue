@@ -53,8 +53,13 @@ const menuItems = computed(() => [
 					label: gotoHash,
 					icon: gotoHash === hash.value ? 'pi pi-fw pi-check' : 'pi pi-fw pi-file',
 					command: () => {
-						router.push(`#${gotoHash}`)
+						router.push(gotoHash === 'default' ? '#' : `#${gotoHash}`)
 					},
+					...(gotoHash === 'default' ? {
+						style: {
+							fontWeight: 'bold',
+						}
+					} : {})
 				})),
 			] : []
 		],

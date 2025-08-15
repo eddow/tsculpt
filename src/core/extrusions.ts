@@ -19,7 +19,11 @@ export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): M
 	// Create the linear path function
 	const path: PathFn = (t: number) => {
 		const z = center ? (t - 0.5) * height : t * height
-		return new Vector3(0, 0, z)
+		return {
+			o: new Vector3(0, 0, z),
+			x: new Vector3(1, 0, 0), // X axis stays constant
+			y: new Vector3(0, 1, 0), // Y axis stays constant
+		}
 	}
 
 	// Create the contour function with twist and scale
@@ -30,7 +34,10 @@ export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): M
 
 		// Apply twist and scale transformations
 		const currentTwist = t * twist
-		const currentScale = typeof scale === 'number' ? scale : new Vector2(scale.x, scale.y)
+		// Interpolate scale from 1.0 at bottom to target scale at top
+		const currentScale = typeof scale === 'number'
+			? 1.0 + (scale - 1.0) * t
+			: new Vector2(1.0 + (scale.x - 1.0) * t, 1.0 + (scale.y - 1.0) * t)
 
 		const transformedVertices = contour.vectors.map((vertex) => {
 			// Apply rotation around Z axis
@@ -62,7 +69,6 @@ export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): M
 		contour: contourFn,
 		sampling: { type: 'count', samples: segments + 1 }, // +1 to include both ends
 		caps: true,
-		orientation: new Vector3(0, 0, 1), // Fixed up vector for linear extrusion
 	})
 }
 
@@ -77,20 +83,22 @@ export function rotateExtrude(contour: Contour, spec: RotateExtrudeSpec = {}): M
 
 	// Calculate segments based on angle and grain
 	// For rotation, we need enough segments so that the arc length between segments is <= grain
-	const arcLength = Math.abs(angle) * 1.0 // Assuming radius of 1 for grain calculation
-	const calculatedSegments = segments || Math.max(8, Math.ceil(arcLength / grain))
+	// Find the maximum radius from the contour vertices
+	const maxRadius = Math.max(...contour.vectors.map((v) => Math.abs(v.x)))
+	const arcLength = Math.abs(angle) * maxRadius
+	const calculatedSegments = segments || Math.max(9, Math.ceil(arcLength / grain))
 
 	// For rotation extrusion, we need to create a circular path and use Frenet orientation
 	const path: PathFn = (t: number) => {
 		const currentAngle = t * angle
-		// Create a circular path with radius based on the contour's X coordinate
-		const radius = Math.max(...contour.vectors.map((v) => Math.abs(v.x)))
-		const x = radius * Math.cos(currentAngle)
-		const z = radius * Math.sin(currentAngle)
-		return new Vector3(x, 0, z)
+		return {
+			o: new Vector3(0, 0, 0),
+			x: new Vector3(-Math.sin(currentAngle), 0, Math.cos(currentAngle)), // Tangent to circle
+			y: new Vector3(0, 1, 0), // Always point up
+		}
 	}
 
-	// Use the generic extrusion engine with Frenet orientation
+	// Use the generic extrusion engine
 	const mesh = extrude({
 		path,
 		contour,

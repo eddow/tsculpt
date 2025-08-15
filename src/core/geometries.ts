@@ -2,24 +2,20 @@ import { generation } from './globals'
 import { Vector3, v3 } from './types'
 import { Mesh } from './types/mesh'
 
-type BoxSpec = [{ radius?: number | Vector3; center?: Vector3 }] | [Vector3, Vector3]
+type BoxSpec = { radius?: number | Vector3; center?: Vector3 } | [Vector3, Vector3]
 
 function bSpec(spec: BoxSpec): { radius: number | Vector3; center: Vector3 } {
-	if (spec.length === 1) {
-		const { radius, center } = {
-			radius: 1,
-			center: v3(0, 0, 0),
-			...spec[0],
-		}
-		return { radius, center }
+	if (Array.isArray(spec) && spec.length === 2) {
+		const [a, b] = spec
+		const min = Vector3.min(a, b)
+		const max = Vector3.max(a, b)
+		return { radius: Vector3.sub(max, min), center: v3`(${min} + ${max}) / 2` }
 	}
-	const [a, b] = spec
-	const min = Vector3.min(a, b)
-	const max = Vector3.max(a, b)
-	return { radius: Vector3.sub(max, min), center: v3`(${min} + ${max}) / 2` }
+	const { radius = 1, center = v3(0, 0, 0) } = spec as { radius?: number | Vector3; center?: Vector3 }
+	return { radius, center }
 }
 
-export function box(...spec: BoxSpec): Mesh {
+export function box(spec: BoxSpec = {}): Mesh {
 	const { radius, center } = bSpec(spec)
 	const vertices = Vector3.array(
 		[-1, -1, -1],
@@ -137,7 +133,7 @@ export function geodesicSphere({
 	)
 }
 
-export function sphere(...spec: BoxSpec): Mesh {
+export function sphere(spec: BoxSpec = {}): Mesh {
 	const { radius, center } = bSpec(spec)
 	const { grain } = generation
 	// Calculate required subdivisions based on grain size
@@ -147,14 +143,12 @@ export function sphere(...spec: BoxSpec): Mesh {
 	return geodesicSphere({ radius, subdivisions, center })
 }
 
-type CylinderSpec = [
-	{
-		radius?: number | Vector3
-		height?: number
-		center?: Vector3
-		segments?: number
-	},
-]
+type CylinderSpec = {
+	radius?: number | Vector3
+	height?: number
+	center?: Vector3
+	segments?: number
+}
 
 function cylinderSpec(spec: CylinderSpec): {
 	radius: number
@@ -162,7 +156,7 @@ function cylinderSpec(spec: CylinderSpec): {
 	center: Vector3
 	segments: number
 } {
-	const { radius = 1, height = 2, center = v3(0, 0, 0), segments } = spec[0]
+	const { radius = 1, height = 2, center = v3(0, 0, 0), segments } = spec
 	const { grain } = generation
 
 	// Calculate segments based on grain size if not provided
@@ -178,7 +172,7 @@ function cylinderSpec(spec: CylinderSpec): {
 	}
 }
 
-export function cylinder(...spec: CylinderSpec): Mesh {
+export function cylinder(spec: CylinderSpec = {}): Mesh {
 	const { radius, height, center, segments } = cylinderSpec(spec)
 
 	// Create vertices for top and bottom circles
@@ -241,14 +235,12 @@ export function cylinder(...spec: CylinderSpec): Mesh {
 	)
 }
 
-type ConeSpec = [
-	{
-		radius?: number
-		height?: number
-		center?: Vector3
-		segments?: number
-	},
-]
+type ConeSpec = {
+	radius?: number
+	height?: number
+	center?: Vector3
+	segments?: number
+}
 
 function coneSpec(spec: ConeSpec): {
 	radius: number
@@ -256,7 +248,7 @@ function coneSpec(spec: ConeSpec): {
 	center: Vector3
 	segments: number
 } {
-	const { radius = 1, height = 2, center = v3(0, 0, 0), segments } = spec[0]
+	const { radius = 1, height = 2, center = v3(0, 0, 0), segments } = spec
 	const { grain } = generation
 
 	// Calculate segments based on grain size if not provided
@@ -266,7 +258,7 @@ function coneSpec(spec: ConeSpec): {
 	return { radius, height, center, segments: calculatedSegments }
 }
 
-export function cone(...spec: ConeSpec): Mesh {
+export function cone(spec: ConeSpec = {}): Mesh {
 	const { radius, height, center, segments } = coneSpec(spec)
 
 	// Create vertices
@@ -311,15 +303,13 @@ export function cone(...spec: ConeSpec): Mesh {
 	)
 }
 
-type TorusSpec = [
-	{
-		radius?: number
-		thickness?: number
-		center?: Vector3
-		segments?: number
-		ringSegments?: number
-	},
-]
+type TorusSpec = {
+	radius?: number
+	thickness?: number
+	center?: Vector3
+	segments?: number
+	ringSegments?: number
+}
 
 function torusSpec(spec: TorusSpec): {
 	radius: number
@@ -328,7 +318,7 @@ function torusSpec(spec: TorusSpec): {
 	segments: number
 	ringSegments: number
 } {
-	const { radius = 2, thickness = 0.5, center = v3(0, 0, 0), segments, ringSegments } = spec[0]
+	const { radius = 2, thickness = 0.5, center = v3(0, 0, 0), segments, ringSegments } = spec
 	const { grain } = generation
 
 	// Calculate segments based on grain size if not provided
@@ -346,7 +336,7 @@ function torusSpec(spec: TorusSpec): {
 	}
 }
 
-export function torus(...spec: TorusSpec): Mesh {
+export function torus(spec: TorusSpec = {}): Mesh {
 	const { radius, thickness, center, segments, ringSegments } = torusSpec(spec)
 
 	// Create vertices

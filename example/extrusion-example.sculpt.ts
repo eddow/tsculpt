@@ -1,4 +1,4 @@
-import { Vector2, Vector3, circle, rotateExtrude, square, union } from '@tsculpt'
+import { Contour, Vector2, Vector3, circle, extrude, rotateExtrude, square, union } from '@tsculpt'
 import { linearExtrude } from '@tsculpt'
 
 // Create a simple square profile
@@ -32,8 +32,8 @@ export const rectPyramid = linearExtrude(squareProfile, {
 })
 
 // Rotational extrusion - create a cylinder from a rectangle
-const rectProfile = square({ size: new Vector3(0.5, 2, 0) })
-export const cylinder = rotateExtrude(rectProfile, {})
+const rectProfile = square({ size: new Vector2(0.5, 2), center: new Vector2(0.25, 0) })
+export const cylinder = rotateExtrude(rectProfile)
 
 // Rotational extrusion - create a torus from a circle
 const circleProfile = circle({ radius: 0.5 })
