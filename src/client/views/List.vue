@@ -1,30 +1,28 @@
 <template>
 	<div class="list-container">
-		<Tree :value="files" selectionMode="single" class="file-tree" toggleable>
-			<template #default="{ node }">
-				<span v-if="node.children" :class="{ 'file-node': true, 'is-file': !node.children }">
-					<i class="pi pi-folder" />
-					{{ node.label }}
-				</span>
-				<a v-else :class="{ 'file-node': true, 'is-file': !node.children }" :href="`/preview/${node.path}`">
-					<i class="pi pi-file" />
-					{{ node.label }}
-				</a>
-			</template>
-		</Tree>
+		<Await :await="files" #default="{result: files}">
+			<Tree :value="files" selectionMode="single" class="file-tree" toggleable>
+				<template #default="{ node }">
+					<span v-if="node.children" :class="{ 'file-node': true, 'is-file': !node.children }">
+						<i class="pi pi-folder" />
+						{{ node.label }}
+					</span>
+					<a v-else :class="{ 'file-node': true, 'is-file': !node.children }" :href="`/module/${node.path}`">
+						<i class="pi pi-file" />
+						{{ node.label }}
+					</a>
+				</template>
+			</Tree>
+		</Await>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { modules } from '@/lib/source'
 import type { TreeNode } from 'primevue/treenode'
-import { onMounted, ref } from 'vue'
 
-const files = ref<TreeNode[]>([])
 function addNode(nodes: TreeNode[], path: string) {
-	// Remove leading '../' from path
-	const cleanPath = path.replace(/^\.\.\//, '')
-	const parts = cleanPath.split('/')
+	const parts = path.split('/')
 	const file = parts.pop()
 	let currentNodes = nodes
 
@@ -52,16 +50,12 @@ function addNode(nodes: TreeNode[], path: string) {
 		path: path.replace(/\.sculpt\.ts$/, ''),
 	})
 }
-
-onMounted(async () => {
-	// Convert modules object into tree structure
-	const paths = Object.keys(modules).map((path) => path.replace(/^\.\.\//, '').substring(1))
+const files = modules().then((modules: string[]) => {
 	const nodes: TreeNode[] = []
 
-	for (const path of paths) addNode(nodes, path)
+	for (const path of modules) addNode(nodes, path)
 
-	// Get root level nodes
-	files.value = nodes
+	return nodes
 })
 </script>
 

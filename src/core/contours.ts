@@ -14,7 +14,7 @@ function circleSpec(spec: CircleSpec): { radius: number; center: Vector2; segmen
 	const { grain } = generation
 
 	// Calculate segments based on grain size if not provided
-	const calculatedSegments = segments ?? Math.max(8, Math.ceil(2 * Math.PI * radius / grain))
+	const calculatedSegments = segments ?? Math.max(8, Math.ceil((2 * Math.PI * radius) / grain))
 
 	return { radius, center, segments: calculatedSegments }
 }

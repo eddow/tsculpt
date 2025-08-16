@@ -1,6 +1,6 @@
 import { ParametersConfig } from './types/parameters'
 
-type MaybePromise<T> = Promise<T> | T
+export type MaybePromise<T> = Promise<T> | T
 export type GenerationParameters = {
 	/**
 	 * The grain of the generated geometry.

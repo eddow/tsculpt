@@ -1,12 +1,11 @@
 <script lang="ts">
-import { ComputedRef, Ref, computed, isRef, ref } from 'vue'
+import { ComputedRef, Ref, computed, isRef, ref, watch } from 'vue'
 import ErrorView from './ErrorView.vue'
 
 export const waiting = Symbol('waiting')
 export type AwaitedValue<T> = T | typeof waiting | Error
 export type AwaitedRef<T> = Ref<AwaitedValue<T>>
 const promiseCache = new WeakMap<Promise<any>, Ref<any>>()
-
 /**
  * Returns a ref that will be updated with the value of the promise.
  * If the promise is already resolved, the ref will be updated immediately.
@@ -57,7 +56,10 @@ export function erroneous(result: any): result is Error {
 	return result instanceof Error
 }
 
-type AcceptedWaitable<T> = AwaitedValue<T> | Ref<AcceptedWaitable<T>> | Promise<AcceptedWaitable<T>>
+export type AcceptedWaitable<T> =
+	| AwaitedValue<T>
+	| Ref<AcceptedWaitable<T>>
+	| Promise<AcceptedWaitable<T>>
 
 export const thenComputed = <I, O = I>(
 	promise: AcceptedWaitable<I>,
@@ -83,6 +85,7 @@ const props = defineProps<{
 }>()
 
 const result = thenComputed<T, T>(computed(()=> props.await) as AcceptedWaitable<T>)
+const lastResults = ref<T | typeof waiting>(waiting) as Ref<T | typeof waiting>
 
 defineSlots<{
 	default: (props: { result: T }) => any
@@ -90,7 +93,10 @@ defineSlots<{
 	error: (props: { error: Error })=> any
 	always: (props: { result: AwaitedValue<T> })=> any
 }>()
-
+watch(result, async (result) => {
+	const c = await result
+	if(c !== waiting && !(c instanceof Error)) lastResults.value = c
+})
 </script>
 <template>
 
@@ -103,7 +109,12 @@ defineSlots<{
 				<ErrorView :error="result" />
 			</slot>
 		</template>
-		<template v-else><slot :result="result" /></template>
+		<template v-if="lastResults !== waiting">
+			<slot
+				:result="lastResults"
+				:style="lastResults !== result ? {display: 'none'} : {}"
+			/>
+		</template>
 	</slot>
 
 </template>

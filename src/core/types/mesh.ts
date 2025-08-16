@@ -80,26 +80,26 @@ export abstract class AMesh {
 		const rotationAngle = angle ?? axis.size
 
 		// Special case: if axis is [0, 0, z], use rotateZ
-		if (axis[0] === 0 && axis[1] === 0 && axis[2] !== 0) {
+		if (axis.x === 0 && axis.y === 0 && axis.z !== 0) {
 			return this.rotateZ(rotationAngle)
 		}
 
 		// Special case: if axis is [x, 0, 0], use rotateX
-		if (axis[0] !== 0 && axis[1] === 0 && axis[2] === 0) {
+		if (axis.x !== 0 && axis.y === 0 && axis.z === 0) {
 			return this.rotateX(rotationAngle)
 		}
 
 		// Special case: if axis is [0, y, 0], use rotateY
-		if (axis[0] === 0 && axis[1] !== 0 && axis[2] === 0) {
+		if (axis.x === 0 && axis.y !== 0 && axis.z === 0) {
 			return this.rotateY(rotationAngle)
 		}
 
 		// General case: rotate around arbitrary axis using Rodrigues' rotation formula
 		// Normalize the axis
 		const normalizedAxis = axis.normalized()
-		const x = normalizedAxis[0]
-		const y = normalizedAxis[1]
-		const z = normalizedAxis[2]
+		const x = normalizedAxis.x
+		const y = normalizedAxis.y
+		const z = normalizedAxis.z
 
 		const cos = Math.cos(rotationAngle)
 		const sin = Math.sin(rotationAngle)
@@ -148,10 +148,12 @@ export class Mesh extends AMesh {
 						)
 					: (faces as Numbers3[])
 		} else
-			this.faces = (faces as [Vector3, Vector3, Vector3][])
-				.map((face) => face.map((v) => this.set.index(v)) as [number, number, number])
-		this.faces = this.faces
-				.filter((face) => face[0] !== face[1] && face[1] !== face[2] && face[2] !== face[0])
+			this.faces = (faces as [Vector3, Vector3, Vector3][]).map(
+				(face) => face.map((v) => this.set.index(v)) as [number, number, number]
+			)
+		this.faces = this.faces.filter(
+			(face) => face[0] !== face[1] && face[1] !== face[2] && face[2] !== face[0]
+		)
 	}
 	get vectors() {
 		return this.set.vectors

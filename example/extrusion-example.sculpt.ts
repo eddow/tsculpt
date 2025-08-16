@@ -1,5 +1,4 @@
-import { Contour, Vector2, Vector3, circle, extrude, rotateExtrude, square, union } from '@tsculpt'
-import { linearExtrude } from '@tsculpt'
+import { Vector2, Vector3, circle, linearExtrude, rotateExtrude, square, union } from '@tsculpt'
 
 // Create a simple square profile
 const squareProfile = square({ size: 1 })

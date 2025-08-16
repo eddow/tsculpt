@@ -43,7 +43,6 @@ export interface ExtrusionSpec {
 
 	// Caps
 	caps?: boolean // default: true
-
 }
 
 export function extrude(spec: ExtrusionSpec): Mesh {

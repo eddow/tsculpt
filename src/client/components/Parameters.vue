@@ -1,9 +1,5 @@
 <template>
-	{{ accordionRef?.value?.value }}
-	<div v-if="viewed === waiting">
-		<h2>Loading...</h2>
-	</div>
-	<Accordion v-else :multiple="true" v-model:value="shown" ref="accordionRef">
+	<Accordion :multiple="true" v-model:value="shown" ref="accordionRef">
 		<AccordionPanel value="parameters" v-if="allParametersConfig">
 			<AccordionHeader>
 				Parameters
@@ -51,22 +47,23 @@
 
 <script setup lang="ts">
 import { localStored } from '@/lib/stores'
+import { deepEqual } from '@/lib/utils'
 import type { AMesh, GenerationParameters, ParametersConfig } from '@tsculpt'
 import { globalsConfig } from '@tsculpt/globals'
 import { computed, ref } from 'vue'
-import { AwaitedValue, hasResult, waiting } from './Await.vue'
+import { AcceptedWaitable, awaited, hasResult } from './Await.vue'
 import Parameter from './Parameter.vue'
 
 const shown = localStored('parameters-shown', ['parameters'])
 const props = defineProps<{
-	viewed: AwaitedValue<AMesh>
+	viewed: AcceptedWaitable<AMesh>
 	parameters: GenerationParameters
 	parametersConfig: ParametersConfig | false
 }>()
 
 const emit = defineEmits<(e: 'update:parameters', value: GenerationParameters) => void>()
 const statistics = computed(() => {
-	const viewed = props.viewed
+	const viewed = awaited(props.viewed)
 	if (!hasResult(viewed)) return []
 	const stats = {
 		vertices: viewed.vectors.length,
@@ -91,10 +88,11 @@ const parametersTabExpanded = computed(() => {
 })
 
 const updateParameter = (name: string, value: any) => {
-	emit('update:parameters', {
-		...props.parameters,
-		[name]: value,
-	})
+	if (!deepEqual(props.parameters[name], value))
+		emit('update:parameters', {
+			...props.parameters,
+			[name]: value,
+		})
 }
 
 // Initialize undefined parameters with their defaults

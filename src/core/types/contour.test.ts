@@ -54,7 +54,7 @@ describe('Contour', () => {
 			[new Vector2(1, 1), new Vector2(0, 1)],
 			[new Vector2(0, 1), new Vector2(0, 0)],
 			// Add a duplicate vertex very close to (0, 0)
-			[new Vector2(0.0000001, 0.0000001), new Vector2(0.5, 0.5)]
+			[new Vector2(0.0000001, 0.0000001), new Vector2(0.5, 0.5)],
 		]
 
 		const contour = new Contour(edges)

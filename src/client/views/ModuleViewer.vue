@@ -1,0 +1,59 @@
+<script setup lang="ts">
+import { useMenuItems } from '@/App.vue'
+import EntryViewer from '@/components/EntryViewer.vue'
+import Parameters from '@/components/Parameters.vue'
+import { ParametersConfig } from '@tsculpt'
+import { computed, ref, watch } from 'vue'
+import { entries, onModuleChanged } from '../lib/source'
+
+const props = defineProps<{
+	path: string
+}>()
+let unregister: () => void = () => {}
+const moduleEntries = ref<Promise<Record<string, ParametersConfig>>>(new Promise(() => {}))
+watch(
+	() => props.path,
+	(path) => {
+		unregister()
+		moduleEntries.value = entries(path)
+		unregister = onModuleChanged(path, () => {
+			const resolved = entries(path)
+			resolved.then(() => {
+				moduleEntries.value = resolved
+			})
+		})
+	},
+	{ immediate: true }
+)
+
+const { hashes, hash } = useMenuItems()
+
+watch(
+	moduleEntries,
+	async (entries) => {
+		hashes.value = Object.keys(await entries)
+	},
+	{ immediate: true }
+)
+
+const entryParameters = computed(() =>
+	moduleEntries.value.then((entries) => {
+		const entry = entries[hash.value]
+		if (!entry) throw new Error(`No entry found for ${hash.value}`)
+		return entry
+	})
+)
+</script>
+<template>
+	<Await :await="entryParameters" #default="{result: parametersConfig}">
+		<EntryViewer :module="props.path" :entry="hash" :parametersConfig/>
+	</Await>
+</template>
+
+<style lang="sass" scoped>
+.full-size
+	height: 100%
+	width: 100%
+.pi-spin
+	font-size: 16rem
+</style>

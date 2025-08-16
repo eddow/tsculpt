@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import List from './views/List.vue'
-import Preview from './views/Preview.vue'
+import Module from './views/ModuleViewer.vue'
 
 export const router = createRouter({
 	history: createWebHistory(),
@@ -10,8 +10,8 @@ export const router = createRouter({
 			component: List,
 		},
 		{
-			path: '/preview/:path(.+)',
-			component: Preview,
+			path: '/module/:path(.+)',
+			component: Module,
 			props: true,
 		},
 	],

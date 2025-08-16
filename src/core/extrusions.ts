@@ -35,9 +35,10 @@ export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): M
 		// Apply twist and scale transformations
 		const currentTwist = t * twist
 		// Interpolate scale from 1.0 at bottom to target scale at top
-		const currentScale = typeof scale === 'number'
-			? 1.0 + (scale - 1.0) * t
-			: new Vector2(1.0 + (scale.x - 1.0) * t, 1.0 + (scale.y - 1.0) * t)
+		const currentScale =
+			typeof scale === 'number'
+				? 1.0 + (scale - 1.0) * t
+				: new Vector2(1.0 + (scale.x - 1.0) * t, 1.0 + (scale.y - 1.0) * t)
 
 		const transformedVertices = contour.vectors.map((vertex) => {
 			// Apply rotation around Z axis

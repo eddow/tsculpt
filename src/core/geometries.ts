@@ -11,7 +11,10 @@ function bSpec(spec: BoxSpec): { radius: number | Vector3; center: Vector3 } {
 		const max = Vector3.max(a, b)
 		return { radius: Vector3.sub(max, min), center: v3`(${min} + ${max}) / 2` }
 	}
-	const { radius = 1, center = v3(0, 0, 0) } = spec as { radius?: number | Vector3; center?: Vector3 }
+	const { radius = 1, center = v3(0, 0, 0) } = spec as {
+		radius?: number | Vector3
+		center?: Vector3
+	}
 	return { radius, center }
 }
 

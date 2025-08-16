@@ -1,6 +1,6 @@
-import { Vector2, Vector3 } from './bunches'
-import { VectorMap } from '../vectorSet'
 import { cache } from '@tsculpt/ts/decorators'
+import { VectorMap } from '../vectorSet'
+import { Vector2 } from './bunches'
 
 /**
  * Represents a 2D contour/profile for extrusion operations.
@@ -39,7 +39,10 @@ export class Contour {
 	}
 
 	get reversed() {
-		const reversed = new Contour(this.vectors, this.edges.map(([a, b]) => [b, a]))
+		const reversed = new Contour(
+			this.vectors,
+			this.edges.map(([a, b]) => [b, a])
+		)
 		cache(reversed, 'reversed', this)
 		return reversed
 	}

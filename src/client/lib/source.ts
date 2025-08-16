@@ -1,8 +1,7 @@
-import { type Ref, ref } from 'vue'
+/*import { type Ref, ref } from 'vue'
 
-export const modules = import.meta.glob('/**/*.sculpt.ts')
+export const modules = import.meta.glob('/** /*.sculpt.ts')
 
-export type Module = Record<string, any>
 const moduleCache = new Map<() => Promise<Module>, Ref<Promise<Module>>>()
 export function module(path: string) {
 	const module = modules[path] as () => Promise<Module>
@@ -17,3 +16,24 @@ export function module(path: string) {
 	import.meta.hot?.accept(path, refresh)
 	return rv as Ref<Promise<Module>>
 }
+*/
+
+import { MeshPack } from '@/lib/pack'
+import type { GenerationParameters, ParametersConfig } from '@tsculpt'
+import { WorkerManager } from './worker-manager'
+
+export type SourceFiles = {
+	modules(): Promise<string[]>
+	entries(module: string): Promise<Record<string, ParametersConfig>>
+	render(module: string, entry: string, parameters: GenerationParameters): Promise<MeshPack>
+}
+export type Module = Record<string, any>
+const viteWorker = new WorkerManager<SourceFiles>(
+	new Worker(new URL('@worker/vite.worker.ts', import.meta.url), {
+		type: 'module',
+	})
+)
+
+export const { modules, entries, render } = viteWorker.call
+export const onModuleChanged = (path: string, cb: () => void) =>
+	viteWorker.listen((data) => data.type === 'module-changed' && data.path === path && cb())
