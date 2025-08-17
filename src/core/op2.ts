@@ -1,12 +1,19 @@
 import type { Contour, Polygon, Vector2 } from '@tsculpt/types'
 import { epsilon } from './math'
+import { MaybePromise } from './ts/maybe'
 
 export default abstract class Op2 {
-	abstract union(contour1: Contour, contour2: Contour): Promise<Contour>
-	abstract intersect(contour1: Contour, contour2: Contour): Promise<Contour>
-	abstract subtract(contour1: Contour, contour2: Contour): Promise<Contour>
-	abstract hull(contours: Contour[]): Promise<Contour>
-	async vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): Promise<boolean> {
+	abstract union(contour1: Contour, contour2: Contour): MaybePromise<Contour>
+	abstract intersect(contour1: Contour, contour2: Contour): MaybePromise<Contour>
+	abstract subtract(contour1: Contour, contour2: Contour): MaybePromise<Contour>
+	abstract hull(contours: Contour[]): MaybePromise<Contour>
+	abstract vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): MaybePromise<boolean>
+	abstract inPolygon(point: Vector2, polygon: Polygon): MaybePromise<boolean>
+	abstract polygonIntersect(p1: Polygon, p2: Polygon): MaybePromise<boolean>
+	abstract distinctPolygons(polygons: Polygon[]): MaybePromise<boolean>
+}
+class EcmascriptEngine {
+	vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): boolean {
 		const [A1, A2] = vA // Segment A: A1 to A2
 		const [B1, B2] = vB // Segment B: B1 to B2
 
@@ -54,8 +61,7 @@ export default abstract class Op2 {
 
 		return isUaValid && isUbValid && isOnSegmentB
 	}
-
-	async inPolygon(point: Vector2, polygon: Polygon): Promise<boolean> {
+	inPolygon(point: Vector2, polygon: Polygon): boolean {
 		const x = point.x
 		const y = point.y
 		let inside = false
@@ -98,20 +104,20 @@ export default abstract class Op2 {
 		return inside
 	}
 
-	async polygonIntersect(p1: Polygon, p2: Polygon): Promise<boolean> {
+	polygonIntersect(p1: Polygon, p2: Polygon): boolean {
 		return this.inPolygon(p2[0], p1) || p1.some((v) => this.inPolygon(v, p2))
 	}
 
-	async distinctPolygons(polygons: Polygon[]): Promise<boolean> {
+	distinctPolygons(polygons: Polygon[]): boolean {
 		for (let i = 0; i < polygons.length; i++) {
 			for (let j = i + 1; j < polygons.length; j++) {
-				if (await this.polygonIntersect(polygons[i], polygons[j])) {
+				if (this.polygonIntersect(polygons[i], polygons[j])) {
 					return false
 				}
 			}
 		}
 		return true
 	}
-
-	//#endregion
 }
+
+export const ecmaOp2 = new EcmascriptEngine()

@@ -1,5 +1,5 @@
-import Op2 from '@tsculpt/op2'
-import { Contour, Polygon, Shape } from '@tsculpt/types'
+import Op2, { ecmaOp2 } from '@tsculpt/op2'
+import { Contour, Polygon, Shape, Vector2 } from '@tsculpt/types'
 import { v2 } from '@tsculpt/types/builders'
 
 // Fake contour for testing purposes
@@ -34,6 +34,23 @@ class TesterEngine extends Op2 {
 		this.operationCount++
 		// Return a fake contour with operation info
 		return new FakeContour(`hull_${this.operationCount}_${contours.length}_contours`)
+	}
+
+	// Delegate boolean operations to ecmaOp2
+	async vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): Promise<boolean> {
+		return ecmaOp2.vectorIntersect(vA, vB)
+	}
+
+	async inPolygon(point: Vector2, polygon: Polygon): Promise<boolean> {
+		return ecmaOp2.inPolygon(point, polygon)
+	}
+
+	async polygonIntersect(p1: Polygon, p2: Polygon): Promise<boolean> {
+		return ecmaOp2.polygonIntersect(p1, p2)
+	}
+
+	async distinctPolygons(polygons: Polygon[]): Promise<boolean> {
+		return ecmaOp2.distinctPolygons(polygons)
 	}
 
 	// Helper method to get operation count for testing

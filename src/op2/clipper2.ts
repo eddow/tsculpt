@@ -1,5 +1,5 @@
-import Engine from '@tsculpt/op2'
-import { Contour, Polygon, Shape } from '@tsculpt/types'
+import Op2, { ecmaOp2 } from '@tsculpt/op2'
+import { Contour, Polygon, Shape, Vector2 } from '@tsculpt/types'
 import { v2 } from '@tsculpt/types/builders'
 
 // Import the correct types
@@ -10,16 +10,12 @@ let clipper2Module: MainModule | null = null
 let initPromise: Promise<MainModule> | null = null
 
 async function ensureClipper2Initialized(): Promise<MainModule> {
-	if (clipper2Module) {
-		return clipper2Module
-	}
+	if (clipper2Module) return clipper2Module
 
-	if (initPromise) {
-		return initPromise
-	}
+	if (initPromise) return initPromise
 
 	// Dynamic import to avoid issues with SSR
-	const module = await import('clipper2-wasm/dist/es/clipper2z')
+	const module = await import('clipper2-wasm/dist/es/clipper2z') as any
 	const Clipper2ZFactory = module.default as Clipper2ZFactoryFunction
 
 	initPromise = Clipper2ZFactory({
@@ -35,7 +31,7 @@ async function ensureClipper2Initialized(): Promise<MainModule> {
 	return initPromise
 }
 
-class Clipper2Engine extends Engine {
+class Clipper2Engine extends Op2 {
 	// Convert internal Polygon to Clipper2 PathD format
 	private polygonToPathD(polygon: Polygon): number[] {
 		const coords: number[] = []
@@ -107,17 +103,13 @@ class Clipper2Engine extends Engine {
 	}
 
 	async union(contour1: Contour, contour2: Contour): Promise<Contour> {
-		// Ensure module is initialized
-		if (!clipper2Module) {
-			await ensureClipper2Initialized()
-		}
-
 		try {
+			const module = await ensureClipper2Initialized()
 			const paths1 = this.contourToPathsD(contour1)
 			const paths2 = this.contourToPathsD(contour2)
 
 			// Perform union operation
-			const result = clipper2Module!.UnionD(paths1, paths2, clipper2Module!.FillRule.EvenOdd, 2)
+			const result = module.UnionD(paths1, paths2, module.FillRule.EvenOdd, 2)
 
 			return this.pathsDToContour(result)
 		} catch (error) {
@@ -127,17 +119,13 @@ class Clipper2Engine extends Engine {
 	}
 
 	async intersect(contour1: Contour, contour2: Contour): Promise<Contour> {
-		// Ensure module is initialized
-		if (!clipper2Module) {
-			await ensureClipper2Initialized()
-		}
-
 		try {
+			const module = await ensureClipper2Initialized()
 			const paths1 = this.contourToPathsD(contour1)
 			const paths2 = this.contourToPathsD(contour2)
 
 			// Perform intersection operation
-			const result = clipper2Module!.IntersectD(paths1, paths2, clipper2Module!.FillRule.EvenOdd, 2)
+			const result = module.IntersectD(paths1, paths2, module.FillRule.EvenOdd, 2)
 
 			return this.pathsDToContour(result)
 		} catch (error) {
@@ -147,17 +135,13 @@ class Clipper2Engine extends Engine {
 	}
 
 	async subtract(contour1: Contour, contour2: Contour): Promise<Contour> {
-		// Ensure module is initialized
-		if (!clipper2Module) {
-			await ensureClipper2Initialized()
-		}
-
 		try {
+			const module = await ensureClipper2Initialized()
 			const paths1 = this.contourToPathsD(contour1)
 			const paths2 = this.contourToPathsD(contour2)
 
 			// Perform difference operation
-			const result = clipper2Module!.DifferenceD(paths1, paths2, clipper2Module!.FillRule.EvenOdd, 2)
+			const result = module.DifferenceD(paths1, paths2, module.FillRule.EvenOdd, 2)
 
 			return this.pathsDToContour(result)
 		} catch (error) {
@@ -167,18 +151,14 @@ class Clipper2Engine extends Engine {
 	}
 
 	async hull(contours: Contour[]): Promise<Contour> {
-		// Ensure module is initialized
-		if (!clipper2Module) {
-			await ensureClipper2Initialized()
-		}
-
 		if (contours.length === 0) {
 			return new Contour(new Shape(new Polygon(v2(0, 0), v2(1, 0), v2(0, 1))))
 		}
 
 		try {
+			const module = await ensureClipper2Initialized()
 			// Combine all contours into a single PathsD
-			const allPaths = new clipper2Module!.PathsD()
+			const allPaths = new module.PathsD()
 			for (const contour of contours) {
 				const paths = this.contourToPathsD(contour)
 				for (let i = 0; i < paths.size(); i++) {
@@ -188,12 +168,98 @@ class Clipper2Engine extends Engine {
 
 			// For convex hull, we'll use a simple approach
 			// Clipper2 doesn't have a direct convex hull function, so we'll use union
-			const result = clipper2Module!.UnionSelfD(allPaths, clipper2Module!.FillRule.EvenOdd, 2)
+			const result = module.UnionSelfD(allPaths, module.FillRule.EvenOdd, 2)
 
 			return this.pathsDToContour(result)
 		} catch (error) {
 			console.warn('Clipper2 hull failed, falling back to simple hull:', error)
 			return contours[0] || new Contour(new Shape(new Polygon(v2(0, 0), v2(1, 0), v2(0, 1))))
+		}
+	}
+
+	async vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): Promise<boolean> {
+		try {
+			const module = await ensureClipper2Initialized()
+			// For vector intersection, we'll use the ECMAScript implementation as Clipper2 is designed for polygons
+			return ecmaOp2.vectorIntersect(vA, vB)
+		} catch (error) {
+			console.warn('Clipper2 vectorIntersect failed, falling back to basic check:', error)
+			return ecmaOp2.vectorIntersect(vA, vB)
+		}
+	}
+
+	// Override non-abstract methods to use Clipper2's more robust operations
+	async inPolygon(point: Vector2, polygon: Polygon): Promise<boolean> {
+		try {
+			const module = await ensureClipper2Initialized()
+
+			// Create a tiny circle around the point and check if it intersects with the polygon
+			const pointPath = module.MakePathD([point.x, point.y, point.x + 0.001, point.y, point.x, point.y + 0.001])
+			const polygonPath = module.MakePathD(this.polygonToPathD(polygon))
+
+			// Use intersection to check if point is inside
+			const pointPaths = new module.PathsD()
+			pointPaths.push_back(pointPath)
+			const polygonPaths = new module.PathsD()
+			polygonPaths.push_back(polygonPath)
+
+			const result = module.IntersectD(pointPaths, polygonPaths, module.FillRule.EvenOdd, 2)
+
+			return result.size() > 0
+		} catch (error) {
+			console.warn('Clipper2 inPolygon failed, falling back to ray casting:', error)
+			return ecmaOp2.inPolygon(point, polygon)
+		}
+	}
+
+	async polygonIntersect(p1: Polygon, p2: Polygon): Promise<boolean> {
+		try {
+			const module = await ensureClipper2Initialized()
+
+			const path1 = module.MakePathD(this.polygonToPathD(p1))
+			const path2 = module.MakePathD(this.polygonToPathD(p2))
+
+			// Use intersection to check if polygons overlap
+			const paths1 = new module.PathsD()
+			paths1.push_back(path1)
+			const paths2 = new module.PathsD()
+			paths2.push_back(path2)
+
+			const result = module.IntersectD(paths1, paths2, module.FillRule.EvenOdd, 2)
+
+			return result.size() > 0
+		} catch (error) {
+			console.warn('Clipper2 polygonIntersect failed, falling back to basic check:', error)
+			return ecmaOp2.polygonIntersect(p1, p2)
+		}
+	}
+
+	async distinctPolygons(polygons: Polygon[]): Promise<boolean> {
+		try {
+			const module = await ensureClipper2Initialized()
+
+			// Check all pairs of polygons for intersection
+			for (let i = 0; i < polygons.length; i++) {
+				for (let j = i + 1; j < polygons.length; j++) {
+					const path1 = module.MakePathD(this.polygonToPathD(polygons[i]))
+					const path2 = module.MakePathD(this.polygonToPathD(polygons[j]))
+
+					const paths1 = new module.PathsD()
+					paths1.push_back(path1)
+					const paths2 = new module.PathsD()
+					paths2.push_back(path2)
+
+					const result = module.IntersectD(paths1, paths2, module.FillRule.EvenOdd, 2)
+
+					if (result.size() > 0) {
+						return false // Found intersection, polygons are not distinct
+					}
+				}
+			}
+			return true // No intersections found, polygons are distinct
+		} catch (error) {
+			console.warn('Clipper2 distinctPolygons failed, falling back to basic check:', error)
+			return ecmaOp2.distinctPolygons(polygons)
 		}
 	}
 }

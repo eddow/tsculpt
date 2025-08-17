@@ -1,12 +1,9 @@
-import type Op2 from '@tsculpt/op2'
 import { assert } from '@tsculpt/ts/debug'
 import { cached } from '@tsculpt/ts/decorators'
-import di from '@tsculpt/ts/di'
 import earcut from 'earcut'
 import { v2 } from './builders'
 import { Vector2 } from './bunches'
-
-const { op2 } = di<{ op2: Op2 }>()
+import { ecmaOp2 } from '@tsculpt/op2'
 export type Surface = [Vector2, Vector2, Vector2][]
 
 class ArrayMappingArray<T> extends Array<T> {
@@ -16,14 +13,14 @@ class ArrayMappingArray<T> extends Array<T> {
 }
 
 @assert.integrity({
-	'No intersections': async function () {
+	'No intersections': function () {
 		for (let i = 0; i < this.length - 1; i++) {
 			for (let j = i + 2; j < this.length; j++) {
 				const a = [i, i + 1]
 				const b = [j, (j + 1) % this.length]
 				if (a[0] === b[0] || a[0] === b[1] || a[1] === b[0] || a[1] === b[1]) continue
 
-				if (await op2.vectorIntersect([this[a[0]], this[a[1]]], [this[b[0]], this[b[1]]])) {
+				if (ecmaOp2.vectorIntersect([this[a[0]], this[a[1]]], [this[b[0]], this[b[1]]])) {
 					return false
 				}
 			}
@@ -75,10 +72,10 @@ export interface IndexedHolesShape {
 
 @assert.integrity({
 	'All holes in polygon': function () {
-		return this.holes.every((hole) => hole.every((v) => op2.inPolygon(v, this.polygon)))
+		return this.holes.every((hole) => hole.every((v) => ecmaOp2.inPolygon(v, this.polygon)))
 	},
 	'Distinct holes': function () {
-		return op2.distinctPolygons(this.holes)
+		return ecmaOp2.distinctPolygons(this.holes)
 	},
 })
 export class Shape {
@@ -154,7 +151,7 @@ export class Shape {
 
 @assert.integrity({
 	'Distinct shapes': function () {
-		return op2.distinctPolygons(this.map((s) => s.polygon))
+		return ecmaOp2.distinctPolygons(this.map((s) => s.polygon))
 	},
 })
 /**
