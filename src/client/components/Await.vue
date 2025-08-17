@@ -99,7 +99,6 @@ watch(result, async (result) => {
 })
 </script>
 <template>
-
 	<slot name="always" :result="result">
 		<template v-if="result === waiting">
 			<slot name="loading"><ProgressSpinner /></slot>
@@ -110,11 +109,15 @@ watch(result, async (result) => {
 			</slot>
 		</template>
 		<template v-if="lastResults !== waiting">
-			<slot
-				:result="lastResults"
-				:style="lastResults !== result ? {display: 'none'} : {}"
-			/>
+			<div class="await-result" :style="lastResults !== result ? {display: 'none'} : {}">
+				<slot :result="lastResults" />
+			</div>
 		</template>
 	</slot>
 
 </template>
+
+<style lang="sass" scoped>
+.await-result
+	height: 100%
+</style>

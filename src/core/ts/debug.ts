@@ -16,7 +16,7 @@ export const assert = asserted
 							super(...args)
 							// Run all integrity checks after construction
 							for (const [name, check] of Object.entries(rules)) {
-								if (!(check.apply(this as InstanceType<T>))) {
+								if (!check.apply(this as InstanceType<T>)) {
 									throw new Error(`Integrity check failed: ${name}`)
 								}
 							}

@@ -1,5 +1,5 @@
 import { MaybePromise } from '@tsculpt/ts/maybe'
-import { Parser, ParseSpecs } from './expression'
+import { ParseSpecs, Parser } from './expression'
 
 export const paramMarker = '\u200B'
 export class TemplateParser<Built, Value, Result> extends Parser<Built> {

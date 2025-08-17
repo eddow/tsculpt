@@ -1,16 +1,16 @@
-import type { Contour, Polygon, Vector2 } from '@tsculpt/types'
+import type { AContour, APolygon, Vector2 } from '@tsculpt/types'
 import { epsilon } from './math'
 import { MaybePromise } from './ts/maybe'
 
 export default abstract class Op2 {
-	abstract union(contour1: Contour, contour2: Contour): MaybePromise<Contour>
-	abstract intersect(contour1: Contour, contour2: Contour): MaybePromise<Contour>
-	abstract subtract(contour1: Contour, contour2: Contour): MaybePromise<Contour>
-	abstract hull(contours: Contour[]): MaybePromise<Contour>
+	abstract union(...contours: AContour[]): MaybePromise<AContour>
+	abstract intersect(...contours: AContour[]): MaybePromise<AContour>
+	abstract subtract(contour1: AContour, contour2: AContour): MaybePromise<AContour>
+	abstract hull(...contours: AContour[]): MaybePromise<AContour>
 	abstract vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): MaybePromise<boolean>
-	abstract inPolygon(point: Vector2, polygon: Polygon): MaybePromise<boolean>
-	abstract polygonIntersect(p1: Polygon, p2: Polygon): MaybePromise<boolean>
-	abstract distinctPolygons(polygons: Polygon[]): MaybePromise<boolean>
+	abstract inPolygon(point: Vector2, polygon: APolygon): MaybePromise<boolean>
+	abstract polygonIntersect(p1: APolygon, p2: APolygon): MaybePromise<boolean>
+	abstract distinctPolygons(polygons: APolygon[]): MaybePromise<boolean>
 }
 class EcmascriptEngine {
 	vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): boolean {
@@ -61,7 +61,7 @@ class EcmascriptEngine {
 
 		return isUaValid && isUbValid && isOnSegmentB
 	}
-	inPolygon(point: Vector2, polygon: Polygon): boolean {
+	inPolygon(point: Vector2, polygon: APolygon): boolean {
 		const x = point.x
 		const y = point.y
 		let inside = false
@@ -71,7 +71,7 @@ class EcmascriptEngine {
 
 		// Check if point is exactly on a vertex
 		for (const vertex of polygon) {
-			if (vertex.x === x && vertex.y === y) {
+			if (Math.abs(vertex.x - x) < epsilon && Math.abs(vertex.y - y) < epsilon) {
 				return true
 			}
 		}
@@ -84,31 +84,45 @@ class EcmascriptEngine {
 			const xj = polygon[j].x
 			const yj = polygon[j].y
 
-			// Check if point is on the edge
-			const onEdge = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi
+			// Check if point is on the edge (including horizontal and vertical edges)
 			const onHorizontalEdge =
-				yi === yj && y === yi && Math.min(xi, xj) <= x && x <= Math.max(xi, xj)
+				Math.abs(yi - yj) < epsilon &&
+				Math.abs(y - yi) < epsilon &&
+				Math.min(xi, xj) - epsilon <= x &&
+				x <= Math.max(xi, xj) + epsilon
 
-			if (onEdge || onHorizontalEdge) {
+			const onVerticalEdge =
+				Math.abs(xi - xj) < epsilon &&
+				Math.abs(x - xi) < epsilon &&
+				Math.min(yi, yj) - epsilon <= y &&
+				y <= Math.max(yi, yj) + epsilon
+
+			const onSlopedEdge =
+				Math.abs(yi - yj) > epsilon &&
+				yi > y !== yj > y &&
+				Math.abs(x - ((xj - xi) * (y - yi)) / (yj - yi) - xi) < epsilon
+
+			if (onHorizontalEdge || onVerticalEdge || onSlopedEdge) {
 				return true
 			}
 
-			// Check for ray intersection
-			const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi
-
-			if (intersect) {
-				inside = !inside
+			// Check for ray intersection (exclude horizontal edges)
+			if (Math.abs(yi - yj) > epsilon) {
+				const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi
+				if (intersect) {
+					inside = !inside
+				}
 			}
 		}
 
 		return inside
 	}
 
-	polygonIntersect(p1: Polygon, p2: Polygon): boolean {
-		return this.inPolygon(p2[0], p1) || p1.some((v) => this.inPolygon(v, p2))
+	polygonIntersect(p1: APolygon, p2: APolygon): boolean {
+		return this.inPolygon(p2.array[0], p1) || p1.array.some((v) => this.inPolygon(v, p2))
 	}
 
-	distinctPolygons(polygons: Polygon[]): boolean {
+	distinctPolygons(polygons: APolygon[]): boolean {
 		for (let i = 0; i < polygons.length; i++) {
 			for (let j = i + 1; j < polygons.length; j++) {
 				if (this.polygonIntersect(polygons[i], polygons[j])) {

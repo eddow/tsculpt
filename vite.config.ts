@@ -19,13 +19,16 @@ export default defineConfig({
 			resolvers: [PrimeVueResolver()],
 		}),
 		dependencyInject(
-			process.env.NODE_ENV === 'test' || process.env.VITEST ?  {
-				op3: './src/op3/tester.ts',
-				op2: './src/op2/tester.ts',
-			} : {
-				op3: './src/op3/jscad.ts',
-				op2: './src/op2/tester.ts',
-			}),
+			process.env.NODE_ENV === 'test' || process.env.VITEST
+				? {
+						op3: './src/algorithms/op3.tester.ts',
+						op2: './src/algorithms/op2.tester.ts',
+					}
+				: {
+						op3: './src/algorithms/jscad.ts',
+						op2: './src/algorithms/clipper2.ts',
+					}
+		),
 	],
 	worker: {
 		format: 'es',

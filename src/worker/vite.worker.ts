@@ -1,6 +1,7 @@
 import type { Module, SourceFiles } from '@client/lib/source'
 import { AMesh, GenerationParameters, ParametersConfig } from '@tsculpt'
-import { MaybePromise, withGlobals } from '@tsculpt/globals'
+import { withGlobals } from '@tsculpt/globals'
+import { MaybePromise } from '@tsculpt/ts/maybe'
 import { MeshPack, packMesh } from '../client/lib/pack'
 import expose from './workerRef'
 

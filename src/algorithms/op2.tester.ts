@@ -12,16 +12,16 @@ export class FakeContour extends Contour {
 class TesterEngine extends Op2 {
 	private operationCount = 0
 
-	async union(_contour1: Contour, _contour2: Contour): Promise<Contour> {
+	async union(...contours: Contour[]): Promise<Contour> {
 		this.operationCount++
 		// Return a fake contour with operation info
-		return new FakeContour(`union_${this.operationCount}_contour1_contour2`)
+		return new FakeContour(`union_${this.operationCount}_${contours.length}_contours`)
 	}
 
-	async intersect(_contour1: Contour, _contour2: Contour): Promise<Contour> {
+	async intersect(...contours: Contour[]): Promise<Contour> {
 		this.operationCount++
 		// Return a fake contour with operation info
-		return new FakeContour(`intersect_${this.operationCount}_contour1_contour2`)
+		return new FakeContour(`intersect_${this.operationCount}_${contours.length}_contours`)
 	}
 
 	async subtract(_contour1: Contour, _contour2: Contour): Promise<Contour> {
@@ -30,7 +30,7 @@ class TesterEngine extends Op2 {
 		return new FakeContour(`subtract_${this.operationCount}_contour1_contour2`)
 	}
 
-	async hull(contours: Contour[]): Promise<Contour> {
+	async hull(...contours: Contour[]): Promise<Contour> {
 		this.operationCount++
 		// Return a fake contour with operation info
 		return new FakeContour(`hull_${this.operationCount}_${contours.length}_contours`)

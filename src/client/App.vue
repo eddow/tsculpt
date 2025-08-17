@@ -16,7 +16,7 @@ export function useMenuItems() {
 				<Button @click="toggleTheme()" :icon="isDark ? 'pi pi-sun' : 'pi pi-moon'" />
 			</template>
 		</Menubar>
-		<router-view></router-view>
+		<router-view class="router-view"></router-view>
 	</div>
 </template>
 
@@ -80,9 +80,6 @@ const menuItems = computed(() => [
 		background-color: #242424
 		color: rgba(255, 255, 255, 0.87)
 
-.main-panel
+.router-view
 	flex: 1
-	:deep(.p-panel-content)
-		height: 100%
-		padding: 0
 </style>

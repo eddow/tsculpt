@@ -1,7 +1,7 @@
 import { cached } from '@tsculpt/ts/decorators'
 import { VectorMap } from '../vectorSet'
 import { Matrix4, Vector, Vector3 } from './bunches'
-
+// TODO: AMesh and AContour should have .union(...), .substract, ...
 type Numbers3 = readonly [number, number, number]
 
 export abstract class AMesh {

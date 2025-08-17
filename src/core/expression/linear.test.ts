@@ -1,8 +1,11 @@
+import { epsilon } from '@tsculpt/math'
 import { describe, expect, it } from 'vitest'
 import { v3 } from '../types/builders'
+import { v2 } from '../types/builders'
 import { Vector3 } from '../types/bunches'
+import { AContour, Contour, Polygon, Shape } from '../types/contour'
 import { AMesh, Mesh } from '../types/mesh'
-import { mesh } from './linear'
+import { contour, mesh, vector } from './linear'
 
 // Helper function to create a simple test mesh
 function createTestMesh(): Mesh {
@@ -14,12 +17,20 @@ function createTestMesh(): Mesh {
 	return new Mesh(faces)
 }
 
+// Helper function to create a simple test contour
+function createTestContour(): Contour {
+	const vertices = [v2(0, 0), v2(1, 0), v2(0, 1)]
+	const polygon = new Polygon(...vertices)
+	const shape = new Shape(polygon)
+	return new Contour(shape)
+}
+
 describe('Mesh operations', () => {
 	describe('mesh template tag', () => {
 		it('should handle translation with vector', async () => {
 			const testMesh = createTestMesh()
 
-			const result = await mesh`${testMesh} + [1 2 3]`
+			const result = await mesh`${testMesh} + (1, 2, 3)`
 
 			// Check that vertices are translated
 			expect(result.vectors.length).toBe(testMesh.vectors.length)
@@ -51,7 +62,7 @@ describe('Mesh operations', () => {
 		it('should handle scaling with vector', async () => {
 			const testMesh = createTestMesh()
 
-			const result = await mesh`${testMesh} * [2 3 4]`
+			const result = await mesh`${testMesh} * (2, 3, 4)`
 
 			// Check that vertices are scaled by vector components
 			expect(result.vectors.length).toBe(testMesh.vectors.length)
@@ -102,7 +113,7 @@ describe('Mesh operations', () => {
 			const mesh2 = createTestMesh()
 			const mesh3 = createTestMesh()
 
-			const result = await 	mesh`${mesh1} | ${mesh2} | ${mesh3}`
+			const result = await mesh`${mesh1} | ${mesh2} | ${mesh3}`
 
 			// Should return a mesh (from tester engine)
 			expect(result).toBeInstanceOf(AMesh)
@@ -124,7 +135,7 @@ describe('Mesh operations', () => {
 		it('should handle complex expressions with translation and scaling', async () => {
 			const testMesh = createTestMesh()
 
-			const result = await mesh`(${testMesh} + [1 0 0]) * 2`
+			const result = await mesh`(${testMesh} + (1, 0, 0)) * 2`
 
 			// Check that vertices are translated and then scaled
 			expect(result.vectors.length).toBe(testMesh.vectors.length)
@@ -142,7 +153,7 @@ describe('Mesh operations', () => {
 			const mesh2 = createTestMesh()
 			const mesh3 = createTestMesh()
 
-			const result = await mesh`(${mesh1} + [1 0 0]) & ${mesh2} | ${mesh3}`
+			const result = await mesh`${mesh1} + (1, 0, 0) & ${mesh2} | ${mesh3}`
 
 			// Should return a mesh (from tester engine)
 			expect(result).toBeInstanceOf(AMesh)
@@ -152,7 +163,7 @@ describe('Mesh operations', () => {
 		it('should handle vector literals in expressions', async () => {
 			const testMesh = createTestMesh()
 
-			const result = await mesh`${testMesh} + [0.5 1.5 2.5]`
+			const result = await mesh`${testMesh} + (0.5, 1.5, 2.5)`
 
 			expect(result.vectors.length).toBe(testMesh.vectors.length)
 			for (let i = 0; i < testMesh.vectors.length; i++) {
@@ -182,7 +193,7 @@ describe('Mesh operations', () => {
 		it('should handle multiple translations', async () => {
 			const testMesh = createTestMesh()
 
-			const result = await mesh`${testMesh} + [1 0 0] + [0 1 0]`
+			const result = await mesh`${testMesh} + (1, 0, 0) + (0, 1, 0)`
 
 			expect(result.vectors.length).toBe(testMesh.vectors.length)
 			for (let i = 0; i < testMesh.vectors.length; i++) {
@@ -232,19 +243,19 @@ describe('Mesh operations', () => {
 		it('should throw when trying to subtract non-mesh from mesh', () => {
 			const mesh1 = createTestMesh()
 
-			expect(() => mesh`${mesh1} - [1 2 3]`).toThrow()
+			expect(() => mesh`${mesh1} - (1, 2, 3)`).toThrow()
 		})
 
 		it('should throw when trying to intersect non-mesh', () => {
 			const mesh1 = createTestMesh()
 
-			expect(() => mesh`${mesh1} & [1 2 3]`).toThrow()
+			expect(() => mesh`${mesh1} & (1, 2, 3)`).toThrow()
 		})
 
 		it('should throw when trying to union non-mesh', () => {
 			const mesh1 = createTestMesh()
 
-			expect(() => mesh`${mesh1} | [1 2 3]`).toThrow()
+			expect(() => mesh`${mesh1} | (1, 2, 3)`).toThrow()
 		})
 
 		it('should handle precedence correctly', async () => {
@@ -290,7 +301,7 @@ describe('Mesh operations', () => {
 		it('should handle translation with zero vector (no translation)', async () => {
 			const testMesh = createTestMesh()
 
-			const result = await mesh`${testMesh} + [0 0 0]`
+			const result = await mesh`${testMesh} + (0, 0, 0)`
 
 			// Should return the original mesh unchanged
 			expect(result.vectors.length).toBe(testMesh.vectors.length)
@@ -307,8 +318,8 @@ describe('Mesh operations', () => {
 			const mesh1 = createTestMesh()
 			const mesh2 = createTestMesh()
 
-			// Test complex expression: (mesh1 + [1 0 0]) * 2 - mesh2
-			const result = await mesh`(${mesh1} + [1 0 0]) * 2 - ${mesh2}`
+			// Test complex expression: (mesh1 + (1, 0, 0)) * 2 - mesh2
+			const result = await mesh`(${mesh1} + (1, 0, 0)) * 2 - ${mesh2}`
 
 			// Should return a mesh (from tester engine for boolean operations)
 			expect(result).toBeInstanceOf(AMesh)
@@ -318,7 +329,7 @@ describe('Mesh operations', () => {
 		it('should handle rotation with ^ operator', async () => {
 			const testMesh = createTestMesh()
 
-			const result = await mesh`${testMesh} ^ [0 0 1.5]`
+			const result = await mesh`${testMesh} ^ (0, 0, 1.5)`
 
 			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(testMesh.vectors.length)
@@ -361,7 +372,7 @@ describe('Mesh operations', () => {
 			const cube = new Mesh(faces)
 
 			// Rotate the cube around Z axis by π/2 radians (90 degrees)
-			const rotatedCube = await mesh`${cube} ^ [0 0 1.5708]`
+			const rotatedCube = await mesh`${cube} ^ (0, 0, 1.5708)`
 
 			expect(rotatedCube).toBeInstanceOf(AMesh)
 			expect(rotatedCube.vectors.length).toBe(cube.vectors.length)
@@ -392,7 +403,7 @@ describe('Mesh operations', () => {
 		it('should handle vector literals with parameters in z', async () => {
 			const zValue = 5.5
 
-			const result = await mesh`${createTestMesh()} + [0 0 ${zValue}]`
+			const result = await mesh`${createTestMesh()} + (0, 0, ${zValue})`
 
 			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(createTestMesh().vectors.length)
@@ -413,7 +424,7 @@ describe('Mesh operations', () => {
 		it('should handle vector literals with parameters in y', async () => {
 			const yValue = 5.5
 
-			const result = await mesh`${createTestMesh()} + [0 ${yValue} 0]`
+			const result = await mesh`${createTestMesh()} + (0, ${yValue}, 0)`
 
 			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(createTestMesh().vectors.length)
@@ -444,7 +455,7 @@ describe('Vector operations', () => {
 
 		it('should hardcode vectors', async () => {
 			const a = v3(1, 0, 0)
-			const result = await v3`${a} + [0 1 0]`
+			const result = await v3`${a} + (0, 1, 0)`
 			expect(result).toEqual([1, 1, 0])
 		})
 
@@ -456,7 +467,7 @@ describe('Vector operations', () => {
 
 		it('should scale vectors', async () => {
 			const a = v3(1, 2, 3)
-			const result = await v3`[2 3 4] * ${a}`
+			const result = await v3`(2, 3, 4) * ${a}`
 			expect(result).toEqual([2, 6, 12])
 		})
 
@@ -488,6 +499,348 @@ describe('Vector operations', () => {
 		it('should throw on invalid expressions', async () => {
 			const a = v3(1, 0, 0)
 			expect(() => v3`invalid ${a}`).toThrow()
+		})
+	})
+})
+
+describe('Contour operations', () => {
+	describe('contour template tag', () => {
+		it('should handle contour rotation with degrees', async () => {
+			const testContour = createTestContour()
+
+			// Rotate by 90 degrees
+			const result = await contour`${testContour} ^ 90`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+
+			// Verify that the rotation actually changed the contour
+			// The vertices should be different after rotation
+			const originalVertices = testContour.array[0].polygon.array
+			const rotatedVertices = result.array[0].polygon.array
+
+			// Check that at least some vertices are different (indicating rotation occurred)
+			let hasChanges = false
+			for (let i = 0; i < originalVertices.length; i++) {
+				const original = originalVertices[i]
+				const rotated = rotatedVertices[i]
+				if (Math.abs(original.x - rotated.x) > 0.001 || Math.abs(original.y - rotated.y) > 0.001) {
+					hasChanges = true
+					break
+				}
+			}
+
+			expect(hasChanges).toBe(true)
+		})
+
+		it('should handle contour rotation with 45 degrees', async () => {
+			const testContour = createTestContour()
+
+			// Rotate by 45 degrees
+			const result = await contour`${testContour} ^ 45`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+
+		it('should handle contour translation', async () => {
+			const testContour = createTestContour()
+
+			const result = await contour`${testContour} + ${v2(1, 2)}`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+
+		it('should handle contour scaling', async () => {
+			const testContour = createTestContour()
+
+			const result = await contour`${testContour} * 2`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+
+		it('should handle contour boolean operations', async () => {
+			const contour1 = createTestContour()
+			const contour2 = createTestContour()
+
+			const unionResult = await contour`${contour1} | ${contour2}`
+			const intersectionResult = await contour`${contour1} & ${contour2}`
+			const subtractionResult = await contour`${contour1} - ${contour2}`
+
+			expect(unionResult).toBeInstanceOf(AContour)
+			expect(intersectionResult).toBeInstanceOf(AContour)
+			expect(subtractionResult).toBeInstanceOf(AContour)
+		})
+	})
+})
+
+describe('Mathematical expressions', () => {
+	describe('π parsing', () => {
+		it('should parse π (Unicode) as Math.PI', async () => {
+			const testContour = createTestContour()
+			const result = await contour`${testContour} ^ π`
+
+			expect(result).toBeInstanceOf(AContour)
+			// π should be parsed as Math.PI (approximately 3.14159)
+			// The rotation should be applied
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+
+		it('should parse π (ASCII) as Math.PI', async () => {
+			const testContour = createTestContour()
+			const result = await contour`${testContour} ^ π`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+
+		it('should parse pi (case-insensitive) as Math.PI', async () => {
+			const testContour = createTestContour()
+			const result = await contour`${testContour} ^ pi`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+
+		it('should parse Pi (mixed case) as Math.PI', async () => {
+			const testContour = createTestContour()
+			const result = await contour`${testContour} ^ Pi`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+
+		it('should parse PI (uppercase) as Math.PI', async () => {
+			const testContour = createTestContour()
+			const result = await contour`${testContour} ^ PI`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+	})
+
+	describe('Vector2 rotation with mathematical expressions', () => {
+		it('should rotate Vector2 by π/4 radians', () => {
+			const vec = v2(1, 0)
+			const result = v2`${vec} ^ π/4`
+
+			// π/4 = 45 degrees, so (1,0) rotated should be approximately (0.707, 0.707)
+			expect(Math.abs(result.x - Math.SQRT1_2)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - Math.SQRT1_2)).toBeLessThan(epsilon)
+		})
+
+		it('should rotate Vector2 by π/2 radians', () => {
+			const vec = v2(1, 0)
+			const result = v2`${vec} ^ π/2`
+
+			// π/2 = 90 degrees, so (1,0) rotated should be approximately (0, 1)
+			expect(Math.abs(result.x - 0)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - 1)).toBeLessThan(epsilon)
+		})
+
+		it('should rotate Vector2 by π radians', () => {
+			const vec = v2(1, 0)
+			const result = v2`${vec} ^ π`
+
+			// π = 180 degrees, so (1,0) rotated should be approximately (-1, 0)
+			expect(Math.abs(result.x - -1)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - 0)).toBeLessThan(epsilon)
+		})
+
+		it('should rotate Vector2 by 2π radians (full rotation)', () => {
+			const vec = v2(1, 0)
+			const result = v2`${vec} ^ 2π`
+
+			// 2π = 360 degrees, so (1,0) rotated should be approximately (1, 0) again
+			expect(Math.abs(result.x - 1)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - 0)).toBeLessThan(epsilon)
+		})
+
+		it('should rotate Vector2 by 3π/4 radians', () => {
+			const vec = v2(1, 0)
+			const result = v2`${vec} ^ 3π/4`
+
+			// 3π/4 = 135 degrees, so (1,0) rotated should be approximately (-0.707, 0.707)
+			expect(Math.abs(result.x + Math.SQRT1_2)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - Math.SQRT1_2)).toBeLessThan(epsilon)
+		})
+	})
+
+	describe('Contour rotation with mathematical expressions', () => {
+		it('should rotate contour by π/4 radians', async () => {
+			const testContour = createTestContour()
+			const result = await contour`${testContour} ^ π/4`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+
+			// Verify rotation occurred by checking vertex positions changed
+			const originalVertices = testContour.array[0].polygon.array
+			const rotatedVertices = result.array[0].polygon.array
+
+			let hasChanges = false
+			for (let i = 0; i < originalVertices.length; i++) {
+				const original = originalVertices[i]
+				const rotated = rotatedVertices[i]
+				if (Math.abs(original.x - rotated.x) > 0.001 || Math.abs(original.y - rotated.y) > 0.001) {
+					hasChanges = true
+					break
+				}
+			}
+			expect(hasChanges).toBe(true)
+		})
+
+		it('should rotate contour by π/2 radians', async () => {
+			const testContour = createTestContour()
+			const result = await contour`${testContour} ^ π/2`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+
+		it('should rotate contour by π radians', async () => {
+			const testContour = createTestContour()
+			const result = await contour`${testContour} ^ π`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+
+		it('should rotate contour by 2π radians (full rotation)', async () => {
+			const testContour = createTestContour()
+			const result = await contour`${testContour} ^ 2π`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+
+			// After full rotation, vertices should be very close to original positions
+			const originalVertices = testContour.array[0].polygon.array
+			const rotatedVertices = result.array[0].polygon.array
+
+			for (let i = 0; i < originalVertices.length; i++) {
+				const original = originalVertices[i]
+				const rotated = rotatedVertices[i]
+				expect(Math.abs(original.x - rotated.x)).toBeLessThan(0.001)
+				expect(Math.abs(original.y - rotated.y)).toBeLessThan(0.001)
+			}
+		})
+	})
+
+		describe('Vector3 rotation with mathematical expressions', () => {
+		it('should rotate Vector3 around Z-axis by π/4 radians', () => {
+			const vec = v3(1, 0, 0)
+			const result = v3`${vec} ^ (0, 0, π/4)`
+
+			// π/4 = 45 degrees around Z-axis, so (1,0,0) rotated should be approximately (0.707, 0.707, 0)
+			expect(Math.abs(result.x - Math.SQRT1_2)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - Math.SQRT1_2)).toBeLessThan(epsilon)
+			expect(Math.abs(result.z - 0)).toBeLessThan(epsilon)
+		})
+
+		it('should rotate Vector3 around Z-axis by π/2 radians', () => {
+			const vec = v3(1, 0, 0)
+			const result = v3`${vec} ^ (0, 0, π/2)`
+
+			// π/2 = 90 degrees around Z-axis, so (1,0,0) rotated should be approximately (0, 1, 0)
+			expect(Math.abs(result.x - 0)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - 1)).toBeLessThan(epsilon)
+			expect(Math.abs(result.z - 0)).toBeLessThan(epsilon)
+		})
+
+		it('should rotate Vector3 around Z-axis by π radians', () => {
+			const vec = v3(1, 0, 0)
+			const result = v3`${vec} ^ (0, 0, π)`
+
+			// π = 180 degrees around Z-axis, so (1,0,0) rotated should be approximately (-1, 0, 0)
+			expect(Math.abs(result.x - -1)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - 0)).toBeLessThan(epsilon)
+			expect(Math.abs(result.z - 0)).toBeLessThan(epsilon)
+		})
+
+		it('should rotate Vector3 around Z-axis by 2π radians (full rotation)', () => {
+			const vec = v3(1, 0, 0)
+			const result = v3`${vec} ^ (0, 0, 2π)`
+
+			// 2π = 360 degrees around Z-axis, so (1,0,0) rotated should be approximately (1, 0, 0) again
+			expect(Math.abs(result.x - 1)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - 0)).toBeLessThan(epsilon)
+			expect(Math.abs(result.z - 0)).toBeLessThan(epsilon)
+		})
+
+		it('should rotate Vector3 around Z-axis by 3π/4 radians', () => {
+			const vec = v3(1, 0, 0)
+			const result = v3`${vec} ^ (0, 0, 3π/4)`
+
+			// 3π/4 = 135 degrees around Z-axis, so (1,0,0) rotated should be approximately (-0.707, 0.707, 0)
+			expect(Math.abs(result.x + Math.SQRT1_2)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - Math.SQRT1_2)).toBeLessThan(epsilon)
+			expect(Math.abs(result.z - 0)).toBeLessThan(epsilon)
+		})
+
+		it('should rotate Vector3 around X-axis by π/2 radians', () => {
+			const vec = v3(0, 1, 0)
+			const result = v3`${vec} ^ (π/2, 0, 0)`
+
+			// π/2 = 90 degrees around X-axis, so (0,1,0) rotated should be approximately (0, 0, 1)
+			expect(Math.abs(result.x - 0)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - 0)).toBeLessThan(epsilon)
+			expect(Math.abs(result.z - 1)).toBeLessThan(epsilon)
+		})
+
+		it('should rotate Vector3 around Y-axis by π/2 radians', () => {
+			const vec = v3(1, 0, 0)
+			const result = v3`${vec} ^ (0, π/2, 0)`
+
+			// π/2 = 90 degrees around Y-axis, so (1,0,0) rotated should be approximately (0, 0, -1)
+			expect(Math.abs(result.x - 0)).toBeLessThan(epsilon)
+			expect(Math.abs(result.y - 0)).toBeLessThan(epsilon)
+			expect(Math.abs(result.z - -1)).toBeLessThan(epsilon)
+		})
+
+		it('should handle complex rotation around multiple axes', () => {
+			const vec = v3(1, 0, 0)
+			const result = v3`${vec} ^ (π/4, π/6, π/3)`
+
+			// Complex rotation around all three axes
+			// This tests that the rotation system can handle non-zero components on all axes
+			expect(result.x).toBeDefined()
+			expect(result.y).toBeDefined()
+			expect(result.z).toBeDefined()
+
+			// The result should be a valid 3D vector (not NaN or infinite)
+			expect(isFinite(result.x)).toBe(true)
+			expect(isFinite(result.y)).toBe(true)
+			expect(isFinite(result.z)).toBe(true)
+		})
+	})
+
+	describe('Combined operations with mathematical expressions', () => {
+		it('should handle rotation and scaling', async () => {
+			const testContour = createTestContour()
+			const result = await contour`${testContour} ^ π/4 * 2`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+
+		it('should handle rotation and translation', async () => {
+			const testContour = createTestContour()
+			const result = await contour`${testContour} ^ π/2 + ${v2(1, 1)}`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBe(testContour.array.length)
+		})
+
+		it('should handle complex boolean operations with mathematical expressions', async () => {
+			const contour1 = createTestContour()
+			const contour2 = createTestContour()
+
+			const result = await contour`(${contour1} ^ π/4) | (${contour2} ^ π/2)`
+
+			expect(result).toBeInstanceOf(AContour)
+			expect(result.array.length).toBeGreaterThan(0)
 		})
 	})
 })

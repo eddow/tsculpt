@@ -1,7 +1,7 @@
 import { Contour, Polygon, Shape, Vector2 } from '@tsculpt/types'
 import { v2 } from '@tsculpt/types/builders'
 import { beforeEach, describe, expect, it } from 'vitest'
-import engine from './tester'
+import engine from './op2.tester'
 
 // Helper function to create a simple test contour
 function createTestContour(): Contour {
@@ -53,7 +53,7 @@ describe('Op2TesterEngine', () => {
 		const contour1 = createTestContour()
 		const contour2 = createTestContour()
 
-		const result = await engine.hull([contour1, contour2])
+		const result = await engine.hull(contour1, contour2)
 
 		expect(result).toBeInstanceOf(Contour)
 		expect(result.flatPolygons.length).toBeGreaterThan(0)
@@ -65,7 +65,7 @@ describe('Op2TesterEngine', () => {
 		const contour2 = createTestContour()
 		const contour3 = createTestContour()
 
-		const result = await engine.hull([contour1, contour2, contour3])
+		const result = await engine.hull(contour1, contour2, contour3)
 
 		expect(result).toBeInstanceOf(Contour)
 		expect(result.flatPolygons.length).toBeGreaterThan(0)
@@ -87,7 +87,7 @@ describe('Op2TesterEngine', () => {
 		await engine.subtract(contour1, contour2)
 		expect(engine.getOperationCount()).toBe(3)
 
-		await engine.hull([contour1, contour2])
+		await engine.hull(contour1, contour2)
 		expect(engine.getOperationCount()).toBe(4)
 	})
 
@@ -106,11 +106,11 @@ describe('Op2TesterEngine', () => {
 		const contour1 = createTestContour()
 		const contour2 = createTestContour()
 
-		const unionResult = await engine.union(contour1, contour2) as any
+		const unionResult = (await engine.union(contour1, contour2)) as any
 		expect(unionResult.id).toContain('union')
-		expect(unionResult.id).toContain('contour1_contour2')
+		expect(unionResult.id).toContain('2_contours')
 
-		const hullResult = await engine.hull([contour1, contour2]) as any
+		const hullResult = (await engine.hull(contour1, contour2)) as any
 		expect(hullResult.id).toContain('hull')
 		expect(hullResult.id).toContain('2_contours')
 	})

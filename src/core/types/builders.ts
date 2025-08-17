@@ -5,8 +5,8 @@ function isTemplateStringsArray(v: unknown): v is TemplateStringsArray {
 	return typeof v === 'object' && !!v && 'raw' in v
 }
 
-function expectDimension(v: Vector|Promise<Vector>, dim: number) {
-	if(v instanceof Promise) throw new Error('Expected resolved vector, got promise')
+function expectDimension(v: Vector | Promise<Vector>, dim: number) {
+	if (v instanceof Promise) throw new Error('Expected resolved vector, got promise')
 	if (v.length !== dim) {
 		throw new Error(`Expected vector of dimension ${dim}, got ${v.length}`)
 	}

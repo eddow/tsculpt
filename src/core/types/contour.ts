@@ -1,17 +1,63 @@
+import { ecmaOp2 } from '@tsculpt/op2'
 import { assert } from '@tsculpt/ts/debug'
-import { cached } from '@tsculpt/ts/decorators'
+import { cache, cached } from '@tsculpt/ts/decorators'
+import { Indexable } from '@tsculpt/ts/indexable'
 import earcut from 'earcut'
 import { v2 } from './builders'
-import { Vector2 } from './bunches'
-import { ecmaOp2 } from '@tsculpt/op2'
+import { Matrix3, Vector2 } from './bunches'
 export type Surface = [Vector2, Vector2, Vector2][]
 
-class ArrayMappingArray<T> extends Array<T> {
+// Abstract base class for array-like behavior
+abstract class Mappable<T> {
+	public abstract readonly array: T[]
 	map<U>(fn: (value: T, index: number, array: T[]) => U): Array<U> {
-		return Array.from(this).map(fn)
+		return this.array.map(fn)
+	}
+	flatMap<U>(fn: (value: T, index: number, array: T[]) => U[]): Array<U> {
+		return this.array.flatMap(fn)
+	}
+	every(fn: (value: T, index: number, array: T[]) => boolean): boolean {
+		return this.array.every(fn)
+	}
+	get length() {
+		return this.array.length
+	}
+	[Symbol.iterator](): Iterator<T> {
+		return this.array[Symbol.iterator]()
 	}
 }
 
+const ArraySim = <T>() =>
+	Indexable(Mappable<T>, {
+		get(this: Mappable<T>, index) {
+			return this.array[index]
+		},
+		set(this: Mappable<T>, index, value) {
+			this.array[index] = value
+		},
+	})
+
+// Abstract base class for Polygon
+export abstract class APolygon extends ArraySim<Vector2>() {
+	/**
+	 * Returns a reversed copy of the polygon
+	 */
+	@cached
+	get reversed(): Polygon {
+		const reversed = new Polygon(...this.array.reverse())
+		cache(reversed, 'reversed', this)
+		return reversed
+	}
+
+	/**
+	 * Maps each vertex through a transformation function
+	 */
+	mapVertex(fn: (vertex: Vector2) => Vector2): Polygon {
+		return new Polygon(...this.map(fn))
+	}
+}
+
+// Concrete Polygon implementation
 @assert.integrity({
 	'No intersections': function () {
 		for (let i = 0; i < this.length - 1; i++) {
@@ -28,11 +74,12 @@ class ArrayMappingArray<T> extends Array<T> {
 		return true
 	},
 })
-/**
- * Represents a 2D polygon as an array of Vector2 vertices.
- * Vertices should be ordered counter-clockwise for positive polygons.
- */
-export class Polygon extends ArrayMappingArray<Vector2> {
+export class Polygon extends APolygon {
+	public array: Vector2[]
+	constructor(...array: Vector2[]) {
+		super()
+		this.array = array
+	}
 	/**
 	 * Creates a polygon from individual coordinates
 	 */
@@ -50,43 +97,27 @@ export class Polygon extends ArrayMappingArray<Vector2> {
 		}
 		return new Polygon(...vertices)
 	}
+}
 
-	/**
-	 * Returns a reversed copy of the polygon
-	 */
-	get reversed(): Polygon {
-		return new Polygon(...this.reverse())
-	}
+// Intermediate Polygon that computes when accessing array
+export abstract class IntermediatePolygon extends APolygon {
+	protected abstract toPolygon(): Vector2[]
 
-	/**
-	 * Maps each vertex through a transformation function
-	 */
-	mapVertex(fn: (vertex: Vector2) => Vector2): Polygon {
-		return new Polygon(...this.map(fn))
+	@cached
+	get array() {
+		return this.toPolygon()
 	}
 }
+
 export interface IndexedHolesShape {
 	polygons: number[]
 	holesIndices: number[]
 }
 
-@assert.integrity({
-	'All holes in polygon': function () {
-		return this.holes.every((hole) => hole.every((v) => ecmaOp2.inPolygon(v, this.polygon)))
-	},
-	'Distinct holes': function () {
-		return ecmaOp2.distinctPolygons(this.holes)
-	},
-})
-export class Shape {
-	/**
-	 * @param polygon CCW positive polygon
-	 * @param holes CW negative polygons
-	 */
-	constructor(
-		public readonly polygon: Polygon,
-		public readonly holes: Polygon[] = []
-	) {}
+// Abstract base class for Shape
+export abstract class AShape {
+	abstract readonly polygon: APolygon
+	abstract readonly holes: APolygon[]
 
 	/**
 	 * Maps each vertex through a transformation function, preserving shape structure
@@ -105,7 +136,7 @@ export class Shape {
 		const vertices = polygon.flatMap((v) => [v.x, v.y])
 
 		// Flatten all holes (in reverse order) and record their start indices
-		const holeVertices = holes.flatMap((hole) => hole.reverse().flatMap((v) => [v.x, v.y]))
+		const holeVertices = holes.flatMap((hole) => hole.reversed.flatMap((v) => [v.x, v.y]))
 
 		// Compute the start index of each hole in the combined vertex array
 		// (earcut expects an array of hole start indices, not lengths)
@@ -122,6 +153,7 @@ export class Shape {
 			holesIndices: holeIndices,
 		}
 	}
+
 	triangulate(winding: 'ccw' | 'cw' = 'ccw'): Surface {
 		const { polygons: allVertices, holesIndices } = this.indexedHoles
 
@@ -149,25 +181,59 @@ export class Shape {
 	}
 }
 
+// Concrete Shape implementation
 @assert.integrity({
-	'Distinct shapes': function () {
-		return ecmaOp2.distinctPolygons(this.map((s) => s.polygon))
+	'All holes in polygon': function () {
+		return this.holes.every((hole) => hole.every((v) => ecmaOp2.inPolygon(v, this.polygon)))
+	},
+	'Distinct holes': function () {
+		return ecmaOp2.distinctPolygons(this.holes)
 	},
 })
-/**
- * Represents a 2D contour/profile for extrusion operations.
- * A contour is a set of shapes, where each shape contains a main polygon and optional holes.
- */
-export class Contour extends ArrayMappingArray<Shape> {
+export class Shape extends AShape {
+	/**
+	 * @param polygon CCW positive polygon
+	 * @param holes CW negative polygons
+	 */
+	constructor(
+		public readonly polygon: APolygon,
+		public readonly holes: APolygon[] = []
+	) {
+		super()
+	}
+}
+
+// Intermediate Shape that computes when accessing polygon/holes
+export abstract class IntermediateShape extends AShape {
+	protected abstract toShape(): { polygon: APolygon; holes: APolygon[] }
+	private _shape: { polygon: APolygon; holes: APolygon[] } | undefined
+
+	@cached
+	get polygon() {
+		if (!this._shape) this._shape = this.toShape()
+		return this._shape.polygon
+	}
+
+	@cached
+	get holes() {
+		if (!this._shape) this._shape = this.toShape()
+		return this._shape.holes
+	}
+}
+
+// Abstract base class for Contour
+export abstract class AContour extends ArraySim<Shape>() {
 	/**
 	 * Creates a contour from a single polygon
 	 */
-	static from(polygon: Polygon): Contour
+	static from(polygon: APolygon): Contour
 	static from(vertices: Vector2[]): Contour
-	static from(polygonOrVertices: Polygon | Vector2[]): Contour {
+	static from(polygonOrVertices: APolygon | Vector2[]): Contour {
 		return new Contour(
 			new Shape(
-				polygonOrVertices instanceof Polygon ? polygonOrVertices : new Polygon(...polygonOrVertices)
+				polygonOrVertices instanceof APolygon
+					? polygonOrVertices
+					: new Polygon(...polygonOrVertices)
 			)
 		)
 	}
@@ -183,12 +249,144 @@ export class Contour extends ArrayMappingArray<Shape> {
 	 * Returns a flat array of all polygons (main polygons and holes) for extrusion operations
 	 * Each polygon can be extruded individually
 	 */
-	get flatPolygons(): Polygon[] {
-		const polygons: Polygon[] = []
+	get flatPolygons(): APolygon[] {
+		const polygons: APolygon[] = []
 		for (const shape of this) {
 			polygons.push(shape.polygon)
 			polygons.push(...shape.holes)
 		}
 		return polygons
+	}
+
+	// Transformation methods that create MatrixedContour instances
+	transform(matrix: Matrix3): AContour {
+		return new MatrixedContour(this, matrix)
+	}
+
+	translate(t: Vector2): AContour {
+		const translationMatrix = new Matrix3(1, 0, t.x, 0, 1, t.y, 0, 0, 1)
+		return this.transform(translationMatrix)
+	}
+
+	scale(s: number | Vector2): AContour {
+		const scaleVector = typeof s === 'number' ? new Vector2(s, s) : s
+		const scaleMatrix = new Matrix3(scaleVector.x, 0, 0, 0, scaleVector.y, 0, 0, 0, 1)
+		return this.transform(scaleMatrix)
+	}
+
+	rotate(angle: number): AContour {
+		const cos = Math.cos(angle)
+		const sin = Math.sin(angle)
+		const rotationMatrix = new Matrix3(cos, -sin, 0, sin, cos, 0, 0, 0, 1)
+		return this.transform(rotationMatrix)
+	}
+}
+
+// Concrete Contour implementation
+@assert.integrity({
+	'Distinct shapes': function () {
+		return ecmaOp2.distinctPolygons(this.map((s) => s.polygon))
+	},
+})
+export class Contour extends AContour {
+	public array: Shape[]
+	constructor(...array: Shape[]) {
+		super()
+		this.array = array
+	}
+
+	/**
+	 * Creates a contour from a single polygon
+	 */
+	static from(polygon: APolygon): Contour
+	static from(vertices: Vector2[]): Contour
+	static from(polygonOrVertices: APolygon | Vector2[]): Contour {
+		return new Contour(
+			new Shape(
+				polygonOrVertices instanceof APolygon
+					? polygonOrVertices
+					: new Polygon(...polygonOrVertices)
+			)
+		)
+	}
+
+	/**
+	 * Maps each vertex through a transformation function, preserving shape structure
+	 */
+	mapVertex(fn: (vertex: Vector2) => Vector2): Contour {
+		return new Contour(...this.map((shape) => shape.mapVertex(fn)))
+	}
+
+	/**
+	 * Returns a flat array of all polygons (main polygons and holes) for extrusion operations
+	 * Each polygon can be extruded individually
+	 */
+	get flatPolygons(): APolygon[] {
+		const polygons: APolygon[] = []
+		for (const shape of this) {
+			polygons.push(shape.polygon)
+			polygons.push(...shape.holes)
+		}
+		return polygons
+	}
+}
+
+// Intermediate Contour that computes when accessing array
+export abstract class IntermediateContour extends AContour {
+	protected abstract toContour(): Shape[]
+
+	@cached
+	get array() {
+		return this.toContour()
+	}
+}
+
+// Internal MatrixedContour class - not exported
+class MatrixedContour extends IntermediateContour {
+	private matrix: Matrix3
+
+	constructor(
+		private readonly sourceContour: AContour,
+		matrix: Matrix3 = new Matrix3(1, 0, 0, 0, 1, 0, 0, 0, 1)
+	) {
+		super()
+		this.matrix = matrix
+	}
+
+	protected toContour(): Shape[] {
+		return this.sourceContour.mapVertex((v) => this.applyMatrix(v)).array
+	}
+
+	private applyMatrix(v: Vector2): Vector2 {
+		// Apply 3x3 transformation matrix to 2D vector
+		// Treat the vector as homogeneous coordinates [x, y, 1]
+		const x = v.x * this.matrix.m(0, 0) + v.y * this.matrix.m(0, 1) + this.matrix.m(0, 2)
+		const y = v.x * this.matrix.m(1, 0) + v.y * this.matrix.m(1, 1) + this.matrix.m(1, 2)
+		const w = v.x * this.matrix.m(2, 0) + v.y * this.matrix.m(2, 1) + this.matrix.m(2, 2)
+
+		// Perspective divide if w != 1
+		if (w !== 1 && w !== 0) {
+			return new Vector2(x / w, y / w)
+		}
+		return new Vector2(x, y)
+	}
+
+	// Override transformation methods to work with existing matrix
+	override transform(matrix: Matrix3): AContour {
+		return new MatrixedContour(this.sourceContour, this.multiplyMatrix(matrix))
+	}
+
+	private multiplyMatrix(other: Matrix3): Matrix3 {
+		const result = new Matrix3(0, 0, 0, 0, 0, 0, 0, 0, 0)
+		for (let i = 0; i < 3; i++) {
+			for (let j = 0; j < 3; j++) {
+				let sum = 0
+				for (let k = 0; k < 3; k++) {
+					sum += other.m(i, k) * this.matrix.m(k, j)
+				}
+				result[i * 3 + j] = sum
+			}
+		}
+		return result
 	}
 }

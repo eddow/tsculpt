@@ -74,3 +74,14 @@ The Clipper2Engine automatically:
 3. Provides fallback behavior if initialization fails
 
 Make sure the `clipper2z.wasm` file is available in the public directory (copied automatically during build).
+
+# Boolean engine
+
+For now, the test engine is used for testing and JSCad is used for actual boolean operations
+
+For now, engines implement:
+- union
+- intersection
+- difference
+
+TODO: try https://github.com/timschmidt/csgrs ?

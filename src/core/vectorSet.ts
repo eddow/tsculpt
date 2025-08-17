@@ -20,7 +20,6 @@ export class VectorMap<V extends Vector> {
 		return this.mapped.get(k)!
 	}
 	face(a: V, b: V, c: V): [number, number, number] {
-		// TODO: use `face`
 		return [this.index(a), this.index(b), this.index(c)]
 	}
 	size(): number {

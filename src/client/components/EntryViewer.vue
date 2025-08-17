@@ -30,7 +30,8 @@ const displaySettings = localStored('viewer-display', {
 })
 
 const parameters = ref<GenerationParameters>({ ...defaultGlobals })
-watch(() => [props.module, props.entry], goHome, { immediate: true })
+//watch(() => [props.module, props.entry], ()=> setTimeout(goHome), { immediate: true })
+// TODO: remember cameras per model/entry
 function goHome() {
 	viewerRef.value?.resetCamera()
 }
