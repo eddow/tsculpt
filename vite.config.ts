@@ -4,8 +4,9 @@ import { PrimeVueResolver } from '@primevue/auto-import-resolver'
 import vue from '@vitejs/plugin-vue'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
-import meshPlugin from './src/client/vite-plugin-mesh'
-import paramMetadataInjector from './src/client/vite-plugin-param-metadata'
+import dependencyInject from './src/vite/di'
+import meshPlugin from './src/vite/mesh'
+import paramMetadataInjector from './src/vite/paramMetadata'
 
 export default defineConfig({
 	plugins: [
@@ -17,15 +18,18 @@ export default defineConfig({
 			globs: ['src/client/**/*.vue'],
 			resolvers: [PrimeVueResolver()],
 		}),
+		dependencyInject({
+			op3: './src/op3/jscad.ts',
+			op2: './src/op2/tester.ts',
+		}),
 	],
 	worker: {
 		format: 'es',
 	},
 	resolve: {
 		alias: {
-			'@': fileURLToPath(new URL('./src/client', import.meta.url)),
+			'@client': fileURLToPath(new URL('./src/client', import.meta.url)),
 			'@tsculpt': fileURLToPath(new URL('./src/core', import.meta.url)),
-			'@booleans': fileURLToPath(new URL('./src/booleans/jscad.ts', import.meta.url)),
 			'@worker': fileURLToPath(new URL('./src/worker', import.meta.url)),
 		},
 	},
@@ -58,9 +62,7 @@ export default defineConfig({
 	},
 	test: {
 		include: ['src/**/*.test.ts'],
-		alias: {
-			'@booleans': fileURLToPath(new URL('./src/booleans/tester.ts', import.meta.url)),
-		},
+
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'html'],

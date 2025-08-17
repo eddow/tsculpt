@@ -1,9 +1,6 @@
-import { assert } from '@tsculpt/ts/debug'
 import { cached } from '@tsculpt/ts/decorators'
 import { VectorMap } from '../vectorSet'
 import { Matrix4, Vector, Vector3 } from './bunches'
-
-const { integrity } = assert
 
 type Numbers3 = readonly [number, number, number]
 
@@ -130,16 +127,26 @@ export abstract class AMesh {
 	}
 }
 
+export type MeshSpecification =
+	| {
+			faces: readonly Numbers3[]
+			vectors: readonly Vector3[]
+	  }
+	| readonly [Vector3, Vector3, Vector3][]
+
 export class Mesh extends AMesh {
 	readonly faces: readonly Numbers3[] = []
 	private readonly set = new VectorMap<Vector3>()
-	constructor(faces: readonly [Vector3, Vector3, Vector3][])
 	constructor(faces: readonly Numbers3[], vectors: readonly Vector3[])
+	constructor(spec: MeshSpecification)
 	constructor(
-		faces: readonly [Vector3, Vector3, Vector3][] | readonly Numbers3[],
+		specs: readonly [Vector3, Vector3, Vector3][] | readonly Numbers3[] | MeshSpecification,
 		vectors?: readonly Vector3[]
 	) {
 		super()
+		if ('vectors' in specs) vectors = specs.vectors
+		const faces =
+			'faces' in specs ? specs.faces : (specs as [Vector3, Vector3, Vector3][] | Numbers3[])
 		if (faces.length === 0) return
 		if (vectors) {
 			const indices = [] as number[]
@@ -162,14 +169,14 @@ export class Mesh extends AMesh {
 }
 
 export abstract class IntermediateMesh extends AMesh {
-	protected abstract toMesh(): Mesh
+	protected abstract toMesh(): MeshSpecification
 	private _mesh: Mesh | undefined
 	get faces() {
-		if (!this._mesh) this._mesh = this.toMesh()
+		if (!this._mesh) this._mesh = new Mesh(this.toMesh())
 		return this._mesh.faces
 	}
 	get vectors() {
-		if (!this._mesh) this._mesh = this.toMesh()
+		if (!this._mesh) this._mesh = new Mesh(this.toMesh())
 		return this._mesh.vectors
 	}
 }

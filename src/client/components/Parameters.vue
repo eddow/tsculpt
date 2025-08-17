@@ -46,8 +46,8 @@
 </template>
 
 <script setup lang="ts">
-import { localStored } from '@/lib/stores'
-import { deepEqual } from '@/lib/utils'
+import { localStored } from '@client/lib/stores'
+import { deepEqual } from '@client/lib/utils'
 import type { AMesh, GenerationParameters, ParametersConfig } from '@tsculpt'
 import { globalsConfig } from '@tsculpt/globals'
 import { computed, ref } from 'vue'

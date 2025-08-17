@@ -21,7 +21,7 @@ export function useMenuItems() {
 </template>
 
 <script setup lang="ts">
-import { isDark, toggleTheme } from '@/lib/stores'
+import { isDark, toggleTheme } from '@client/lib/stores'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed, inject, provide, Ref, ref } from 'vue'
 import { useRoute } from 'vue-router'

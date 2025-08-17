@@ -6,6 +6,7 @@ type AwaitedFunctions<APIs> = {
 		? (...args: any[]) => Awaited<R>
 		: APIs[K]
 }
+
 /**
  * Expose a worker function to the worker context.
  * @param self - The worker instance.

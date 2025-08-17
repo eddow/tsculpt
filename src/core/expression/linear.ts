@@ -1,7 +1,11 @@
-import booleans from '@booleans'
+import type Op3 from '@tsculpt/op3'
+import di from '@tsculpt/ts/di'
 import { Vector, Vector2, Vector3, isUnity, product } from '../types/bunches'
 import { AMesh, Mesh } from '../types/mesh'
 import { TemplateParser, paramMarker } from './templated'
+
+const { op3 } = di<{ op3: Op3 }>()
+
 export class SemanticError extends Error {}
 
 type LinearParameter = { type: 'parameter'; index: number }
@@ -75,7 +79,7 @@ function recur(
 		case 'subtract': {
 			const a = recur(expr.operands[0], values)
 			const b = recur(expr.operands[1], values)
-			if (a instanceof AMesh && b instanceof AMesh) return booleans.subtract(a, b)
+			if (a instanceof AMesh && b instanceof AMesh) return op3.subtract(a, b)
 			if (typeof a === 'number' && typeof b === 'number') return a - b
 			if (Array.isArray(a) && Array.isArray(b)) return Vector.sub(a, b)
 			throw new SemanticError(`Bad operand to subtract: ${a} and ${b}`)
@@ -123,7 +127,7 @@ function recur(
 					throw new SemanticError(`Bad operand to intersect: ${result}`)
 				meshes.push(result)
 			}
-			return booleans.intersect(...meshes)
+			return op3.intersect(...meshes)
 		}
 		case 'union': {
 			const meshes: AMesh[] = []
@@ -132,7 +136,7 @@ function recur(
 				if (!(result instanceof AMesh)) throw new SemanticError(`Bad operand to union: ${result}`)
 				meshes.push(result)
 			}
-			return booleans.union(...meshes)
+			return op3.union(...meshes)
 		}
 		case 'vectorWithParams': {
 			const components: number[] = []

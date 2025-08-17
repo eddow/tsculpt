@@ -84,7 +84,7 @@ describe('Contour', () => {
 
 	it('should handle contour with multiple shapes', () => {
 		const polygon1 = new Polygon(v2(0, 0), v2(1, 0), v2(1, 1), v2(0, 1))
-		const polygon2 = new Polygon(v2(2, 0), v2(3, 0), v2(3, 1), v2(2, 1))
+		const polygon2 = new Polygon(v2(10, 10), v2(11, 10), v2(11, 11), v2(10, 11))
 		const shape1 = new Shape(polygon1)
 		const shape2 = new Shape(polygon2)
 		const contour = new Contour(shape1, shape2)

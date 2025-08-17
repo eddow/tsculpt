@@ -1,14 +1,23 @@
 import { Color, Geom3, Poly3 } from '@jscad/modeling/src/geometries/types'
-import { type Engine, triangles } from '@tsculpt/booleans'
+import type Engine from '@tsculpt/op3'
 
 import { booleans, geometries } from '@jscad/modeling'
 import { Mat4 } from '@jscad/modeling/src/maths/mat4'
 import { Vec3 } from '@jscad/modeling/src/maths/vec3'
 import { hull } from '@jscad/modeling/src/operations/hulls'
-import { AMesh, IntermediateMesh, Mesh, Vector3 } from '@tsculpt/types'
+import { type AMesh, IntermediateMesh, type MeshSpecification, Vector3 } from '@tsculpt/types'
 const { union, intersect, subtract } = booleans
 
 const { geom3, poly3 } = geometries
+
+function triangles(polygon: [number, number, number][]) {
+	const vectors = polygon.map((v) => new Vector3(...v))
+	const triangles: [Vector3, Vector3, Vector3][] = []
+	for (let i = 1; i < vectors.length - 1; ++i) {
+		triangles.push([vectors[0], vectors[i], vectors[i + 1]])
+	}
+	return triangles
+}
 
 class JscadMesh extends IntermediateMesh implements Geom3 {
 	get polygons(): Poly3[] {
@@ -24,7 +33,7 @@ class JscadMesh extends IntermediateMesh implements Geom3 {
 		super()
 	}
 
-	toMesh(): Mesh {
+	toMesh(): MeshSpecification {
 		const polys = this.polygons.reduce(
 			(acc, p) => {
 				acc.push(...triangles(p.vertices))
@@ -32,7 +41,7 @@ class JscadMesh extends IntermediateMesh implements Geom3 {
 			},
 			[] as [Vector3, Vector3, Vector3][]
 		)
-		return new Mesh(polys)
+		return polys
 	}
 }
 
@@ -68,5 +77,3 @@ class JscadEngine implements Engine {
 }
 
 export default new JscadEngine()
-
-export * from '@tsculpt/booleans'

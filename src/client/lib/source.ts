@@ -18,7 +18,7 @@ export function module(path: string) {
 }
 */
 
-import { MeshPack } from '@/lib/pack'
+import { MeshPack } from '@client/lib/pack'
 import type { GenerationParameters, ParametersConfig } from '@tsculpt'
 import { WorkerManager } from './worker-manager'
 

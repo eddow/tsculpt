@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useMenuItems } from '@/App.vue'
-import EntryViewer from '@/components/EntryViewer.vue'
-import Parameters from '@/components/Parameters.vue'
+import { useMenuItems } from '@client/App.vue'
+import EntryViewer from '@client/components/EntryViewer.vue'
+import Parameters from '@client/components/Parameters.vue'
 import { ParametersConfig } from '@tsculpt'
 import { computed, ref, watch } from 'vue'
 import { entries, onModuleChanged } from '../lib/source'

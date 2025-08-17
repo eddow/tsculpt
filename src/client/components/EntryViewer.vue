@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useMenuItems } from '@/App.vue'
-import Viewer from '@/components/Viewer.vue'
-import { unpackMesh } from '@/lib/pack'
-import { localStored } from '@/lib/stores'
+import { useMenuItems } from '@client/App.vue'
+import Viewer from '@client/components/Viewer.vue'
+import { unpackMesh } from '@client/lib/pack'
+import { localStored } from '@client/lib/stores'
 import type { GenerationParameters, ParametersConfig } from '@tsculpt'
 import { defaultGlobals } from '@tsculpt/globals'
 import { computed, ref, watch } from 'vue'

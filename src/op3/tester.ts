@@ -1,4 +1,4 @@
-import type { Engine } from '@tsculpt/booleans'
+import type Engine from '@tsculpt/op3'
 import { AMesh, IntermediateMesh, Mesh, Vector3 } from '@tsculpt/types'
 import { v3 } from '@tsculpt/types/builders'
 
@@ -53,7 +53,4 @@ class TesterEngine implements Engine {
 		this.operationCount = 0
 	}
 }
-
 export default new TesterEngine()
-
-export * from '@tsculpt/booleans'

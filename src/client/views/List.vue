@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { modules } from '@/lib/source'
+import { modules } from '@client/lib/source'
 import type { TreeNode } from 'primevue/treenode'
 
 function addNode(nodes: TreeNode[], path: string) {
