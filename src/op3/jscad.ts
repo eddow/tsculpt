@@ -55,22 +55,22 @@ function jscadMeshes(meshes: AMesh[]): JscadMesh[] {
 }
 
 class JscadEngine implements Engine {
-	union(...meshes: AMesh[]): AMesh {
+	async union(...meshes: AMesh[]): Promise<AMesh> {
 		const ops = jscadMeshes(meshes)
 		return new JscadMesh(union(...ops))
 	}
 
-	intersect(...meshes: AMesh[]): AMesh {
+	async intersect(...meshes: AMesh[]): Promise<AMesh> {
 		const ops = jscadMeshes(meshes)
 		return new JscadMesh(intersect(...ops))
 	}
 
-	subtract(mesh1: AMesh, mesh2: AMesh): AMesh {
+	async subtract(mesh1: AMesh, mesh2: AMesh): Promise<AMesh> {
 		const [op1, op2] = jscadMeshes([mesh1, mesh2])
 		return new JscadMesh(subtract(op1, op2))
 	}
 
-	hull(...meshes: AMesh[]): AMesh {
+	async hull(...meshes: AMesh[]): Promise<AMesh> {
 		const ops = jscadMeshes(meshes)
 		return new JscadMesh(hull(...ops))
 	}

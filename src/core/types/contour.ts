@@ -16,14 +16,14 @@ class ArrayMappingArray<T> extends Array<T> {
 }
 
 @assert.integrity({
-	'No intersections': function () {
+	'No intersections': async function () {
 		for (let i = 0; i < this.length - 1; i++) {
 			for (let j = i + 2; j < this.length; j++) {
 				const a = [i, i + 1]
 				const b = [j, (j + 1) % this.length]
 				if (a[0] === b[0] || a[0] === b[1] || a[1] === b[0] || a[1] === b[1]) continue
 
-				if (op2.vectorIntersect([this[a[0]], this[a[1]]], [this[b[0]], this[b[1]]])) {
+				if (await op2.vectorIntersect([this[a[0]], this[a[1]]], [this[b[0]], this[b[1]]])) {
 					return false
 				}
 			}

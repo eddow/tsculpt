@@ -19,25 +19,25 @@ export class FakeMesh extends IntermediateMesh {
 class TesterEngine implements Engine {
 	private operationCount = 0
 
-	union(...meshes: AMesh[]): AMesh {
+	async union(...meshes: AMesh[]): Promise<AMesh> {
 		this.operationCount++
 		// Return a fake mesh with operation info
 		return new FakeMesh(`union_${this.operationCount}_${meshes.length}_meshes`)
 	}
 
-	intersect(...meshes: AMesh[]): AMesh {
+	async intersect(...meshes: AMesh[]): Promise<AMesh> {
 		this.operationCount++
 		// Return a fake mesh with operation info
 		return new FakeMesh(`intersect_${this.operationCount}_${meshes.length}_meshes`)
 	}
 
-	subtract(_mesh1: AMesh, _mesh2: AMesh): AMesh {
+	async subtract(_mesh1: AMesh, _mesh2: AMesh): Promise<AMesh> {
 		this.operationCount++
 		// Return a fake mesh with operation info
 		return new FakeMesh(`subtract_${this.operationCount}_mesh1_mesh2`)
 	}
 
-	hull(...meshes: AMesh[]): AMesh {
+	async hull(...meshes: AMesh[]): Promise<AMesh> {
 		this.operationCount++
 		// Return a fake mesh with operation info
 		return new FakeMesh(`hull_${this.operationCount}_${meshes.length}_meshes`)

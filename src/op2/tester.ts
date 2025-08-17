@@ -1,4 +1,4 @@
-import Engine from '@tsculpt/op2'
+import Op2 from '@tsculpt/op2'
 import { Contour, Polygon, Shape } from '@tsculpt/types'
 import { v2 } from '@tsculpt/types/builders'
 
@@ -9,28 +9,28 @@ export class FakeContour extends Contour {
 	}
 }
 
-class TesterEngine extends Engine {
+class TesterEngine extends Op2 {
 	private operationCount = 0
 
-	union(_contour1: Contour, _contour2: Contour): Contour {
+	async union(_contour1: Contour, _contour2: Contour): Promise<Contour> {
 		this.operationCount++
 		// Return a fake contour with operation info
 		return new FakeContour(`union_${this.operationCount}_contour1_contour2`)
 	}
 
-	intersect(_contour1: Contour, _contour2: Contour): Contour {
+	async intersect(_contour1: Contour, _contour2: Contour): Promise<Contour> {
 		this.operationCount++
 		// Return a fake contour with operation info
 		return new FakeContour(`intersect_${this.operationCount}_contour1_contour2`)
 	}
 
-	subtract(_contour1: Contour, _contour2: Contour): Contour {
+	async subtract(_contour1: Contour, _contour2: Contour): Promise<Contour> {
 		this.operationCount++
 		// Return a fake contour with operation info
 		return new FakeContour(`subtract_${this.operationCount}_contour1_contour2`)
 	}
 
-	hull(contours: Contour[]): Contour {
+	async hull(contours: Contour[]): Promise<Contour> {
 		this.operationCount++
 		// Return a fake contour with operation info
 		return new FakeContour(`hull_${this.operationCount}_${contours.length}_contours`)

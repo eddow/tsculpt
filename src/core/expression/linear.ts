@@ -3,6 +3,7 @@ import di from '@tsculpt/ts/di'
 import { Vector, Vector2, Vector3, isUnity, product } from '../types/bunches'
 import { AMesh, Mesh } from '../types/mesh'
 import { TemplateParser, paramMarker } from './templated'
+import { maybeAwait, MaybePromise } from '@tsculpt/ts/maybe'
 
 const { op3 } = di<{ op3: Op3 }>()
 
@@ -41,7 +42,7 @@ type LinearExpression =
 function recur(
 	expr: LinearExpression,
 	values: (AMesh | LinearPrimitive)[]
-): AMesh | LinearPrimitive {
+): MaybePromise<AMesh | LinearPrimitive> {
 	switch (expr.type) {
 		case 'parameter':
 			return values[expr.index]
@@ -50,108 +51,120 @@ function recur(
 		case 'scale': {
 			let factor: number | readonly number[] = expr.factor
 			let mesh: AMesh | undefined
-			for (const operand of expr.operands) {
-				const result = recur(operand, values)
-				if (result instanceof AMesh) {
-					if (mesh) throw new SemanticError(`Cannot scale multiple meshes: ${mesh} and ${result}`)
-					mesh = result
-				} else factor = product(factor, result)
-			}
-			if (isUnity(factor)) return mesh || 1
-			const scale = Array.isArray(factor) ? (Vector.from(factor) as Vector3) : (factor as number)
-			return mesh ? mesh.scale(scale) : scale
+			return maybeAwait(expr.operands.map(operand=> recur(operand, values)), (results)=> {
+				for (const result of results) {
+					if (result instanceof AMesh) {
+						if (mesh) throw new SemanticError(`Cannot scale multiple meshes: ${mesh} and ${result}`)
+						mesh = result
+					} else factor = product(factor, result)
+				}
+				if (isUnity(factor)) return mesh || 1
+				const scale = Array.isArray(factor) ? (Vector.from(factor) as Vector3) : (factor as number)
+				return mesh ? mesh.scale(scale) : scale
+			})
 		}
 		case 'translate': {
 			let vector: Vector = Vector.from([0, 0, 0])
 			let mesh: AMesh | undefined
-			for (const term of expr.terms) {
-				const result = recur(term, values)
+			return maybeAwait(expr.terms.map(term=> recur(term, values)), (results)=> {
+				for (const result of results) {
 				if (result instanceof AMesh) {
 					if (mesh)
 						throw new SemanticError(`Cannot translate multiple meshes: ${mesh} and ${result}`)
 					mesh = result
 				} else if (typeof result === 'number')
 					throw new SemanticError(`Cannot translate by number: ${result}`)
-				else vector = Vector.add(vector, result)
-			}
-			return mesh ? mesh.translate(vector as Vector3) : (vector as Vector3)
+					else vector = Vector.add(vector, result)
+				}
+				return mesh ? mesh.translate(vector as Vector3) : (vector as Vector3)
+			})
 		}
 		case 'subtract': {
-			const a = recur(expr.operands[0], values)
-			const b = recur(expr.operands[1], values)
-			if (a instanceof AMesh && b instanceof AMesh) return op3.subtract(a, b)
-			if (typeof a === 'number' && typeof b === 'number') return a - b
-			if (Array.isArray(a) && Array.isArray(b)) return Vector.sub(a, b)
-			throw new SemanticError(`Bad operand to subtract: ${a} and ${b}`)
+			return maybeAwait(expr.operands.map(operand=> recur(operand, values)), (results)=> {
+				const [a, b] = results
+				if (a instanceof AMesh && b instanceof AMesh) return maybeAwait([op3.subtract(a, b)], ([result]) => result)
+				if (typeof a === 'number' && typeof b === 'number') return a - b
+				if (Array.isArray(a) && Array.isArray(b)) return Vector.sub(a, b)
+				throw new SemanticError(`Bad operand to subtract: ${a} and ${b}`)
+			})
 		}
 		case 'invert': {
-			const result = recur(expr.operand, values)
-			if (typeof result === 'number') return 1 / result
-			if (Array.isArray(result)) return Vector.from(result.map((v) => 1 / v)) as Vector3
-			throw new SemanticError(`Cannot invert non-number and non-vector: ${result}`)
+			return maybeAwait([recur(expr.operand, values)], ([result]) => {
+				if (typeof result === 'number') return 1 / result
+				if (Array.isArray(result)) return Vector.from(result.map((v) => 1 / v)) as Vector3
+				throw new SemanticError(`Cannot invert non-number and non-vector: ${result}`)
+			})
 		}
 		case 'rotate': {
-			const mesh = recur(expr.mesh, values)
-			const axis = recur(expr.axis, values)
-			const angle = expr.angle ? recur(expr.angle, values) : undefined
-
-			// The mesh should be an AMesh
-			if (!(mesh instanceof AMesh)) {
-				throw new SemanticError(`Cannot rotate non-mesh: ${mesh}`)
-			}
-
-			// The axis should be a vector
-			if (!Array.isArray(axis)) {
-				throw new SemanticError(`Rotation axis must be a vector: ${axis}`)
-			}
-			const rotationAxis = axis as Vector3
-
-			// If angle is provided, use it; otherwise use the length of the axis vector
-			let rotationAngle: number
-			if (angle !== undefined) {
-				if (typeof angle !== 'number') {
-					throw new SemanticError(`Rotation angle must be a number: ${angle}`)
+			const operands = [recur(expr.mesh, values), recur(expr.axis, values)]
+			if (expr.angle) operands.push(recur(expr.angle, values))
+			return maybeAwait(operands, ([mesh, axis, angle]) => {
+				// The mesh should be an AMesh
+				if (!(mesh instanceof AMesh)) {
+					throw new SemanticError(`Cannot rotate non-mesh: ${mesh}`)
 				}
-				rotationAngle = angle
-			} else {
-				rotationAngle = rotationAxis.size
-			}
 
-			return mesh.rotate(rotationAxis, rotationAngle)
+				// The axis should be a vector
+				if (!Array.isArray(axis)) {
+					throw new SemanticError(`Rotation axis must be a vector: ${axis}`)
+				}
+				const rotationAxis = axis as Vector3
+
+				// If angle is provided, use it; otherwise use the length of the axis vector
+				let rotationAngle: number
+				if (angle !== undefined) {
+					if (typeof angle !== 'number') {
+						throw new SemanticError(`Rotation angle must be a number: ${angle}`)
+					}
+					rotationAngle = angle
+				} else {
+					rotationAngle = rotationAxis.size
+				}
+
+				return mesh.rotate(rotationAxis, rotationAngle)
+			})
 		}
 		case 'intersect': {
-			const meshes: AMesh[] = []
-			for (const operand of expr.operands) {
-				const result = recur(operand, values)
-				if (!(result instanceof AMesh))
-					throw new SemanticError(`Bad operand to intersect: ${result}`)
-				meshes.push(result)
-			}
-			return op3.intersect(...meshes)
+			return maybeAwait(expr.operands.map(operand => recur(operand, values)), (results) => {
+				const meshes: AMesh[] = []
+				for (const result of results) {
+					if (!(result instanceof AMesh))
+						throw new SemanticError(`Bad operand to intersect: ${result}`)
+					meshes.push(result)
+				}
+				return op3.intersect(...meshes)
+			})
 		}
 		case 'union': {
-			const meshes: AMesh[] = []
-			for (const operand of expr.operands) {
-				const result = recur(operand, values)
-				if (!(result instanceof AMesh)) throw new SemanticError(`Bad operand to union: ${result}`)
-				meshes.push(result)
-			}
-			return op3.union(...meshes)
+			return maybeAwait(expr.operands.map(operand => recur(operand, values)), (results) => {
+				const meshes: AMesh[] = []
+				for (const result of results) {
+					if (!(result instanceof AMesh)) throw new SemanticError(`Bad operand to union: ${result}`)
+					meshes.push(result)
+				}
+				return op3.union(...meshes)
+			})
 		}
 		case 'vectorWithParams': {
-			const components: number[] = []
-			for (const component of expr.components) {
-				if (typeof component === 'number') {
-					components.push(component)
-				} else {
-					const result = recur(component, values)
-					if (typeof result !== 'number') {
-						throw new SemanticError(`Vector component must be a number: ${result}`)
+			const operands = expr.components.map(component =>
+				typeof component === 'number' ? component : recur(component, values)
+			)
+			return maybeAwait(operands, (results) => {
+				const components: number[] = []
+				for (let i = 0; i < expr.components.length; i++) {
+					const component = expr.components[i]
+					if (typeof component === 'number') {
+						components.push(component)
+					} else {
+						const result = results[i]
+						if (typeof result !== 'number') {
+							throw new SemanticError(`Vector component must be a number: ${result}`)
+						}
+						components.push(result)
 					}
-					components.push(result)
 				}
-			}
-			return Vector.from(components) as Vector3
+				return Vector.from(components) as Vector3
+			})
 		}
 	}
 }
@@ -299,11 +312,11 @@ function expectClass<T>(value: unknown, type: abstract new (...args: any[]) => T
 		)
 	return value as T
 }
+
 export function mesh(expr: TemplateStringsArray, ...values: readonly (Mesh | LinearPrimitive)[]) {
-	const result = formulas.calculate(expr, ...values)
-	return expectClass(result, AMesh)
+	return maybeAwait([formulas.calculate(expr, ...values)], ([result])=> expectClass(result, AMesh))
 }
 
 export function vector(expr: TemplateStringsArray, ...values: readonly LinearPrimitive[]) {
-	return expectClass(formulas.calculate(expr, ...values), Vector)
+	return maybeAwait([formulas.calculate(expr, ...values)], ([result])=> expectClass(result, Vector))
 }

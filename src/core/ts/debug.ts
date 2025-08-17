@@ -1,7 +1,7 @@
 const asserted = true
 
 type Ctor = new (...args: any[]) => any
-type IntegrityCheck<T extends Ctor> = Record<string, (this: InstanceType<T>) => boolean>
+type IntegrityCheck<T extends Ctor> = Record<string, (this: InstanceType<T>) => boolean | Promise<boolean>>
 export const assert = asserted
 	? {
 			equal(a: any, b: any, message?: string) {
@@ -14,13 +14,15 @@ export const assert = asserted
 					class extends Base {
 						constructor(...args: any[]) {
 							super(...args)
+							;(async ()=> {
 
-							// Run all integrity checks after construction
-							for (const [name, check] of Object.entries(rules)) {
-								if (!check.apply(this as InstanceType<T>)) {
-									throw new Error(`Integrity check failed: ${name}`)
+								// Run all integrity checks after construction
+								for (const [name, check] of Object.entries(rules)) {
+									if (!(await check.apply(this as InstanceType<T>))) {
+										throw new Error(`Integrity check failed: ${name}`)
+									}
 								}
-							}
+							})()
 						}
 					}
 			},

@@ -1,11 +1,12 @@
-import { ParseSpecs, Parser } from './expression'
+import { MaybePromise } from '@tsculpt/ts/maybe'
+import { Parser, ParseSpecs } from './expression'
 
 export const paramMarker = '\u200B'
 export class TemplateParser<Built, Value, Result> extends Parser<Built> {
 	constructor(
 		specs: ParseSpecs<Built>,
 		parameter: (index: number) => Built,
-		private readonly calculus: (cached: Built, values: Value[]) => Result
+		private readonly calculus: (cached: Built, values: Value[]) => Result | Promise<Result>
 	) {
 		const paramDSpecs: ParseSpecs<Built> = {
 			...specs,
@@ -20,7 +21,8 @@ export class TemplateParser<Built, Value, Result> extends Parser<Built> {
 		super(paramDSpecs)
 	}
 	private cachedTSA = new WeakMap<TemplateStringsArray, Built>()
-	public calculate(expr: TemplateStringsArray, ...values: Value[]): Result {
+
+	public calculate(expr: TemplateStringsArray, ...values: Value[]): MaybePromise<Result> {
 		let cached = this.cachedTSA.get(expr)
 		if (!cached) {
 			const parts = [...expr]

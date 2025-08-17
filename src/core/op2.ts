@@ -1,12 +1,12 @@
 import type { Contour, Polygon, Vector2 } from '@tsculpt/types'
 import { epsilon } from './math'
 
-export default abstract class Engine {
-	abstract union(contour1: Contour, contour2: Contour): Contour
-	abstract intersect(contour1: Contour, contour2: Contour): Contour
-	abstract subtract(contour1: Contour, contour2: Contour): Contour
-	abstract hull(contours: Contour[]): Contour
-	vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): boolean {
+export default abstract class Op2 {
+	abstract union(contour1: Contour, contour2: Contour): Promise<Contour>
+	abstract intersect(contour1: Contour, contour2: Contour): Promise<Contour>
+	abstract subtract(contour1: Contour, contour2: Contour): Promise<Contour>
+	abstract hull(contours: Contour[]): Promise<Contour>
+	async vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): Promise<boolean> {
 		const [A1, A2] = vA // Segment A: A1 to A2
 		const [B1, B2] = vB // Segment B: B1 to B2
 
@@ -55,7 +55,7 @@ export default abstract class Engine {
 		return isUaValid && isUbValid && isOnSegmentB
 	}
 
-	inPolygon(point: Vector2, polygon: Polygon): boolean {
+	async inPolygon(point: Vector2, polygon: Polygon): Promise<boolean> {
 		const x = point.x
 		const y = point.y
 		let inside = false
@@ -98,14 +98,14 @@ export default abstract class Engine {
 		return inside
 	}
 
-	polygonIntersect(p1: Polygon, p2: Polygon): boolean {
+	async polygonIntersect(p1: Polygon, p2: Polygon): Promise<boolean> {
 		return this.inPolygon(p2[0], p1) || p1.some((v) => this.inPolygon(v, p2))
 	}
 
-	distinctPolygons(polygons: Polygon[]): boolean {
+	async distinctPolygons(polygons: Polygon[]): Promise<boolean> {
 		for (let i = 0; i < polygons.length; i++) {
 			for (let j = i + 1; j < polygons.length; j++) {
-				if (this.polygonIntersect(polygons[i], polygons[j])) {
+				if (await this.polygonIntersect(polygons[i], polygons[j])) {
 					return false
 				}
 			}
