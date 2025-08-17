@@ -1,7 +1,8 @@
 import { generation } from './globals'
+import { lerp } from './math'
 import { Vector2, Vector3 } from './types'
-import { Contour } from './types/contour'
-import { PathFn, extrude } from './types/extrusion'
+import { Contour, Polygon } from './types/contour'
+import { ContourFn, PathFn, extrude } from './types/extrusion'
 import { Mesh } from './types/mesh'
 
 // Extrusion functions
@@ -32,7 +33,7 @@ export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): M
 			return contour
 		}
 
-		// Apply twist and scale transformations
+		// Apply twist and scale transformations to the entire contour
 		const currentTwist = t * twist
 		// Interpolate scale from 1.0 at bottom to target scale at top
 		const currentScale =
@@ -40,7 +41,8 @@ export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): M
 				? 1.0 + (scale - 1.0) * t
 				: new Vector2(1.0 + (scale.x - 1.0) * t, 1.0 + (scale.y - 1.0) * t)
 
-		const transformedVertices = contour.vectors.map((vertex) => {
+		// Transform the entire contour using mapVertex
+		return contour.mapVertex((vertex) => {
 			// Apply rotation around Z axis
 			const cos = Math.cos(currentTwist)
 			const sin = Math.sin(currentTwist)
@@ -55,8 +57,6 @@ export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): M
 
 			return new Vector2(scaledX, scaledY)
 		})
-
-		return new Contour(transformedVertices, contour.edges)
 	}
 
 	// Calculate segments based on height and grain (matching original behavior)
@@ -84,8 +84,10 @@ export function rotateExtrude(contour: Contour, spec: RotateExtrudeSpec = {}): M
 
 	// Calculate segments based on angle and grain
 	// For rotation, we need enough segments so that the arc length between segments is <= grain
-	// Find the maximum radius from the contour vertices
-	const maxRadius = Math.max(...contour.vectors.map((v) => Math.abs(v.x)))
+	// Find the maximum radius from all polygon vertices in the contour
+	const maxRadius = Math.max(
+		...contour.flatPolygons.flatMap((polygon) => polygon.map((v) => Math.abs(v.x)))
+	)
 	const arcLength = Math.abs(angle) * maxRadius
 	const calculatedSegments = segments || Math.max(9, Math.ceil(arcLength / grain))
 
@@ -108,4 +110,57 @@ export function rotateExtrude(contour: Contour, spec: RotateExtrudeSpec = {}): M
 	})
 
 	return mesh
+}
+
+/**
+ * Helper function to create a loft between two polygons
+ * Returns a ContourFn that interpolates between the two polygons
+ */
+export function loft(polygon1: Polygon, polygon2: Polygon): ContourFn {
+	// For now, assume both polygons have the same number of vertices
+	if (polygon1.length !== polygon2.length) {
+		throw new Error('Lofting requires polygons with the same number of vertices')
+	}
+
+	return (t: number) => {
+		// Clamp t to [0, 1]
+		t = Math.max(0, Math.min(1, t))
+
+		if (t <= 0) return Contour.from(polygon1)
+		if (t >= 1) return Contour.from(polygon2)
+
+		// Interpolate between the two polygons
+		const interpolatedVertices = polygon1.map((vertex, i) => {
+			const otherVertex = polygon2[i]
+			return new Vector2(lerp(vertex.x, otherVertex.x, t), lerp(vertex.y, otherVertex.y, t))
+		})
+		return Contour.from(new Polygon(...interpolatedVertices))
+	}
+}
+
+/**
+ * Helper function to create a sweep along a 3D path
+ * Converts a point function to a coordinate frame function
+ */
+export function sweep(pathFn: (t: number) => Vector3): PathFn {
+	return (t: number) => {
+		const point = pathFn(t)
+
+		// Calculate tangent (derivative) for orientation
+		const dt = 0.01
+		const nextT = Math.min(t + dt, 1)
+		const nextPoint = pathFn(nextT)
+		const tangent = Vector3.sub(nextPoint, point).normalized()
+
+		// Create coordinate frame
+		const up = new Vector3(0, 0, 1) // Default up direction
+		const right = Vector3.cross(tangent, up).normalized()
+		const adjustedUp = Vector3.cross(right, tangent).normalized()
+
+		return {
+			o: point,
+			x: right,
+			y: adjustedUp,
+		}
+	}
 }

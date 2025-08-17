@@ -31,15 +31,8 @@ export function circle(spec: CircleSpec = {}): Contour {
 		vertices2D.push(new Vector2(x, y))
 	}
 
-	// Create edges connecting consecutive vertices (closed polygon)
-	const edges: [Vector2, Vector2][] = []
-	for (let i = 0; i < vertices2D.length; i++) {
-		const current = vertices2D[i]
-		const next = vertices2D[(i + 1) % vertices2D.length]
-		edges.push([current, next])
-	}
-
-	return new Contour(edges)
+	// Create a polygon from the vertices
+	return Contour.from(vertices2D)
 }
 
 type SquareSpec = {
@@ -65,13 +58,6 @@ export function square(spec: SquareSpec = {}): Contour {
 		new Vector2(-halfSize.x + center.x, halfSize.y + center.y),
 	]
 
-	// Create edges connecting consecutive vertices (closed polygon)
-	const edges: [Vector2, Vector2][] = []
-	for (let i = 0; i < vertices2D.length; i++) {
-		const current = vertices2D[i]
-		const next = vertices2D[(i + 1) % vertices2D.length]
-		edges.push([current, next])
-	}
-
-	return new Contour(edges)
+	// Create a polygon from the vertices
+	return Contour.from(vertices2D)
 }

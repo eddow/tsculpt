@@ -1,8 +1,8 @@
 import type { Module, SourceFiles } from '@/lib/source'
 import { AMesh, GenerationParameters, ParametersConfig } from '@tsculpt'
+import { MaybePromise, withGlobals } from '@tsculpt/globals'
 import { MeshPack, packMesh } from '../client/lib/pack'
 import expose from './workerRef'
-import { MaybePromise, withGlobals } from '@tsculpt/globals'
 
 const actualPath = (path: string) => `/${path}.sculpt.ts`
 const logicalPath = (path: string) => path.match(/^\/(.*)\.sculpt\.ts$/)?.[1]
@@ -41,7 +41,7 @@ function readModule(path: string): Promise<Module> {
 }
 expose<SourceFiles>({
 	modules() {
-		// TODO vite fileWatcherPlugin
+		// TODO vite fileWatcherPlugin?
 		return Object.keys(modules)
 			.map(logicalPath)
 			.filter((path): path is string => path !== undefined)
@@ -59,8 +59,13 @@ expose<SourceFiles>({
 		const module = await readModule(path)
 		entry ??= 'default'
 		if (!module[entry]) throw new Error(`Entry ${entry} not found in module ${path}`)
-		const generator = module[entry] as ((parameters: GenerationParameters) => MaybePromise<AMesh>) | MaybePromise<AMesh>
-		const generated = typeof generator === 'function' ? withGlobals(()=> generator(parameters), parameters) : generator
+		const generator = module[entry] as
+			| ((parameters: GenerationParameters) => MaybePromise<AMesh>)
+			| MaybePromise<AMesh>
+		const generated =
+			typeof generator === 'function'
+				? withGlobals(() => generator(parameters), parameters)
+				: generator
 		return packMesh(await generated)
 	},
 })

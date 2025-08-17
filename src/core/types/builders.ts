@@ -1,8 +1,15 @@
 import { vector } from '../expression/linear'
-import { Vector2, Vector3 } from './bunches'
+import { Vector, Vector2, Vector3 } from './bunches'
 
 function isTemplateStringsArray(v: unknown): v is TemplateStringsArray {
 	return typeof v === 'object' && !!v && 'raw' in v
+}
+
+function expectDimension(v: Vector, dim: number) {
+	if (v.length !== dim) {
+		throw new Error(`Expected vector of dimension ${dim}, got ${v.length}`)
+	}
+	return v
 }
 
 export function v2(x: number, y: number): Vector2
@@ -14,7 +21,7 @@ export function v2(
 	...rest: readonly (number | Vector2)[]
 ): Vector2 {
 	const array = isTemplateStringsArray(v)
-		? vector(v, ...rest)
+		? expectDimension(vector(v, ...rest), 2)
 		: typeof v === 'object' && 'x' in v && 'y' in v
 			? ([v.x, v.y] as Vector2)
 			: typeof v === 'number'
@@ -32,7 +39,7 @@ export function v3(
 	...rest: readonly (number | Vector3)[]
 ): Vector3 {
 	const array = isTemplateStringsArray(v)
-		? vector(v, ...rest)
+		? expectDimension(vector(v, ...rest), 3)
 		: typeof v === 'object' && 'x' in v && 'y' in v && 'z' in v
 			? ([v.x, v.y, v.z] as Vector3)
 			: typeof v === 'number'

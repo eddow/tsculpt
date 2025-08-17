@@ -148,9 +148,7 @@ export class Mesh extends AMesh {
 						)
 					: (faces as Numbers3[])
 		} else
-			this.faces = (faces as [Vector3, Vector3, Vector3][]).map(
-				(face) => face.map((v) => this.set.index(v)) as [number, number, number]
-			)
+			this.faces = (faces as [Vector3, Vector3, Vector3][]).map((face) => this.set.face(...face))
 		this.faces = this.faces.filter(
 			(face) => face[0] !== face[1] && face[1] !== face[2] && face[2] !== face[0]
 		)

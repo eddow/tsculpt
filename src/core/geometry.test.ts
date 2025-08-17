@@ -110,77 +110,81 @@ describe('Geometry Primitives', () => {
 			const mesh = torus({ radius: 3, thickness: 1 })
 			expect(mesh.vectors.length).toBeGreaterThan(20)
 			// Check outer radius
-			const maxDistance = Math.max(...mesh.vectors.map((v) => Math.sqrt(v.x * v.x + v.y * v.y)))
-			expect(maxDistance).toBeCloseTo(4, 1) // radius + thickness
+			const maxRadius = Math.max(...mesh.vectors.map((v) => Math.sqrt(v.x * v.x + v.y * v.y)))
+			expect(maxRadius).toBeCloseTo(4, 1) // radius + thickness
 			// Check inner radius
-			const minDistance = Math.min(...mesh.vectors.map((v) => Math.sqrt(v.x * v.x + v.y * v.y)))
-			expect(minDistance).toBeCloseTo(2, 1) // radius - thickness
+			const minRadius = Math.min(...mesh.vectors.map((v) => Math.sqrt(v.x * v.x + v.y * v.y)))
+			expect(minRadius).toBeCloseTo(2, 1) // radius - thickness
 		})
 
 		it('should create a torus with custom segments', () => {
-			const mesh = torus({ segments: 12, ringSegments: 8 })
-			expect(mesh.vectors.length).toBe(96) // 12 * 8
+			const mesh = torus({ segments: 16, ringSegments: 8 })
+			expect(mesh.vectors.length).toBe(128) // 16 * 8 vertices
 		})
 	})
 
 	describe('circle', () => {
 		it('should create a default circle', () => {
 			const contour = circle({})
-			expect(contour.vectors.length).toBeGreaterThan(8) // Should have reasonable number of vertices
-			expect(contour.edges.length).toBeGreaterThan(8) // Should have reasonable number of edges
+			expect(contour.length).toBe(1) // One shape
+			expect(contour[0].polygon.length).toBeGreaterThan(8) // Should have reasonable number of vertices
 		})
 
 		it('should create a circle with custom radius', () => {
 			const contour = circle({ radius: 3 })
-			expect(contour.vectors.length).toBeGreaterThan(8)
+			expect(contour.length).toBe(1) // One shape
+			expect(contour[0].polygon.length).toBeGreaterThan(8)
 			// Check radius
-			const maxRadius = Math.max(...contour.vectors.map((v) => Math.sqrt(v.x * v.x + v.y * v.y)))
+			const maxRadius = Math.max(...contour[0].polygon.map((v) => Math.sqrt(v.x * v.x + v.y * v.y)))
 			expect(maxRadius).toBeCloseTo(3, 1)
 		})
 
 		it('should create a circle with custom segments', () => {
 			const contour = circle({ segments: 16 })
-			expect(contour.vectors.length).toBe(16) // 16 perimeter vertices (no center)
+			expect(contour.length).toBe(1) // One shape
+			expect(contour[0].polygon.length).toBe(16) // 16 perimeter vertices
 		})
 
 		it('should be flat (all z coordinates near 0)', () => {
 			const contour = circle({})
 			// All vertices should be Vector2 (no z component)
-			expect(contour.vectors.every((v) => v instanceof Vector2)).toBe(true)
+			expect(contour[0].polygon.every((v) => v instanceof Vector2)).toBe(true)
 		})
 	})
 
 	describe('square', () => {
 		it('should create a default square', () => {
 			const contour = square({})
-			expect(contour.vectors.length).toBe(4) // 4 vertices
-			expect(contour.edges.length).toBe(4) // 4 edges
+			expect(contour.length).toBe(1) // One shape
+			expect(contour[0].polygon.length).toBe(4) // 4 vertices
 		})
 
 		it('should create a square with custom size', () => {
 			const contour = square({ size: 4 })
-			expect(contour.vectors.length).toBe(4)
+			expect(contour.length).toBe(1) // One shape
+			expect(contour[0].polygon.length).toBe(4)
 			// Check size
-			const maxX = Math.max(...contour.vectors.map((v) => Math.abs(v.x)))
-			const maxY = Math.max(...contour.vectors.map((v) => Math.abs(v.y)))
-			expect(maxX).toBe(2) // half of 4
-			expect(maxY).toBe(2) // half of 4
+			const maxX = Math.max(...contour[0].polygon.map((v) => Math.abs(v.x)))
+			const maxY = Math.max(...contour[0].polygon.map((v) => Math.abs(v.y)))
+			expect(maxX).toBe(2) // Half of size
+			expect(maxY).toBe(2) // Half of size
 		})
 
 		it('should create a rectangle with vector size', () => {
-			const contour = square({ size: new Vector3(4, 6, 0) })
-			expect(contour.vectors.length).toBe(4)
+			const contour = square({ size: new Vector2(4, 6) })
+			expect(contour.length).toBe(1) // One shape
+			expect(contour[0].polygon.length).toBe(4)
 			// Check size
-			const maxX = Math.max(...contour.vectors.map((v) => Math.abs(v.x)))
-			const maxY = Math.max(...contour.vectors.map((v) => Math.abs(v.y)))
-			expect(maxX).toBe(2) // half of 4
-			expect(maxY).toBe(3) // half of 6
+			const maxX = Math.max(...contour[0].polygon.map((v) => Math.abs(v.x)))
+			const maxY = Math.max(...contour[0].polygon.map((v) => Math.abs(v.y)))
+			expect(maxX).toBe(2) // Half of x size
+			expect(maxY).toBe(3) // Half of y size
 		})
 
 		it('should be flat (all z coordinates near 0)', () => {
 			const contour = square({})
 			// All vertices should be Vector2 (no z component)
-			expect(contour.vectors.every((v) => v instanceof Vector2)).toBe(true)
+			expect(contour[0].polygon.every((v) => v instanceof Vector2)).toBe(true)
 		})
 	})
 

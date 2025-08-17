@@ -6,3 +6,5 @@ For now, engines implement:
 - union
 - intersection
 - difference
+
+TODO: try https://github.com/timschmidt/csgrs ?

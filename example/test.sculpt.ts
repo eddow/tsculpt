@@ -17,6 +17,5 @@ export default function scene({ radius = 5 as Decimal<1, 100>, hulled = false })
 	// Original boolean subtraction
 	const subtracted = mesh`${s1} - ${b1}`
 
-
 	return hulled ? hull(subtracted) : subtracted
 }
