@@ -1,4 +1,4 @@
-import { type Decimal, Vector3, hull } from '@tsculpt'
+import { type Decimal, Vector3, hull, v3 } from '@tsculpt'
 import { box, sphere } from '@tsculpt'
 
 export default function scene({ radius = 5 as Decimal<1, 100>, center = [0, 0, 0] as Vector3 }) {
@@ -9,18 +9,18 @@ export default function scene({ radius = 5 as Decimal<1, 100>, center = [0, 0, 0
 	const transformedSphere = s1
 		.rotateZ(Math.PI / 4) // Rotate 45 degrees around Z
 		.scale(0.5) // Scale down
-		.translate(new Vector3(radius * 2, 0, 0)) // Move to the right
+		.translate(v3(radius * 2, 0, 0)) // Move to the right
 
 	// Create another transformed sphere using the new rotate function
 	const anotherSphere = s1
-		.translate(new Vector3(-radius * 2, 0, 0)) // Move to the left
-		.scale(new Vector3(1, 0.5, 1)) // Scale only in Y
-		.rotate(new Vector3(1, 0, 0), Math.PI / 6) // Rotate around X axis (equivalent to rotateX)
+		.translate(v3(-radius * 2, 0, 0)) // Move to the left
+		.scale(v3(1, 0.5, 1)) // Scale only in Y
+		.rotate(v3(1, 0, 0), Math.PI / 6) // Rotate around X axis (equivalent to rotateX)
 
 	// Create a third sphere with arbitrary axis rotation
 	const thirdSphere = s1
-		.translate(new Vector3(0, radius * 2, 0)) // Move up
-		.rotate(new Vector3(1, 1, 0), Math.PI / 3) // Rotate around diagonal axis
+		.translate(v3(0, radius * 2, 0)) // Move up
+		.rotate(v3(1, 1, 0), Math.PI / 3) // Rotate around diagonal axis
 		.scale(0.7) // Scale down
 
 	// Combine all meshes using hull operation

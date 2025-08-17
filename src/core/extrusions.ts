@@ -1,6 +1,6 @@
 import { generation } from './globals'
 import { lerp } from './math'
-import { Vector2, Vector3 } from './types'
+import { Vector2, Vector3, v2, v3 } from './types'
 import { Contour, Polygon } from './types/contour'
 import { ContourFn, PathFn, extrude } from './types/extrusion'
 import { Mesh } from './types/mesh'
@@ -21,9 +21,9 @@ export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): M
 	const path: PathFn = (t: number) => {
 		const z = center ? (t - 0.5) * height : t * height
 		return {
-			o: new Vector3(0, 0, z),
-			x: new Vector3(1, 0, 0), // X axis stays constant
-			y: new Vector3(0, 1, 0), // Y axis stays constant
+			o: v3(0, 0, z),
+			x: v3(1, 0, 0), // X axis stays constant
+			y: v3(0, 1, 0), // Y axis stays constant
 		}
 	}
 
@@ -39,7 +39,7 @@ export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): M
 		const currentScale =
 			typeof scale === 'number'
 				? 1.0 + (scale - 1.0) * t
-				: new Vector2(1.0 + (scale.x - 1.0) * t, 1.0 + (scale.y - 1.0) * t)
+				: v2(1.0 + (scale.x - 1.0) * t, 1.0 + (scale.y - 1.0) * t)
 
 		// Transform the entire contour using mapVertex
 		return contour.mapVertex((vertex) => {
@@ -55,7 +55,7 @@ export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): M
 			const scaledX = rotatedX * scaleX
 			const scaledY = rotatedY * scaleY
 
-			return new Vector2(scaledX, scaledY)
+			return v2(scaledX, scaledY)
 		})
 	}
 
@@ -95,9 +95,9 @@ export function rotateExtrude(contour: Contour, spec: RotateExtrudeSpec = {}): M
 	const path: PathFn = (t: number) => {
 		const currentAngle = t * angle
 		return {
-			o: new Vector3(0, 0, 0),
-			x: new Vector3(-Math.sin(currentAngle), 0, Math.cos(currentAngle)), // Tangent to circle
-			y: new Vector3(0, 1, 0), // Always point up
+			o: v3(0, 0, 0),
+			x: v3(-Math.sin(currentAngle), 0, Math.cos(currentAngle)), // Tangent to circle
+			y: v3(0, 1, 0), // Always point up
 		}
 	}
 
@@ -132,7 +132,7 @@ export function loft(polygon1: Polygon, polygon2: Polygon): ContourFn {
 		// Interpolate between the two polygons
 		const interpolatedVertices = polygon1.map((vertex, i) => {
 			const otherVertex = polygon2[i]
-			return new Vector2(lerp(vertex.x, otherVertex.x, t), lerp(vertex.y, otherVertex.y, t))
+			return v2(lerp(vertex.x, otherVertex.x, t), lerp(vertex.y, otherVertex.y, t))
 		})
 		return Contour.from(new Polygon(...interpolatedVertices))
 	}
@@ -153,7 +153,7 @@ export function sweep(pathFn: (t: number) => Vector3): PathFn {
 		const tangent = Vector3.sub(nextPoint, point).normalized()
 
 		// Create coordinate frame
-		const up = new Vector3(0, 0, 1) // Default up direction
+		const up = v3(0, 0, 1) // Default up direction
 		const right = Vector3.cross(tangent, up).normalized()
 		const adjustedUp = Vector3.cross(right, tangent).normalized()
 

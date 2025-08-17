@@ -1,4 +1,4 @@
-import { Vector2, Vector3, circle, linearExtrude, rotateExtrude, square, union } from '@tsculpt'
+import { circle, linearExtrude, rotateExtrude, square, union, v2, v3 } from '@tsculpt'
 
 // Create a simple square profile
 const squareProfile = square({ size: 1 })
@@ -26,12 +26,12 @@ export const pyramid = linearExtrude(squareProfile, {
 // Linear extrusion with vector scaling - create a rectangular pyramid
 export const rectPyramid = linearExtrude(squareProfile, {
 	height: 2,
-	scale: new Vector2(0.3, 0.8), // Different X and Y scaling
+	scale: v2(0.3, 0.8), // Different X and Y scaling
 	center: true,
 })
 
 // Rotational extrusion - create a cylinder from a rectangle
-const rectProfile = square({ size: new Vector2(0.5, 2), center: new Vector2(0.25, 0) })
+const rectProfile = square({ size: v2(0.5, 2), center: v2(0.25, 0) })
 export const cylinder = rotateExtrude(rectProfile)
 
 // Rotational extrusion - create a torus from a circle
@@ -55,12 +55,12 @@ export const complexExtrusion = linearExtrude(squareProfile, {
 export default function scene() {
 	return union(
 		extrudedBox,
-		twistedPrism.translate(new Vector3(4, 0, 0)),
-		pyramid.translate(new Vector3(-4, 0, 0)),
-		rectPyramid.translate(new Vector3(0, 4, 0)),
-		cylinder.translate(new Vector3(0, -4, 0)),
-		torus.translate(new Vector3(8, 0, 0)),
-		halfCylinder.translate(new Vector3(-8, 0, 0)),
-		complexExtrusion.translate(new Vector3(0, -8, 0))
+		twistedPrism.translate(v3(4, 0, 0)),
+		pyramid.translate(v3(-4, 0, 0)),
+		rectPyramid.translate(v3(0, 4, 0)),
+		cylinder.translate(v3(0, -4, 0)),
+		torus.translate(v3(8, 0, 0)),
+		halfCylinder.translate(v3(-8, 0, 0)),
+		complexExtrusion.translate(v3(0, -8, 0))
 	)
 }

@@ -1,6 +1,6 @@
 import { lerp } from '@tsculpt/math'
-import { assert } from '../debug'
 import { generation } from '../globals'
+import { assert } from '../ts/debug'
 import { VectorMap } from '../vectorSet'
 import { Vector2, Vector3 } from './bunches'
 import { Contour } from './contour'

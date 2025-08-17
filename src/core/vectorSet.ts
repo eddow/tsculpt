@@ -1,6 +1,5 @@
+import { epsilon } from './math'
 import type { Vector } from './types/bunches'
-
-const epsilon = 1e-6
 export class VectorMap<V extends Vector> {
 	private mapped = new Map<string, number>()
 	public readonly vectors = [] as V[]

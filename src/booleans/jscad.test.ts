@@ -1,3 +1,4 @@
+import { v3 } from '@tsculpt/types/builders'
 import { Vector3 } from '@tsculpt/types/bunches'
 import { AMesh, Mesh } from '@tsculpt/types/mesh'
 import { describe, expect, it } from 'vitest'
@@ -5,12 +6,7 @@ import engine from './jscad'
 
 // Helper function to create a simple test mesh
 function createTestMesh(): Mesh {
-	const vertices: Vector3[] = [
-		new Vector3(0, 0, 0),
-		new Vector3(1, 0, 0),
-		new Vector3(0, 1, 0),
-		new Vector3(1, 1, 0),
-	]
+	const vertices: Vector3[] = [v3(0, 0, 0), v3(1, 0, 0), v3(0, 1, 0), v3(1, 1, 0)]
 	const faces: [Vector3, Vector3, Vector3][] = [
 		[vertices[0], vertices[1], vertices[2]],
 		[vertices[1], vertices[3], vertices[2]],

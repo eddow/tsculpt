@@ -1,15 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { v3 } from './builders'
 import { Matrix4, Vector3 } from './bunches'
 import { AMesh, Mesh } from './mesh'
 
 // Helper function to create a simple test mesh
 function createTestMesh(): Mesh {
-	const vertices: Vector3[] = [
-		new Vector3(0, 0, 0),
-		new Vector3(1, 0, 0),
-		new Vector3(0, 1, 0),
-		new Vector3(1, 1, 0),
-	]
+	const vertices: Vector3[] = [v3(0, 0, 0), v3(1, 0, 0), v3(0, 1, 0), v3(1, 1, 0)]
 	const faces: [Vector3, Vector3, Vector3][] = [
 		[vertices[0], vertices[1], vertices[2]],
 		[vertices[1], vertices[3], vertices[2]],
@@ -21,7 +17,7 @@ describe('Transformation Methods', () => {
 	describe('basic functionality', () => {
 		it('should create a transformed mesh from a source mesh', () => {
 			const sourceMesh = createTestMesh()
-			const transformedMesh = sourceMesh.translate(new Vector3(1, 0, 0))
+			const transformedMesh = sourceMesh.translate(v3(1, 0, 0))
 
 			expect(transformedMesh).toBeInstanceOf(AMesh)
 			expect(transformedMesh.vectors.length).toBe(sourceMesh.vectors.length)
@@ -75,7 +71,7 @@ describe('Transformation Methods', () => {
 	describe('transformation methods', () => {
 		it('should translate mesh', () => {
 			const sourceMesh = createTestMesh()
-			const translated = sourceMesh.translate(new Vector3(1, 2, 3))
+			const translated = sourceMesh.translate(v3(1, 2, 3))
 
 			expect(translated).toBeInstanceOf(AMesh)
 
@@ -107,7 +103,7 @@ describe('Transformation Methods', () => {
 
 		it('should scale mesh with vector', () => {
 			const sourceMesh = createTestMesh()
-			const scaled = sourceMesh.scale(new Vector3(2, 3, 4))
+			const scaled = sourceMesh.scale(v3(2, 3, 4))
 
 			expect(scaled).toBeInstanceOf(AMesh)
 
@@ -148,7 +144,7 @@ describe('Transformation Methods', () => {
 
 		it('should rotate around arbitrary axis', () => {
 			const sourceMesh = createTestMesh()
-			const rotated = sourceMesh.rotate(new Vector3(1, 1, 0), Math.PI / 4)
+			const rotated = sourceMesh.rotate(v3(1, 1, 0), Math.PI / 4)
 
 			expect(rotated).toBeInstanceOf(AMesh)
 		})
@@ -156,14 +152,14 @@ describe('Transformation Methods', () => {
 		it('should use vector length as angle when no angle provided', () => {
 			const sourceMesh = createTestMesh()
 			// Vector [0, 0, 1.5] has length 1.5, so should rotate by 1.5 radians
-			const rotated = sourceMesh.rotate(new Vector3(0, 0, 1.5))
+			const rotated = sourceMesh.rotate(v3(0, 0, 1.5))
 
 			expect(rotated).toBeInstanceOf(AMesh)
 		})
 
 		it('should handle special case rotate(0, 0, z) as rotateZ', () => {
 			const sourceMesh = createTestMesh()
-			const rotated1 = sourceMesh.rotate(new Vector3(0, 0, Math.PI / 2))
+			const rotated1 = sourceMesh.rotate(v3(0, 0, Math.PI / 2))
 			const rotated2 = sourceMesh.rotateZ(Math.PI / 2)
 
 			expect(rotated1).toBeInstanceOf(AMesh)
@@ -174,7 +170,7 @@ describe('Transformation Methods', () => {
 
 		it('should handle special case rotate(x, 0, 0) as rotateX', () => {
 			const sourceMesh = createTestMesh()
-			const rotated1 = sourceMesh.rotate(new Vector3(Math.PI / 3, 0, 0))
+			const rotated1 = sourceMesh.rotate(v3(Math.PI / 3, 0, 0))
 			const rotated2 = sourceMesh.rotateX(Math.PI / 3)
 
 			expect(rotated1).toBeInstanceOf(AMesh)
@@ -185,7 +181,7 @@ describe('Transformation Methods', () => {
 
 		it('should handle special case rotate(0, y, 0) as rotateY', () => {
 			const sourceMesh = createTestMesh()
-			const rotated1 = sourceMesh.rotate(new Vector3(0, Math.PI / 4, 0))
+			const rotated1 = sourceMesh.rotate(v3(0, Math.PI / 4, 0))
 			const rotated2 = sourceMesh.rotateY(Math.PI / 4)
 
 			expect(rotated1).toBeInstanceOf(AMesh)
@@ -209,7 +205,7 @@ describe('Transformation Methods', () => {
 
 			// Apply multiple transformations
 			const transformed = sourceMesh
-				.translate(new Vector3(1, 0, 0))
+				.translate(v3(1, 0, 0))
 				.scale(2)
 				.rotateZ(Math.PI / 4)
 
@@ -224,8 +220,8 @@ describe('Transformation Methods', () => {
 
 			// Apply many transformations
 			const transformed = sourceMesh
-				.translate(new Vector3(1, 2, 3))
-				.scale(new Vector3(2, 1, 3))
+				.translate(v3(1, 2, 3))
+				.scale(v3(2, 1, 3))
 				.rotateX(Math.PI / 6)
 				.rotateY(Math.PI / 4)
 				.rotateZ(Math.PI / 3)
@@ -238,7 +234,7 @@ describe('Transformation Methods', () => {
 	describe('lazy evaluation', () => {
 		it('should not compute vertices until accessed', () => {
 			const sourceMesh = createTestMesh()
-			const transformed = sourceMesh.translate(new Vector3(1, 0, 0))
+			const transformed = sourceMesh.translate(v3(1, 0, 0))
 
 			// At this point, no computation should have happened
 			// The actual test is that we can access vectors without error

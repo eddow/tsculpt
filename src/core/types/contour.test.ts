@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { circle, square } from '../contours'
+import { v2 } from './builders'
 import { Vector2 } from './bunches'
 import { Contour, Polygon, Shape } from './contour'
 
@@ -29,12 +30,7 @@ describe('Contour', () => {
 	})
 
 	it('should create contour from polygon', () => {
-		const polygon = new Polygon(
-			new Vector2(0, 0),
-			new Vector2(1, 0),
-			new Vector2(1, 1),
-			new Vector2(0, 1)
-		)
+		const polygon = new Polygon(v2(0, 0), v2(1, 0), v2(1, 1), v2(0, 1))
 		const contour = Contour.from(polygon)
 
 		expect(contour).toBeInstanceOf(Contour)
@@ -45,7 +41,7 @@ describe('Contour', () => {
 	})
 
 	it('should create contour from vertices', () => {
-		const vertices = [new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1)]
+		const vertices = [v2(0, 0), v2(1, 0), v2(1, 1), v2(0, 1)]
 		const contour = Contour.from(vertices)
 
 		expect(contour).toBeInstanceOf(Contour)
@@ -58,7 +54,7 @@ describe('Contour', () => {
 
 	it('should map vertices through transformation function', () => {
 		const contour = square({ size: 2 })
-		const transformed = contour.mapVertex((v) => new Vector2(v.x * 2, v.y * 2))
+		const transformed = contour.mapVertex((v) => v2(v.x * 2, v.y * 2))
 
 		expect(transformed).toBeInstanceOf(Contour)
 		expect(transformed.length).toBe(1)
@@ -87,18 +83,8 @@ describe('Contour', () => {
 	})
 
 	it('should handle contour with multiple shapes', () => {
-		const polygon1 = new Polygon(
-			new Vector2(0, 0),
-			new Vector2(1, 0),
-			new Vector2(1, 1),
-			new Vector2(0, 1)
-		)
-		const polygon2 = new Polygon(
-			new Vector2(2, 0),
-			new Vector2(3, 0),
-			new Vector2(3, 1),
-			new Vector2(2, 1)
-		)
+		const polygon1 = new Polygon(v2(0, 0), v2(1, 0), v2(1, 1), v2(0, 1))
+		const polygon2 = new Polygon(v2(2, 0), v2(3, 0), v2(3, 1), v2(2, 1))
 		const shape1 = new Shape(polygon1)
 		const shape2 = new Shape(polygon2)
 		const contour = new Contour(shape1, shape2)
@@ -112,18 +98,8 @@ describe('Contour', () => {
 	})
 
 	it('should handle shapes with holes in flatPolygons', () => {
-		const mainPolygon = new Polygon(
-			new Vector2(0, 0),
-			new Vector2(3, 0),
-			new Vector2(3, 3),
-			new Vector2(0, 3)
-		)
-		const hole = new Polygon(
-			new Vector2(1, 1),
-			new Vector2(2, 1),
-			new Vector2(2, 2),
-			new Vector2(1, 2)
-		)
+		const mainPolygon = new Polygon(v2(0, 0), v2(3, 0), v2(3, 3), v2(0, 3))
+		const hole = new Polygon(v2(1, 1), v2(2, 1), v2(2, 2), v2(1, 2))
 		const shape = new Shape(mainPolygon, [hole])
 		const contour = new Contour(shape)
 
@@ -136,18 +112,8 @@ describe('Contour', () => {
 
 describe('Shape', () => {
 	it('should create shape with polygon and holes', () => {
-		const polygon = new Polygon(
-			new Vector2(0, 0),
-			new Vector2(3, 0),
-			new Vector2(3, 3),
-			new Vector2(0, 3)
-		)
-		const hole = new Polygon(
-			new Vector2(1, 1),
-			new Vector2(2, 1),
-			new Vector2(2, 2),
-			new Vector2(1, 2)
-		)
+		const polygon = new Polygon(v2(0, 0), v2(3, 0), v2(3, 3), v2(0, 3))
+		const hole = new Polygon(v2(1, 1), v2(2, 1), v2(2, 2), v2(1, 2))
 		const shape = new Shape(polygon, [hole])
 
 		expect(shape.polygon).toBe(polygon)
@@ -155,12 +121,7 @@ describe('Shape', () => {
 	})
 
 	it('should create shape with only polygon', () => {
-		const polygon = new Polygon(
-			new Vector2(0, 0),
-			new Vector2(1, 0),
-			new Vector2(1, 1),
-			new Vector2(0, 1)
-		)
+		const polygon = new Polygon(v2(0, 0), v2(1, 0), v2(1, 1), v2(0, 1))
 		const shape = new Shape(polygon)
 
 		expect(shape.polygon).toBe(polygon)
@@ -168,20 +129,10 @@ describe('Shape', () => {
 	})
 
 	it('should map vertices through transformation function', () => {
-		const polygon = new Polygon(
-			new Vector2(0, 0),
-			new Vector2(1, 0),
-			new Vector2(1, 1),
-			new Vector2(0, 1)
-		)
-		const hole = new Polygon(
-			new Vector2(0.25, 0.25),
-			new Vector2(0.75, 0.25),
-			new Vector2(0.75, 0.75),
-			new Vector2(0.25, 0.75)
-		)
+		const polygon = new Polygon(v2(0, 0), v2(1, 0), v2(1, 1), v2(0, 1))
+		const hole = new Polygon(v2(0.25, 0.25), v2(0.75, 0.25), v2(0.75, 0.75), v2(0.25, 0.75))
 		const shape = new Shape(polygon, [hole])
-		const transformed = shape.mapVertex((v) => new Vector2(v.x * 2, v.y * 2))
+		const transformed = shape.mapVertex((v) => v2(v.x * 2, v.y * 2))
 
 		expect(transformed).toBeInstanceOf(Shape)
 		expect(transformed.polygon).toBeInstanceOf(Polygon)
@@ -202,12 +153,7 @@ describe('Shape', () => {
 	})
 
 	it('should triangulate shape without holes', () => {
-		const polygon = new Polygon(
-			new Vector2(0, 0),
-			new Vector2(1, 0),
-			new Vector2(1, 1),
-			new Vector2(0, 1)
-		)
+		const polygon = new Polygon(v2(0, 0), v2(1, 0), v2(1, 1), v2(0, 1))
 		const shape = new Shape(polygon)
 		const surface = shape.triangulate()
 
@@ -220,18 +166,8 @@ describe('Shape', () => {
 	})
 
 	it('should triangulate shape with holes', () => {
-		const polygon = new Polygon(
-			new Vector2(0, 0),
-			new Vector2(3, 0),
-			new Vector2(3, 3),
-			new Vector2(0, 3)
-		)
-		const hole = new Polygon(
-			new Vector2(1, 1),
-			new Vector2(2, 1),
-			new Vector2(2, 2),
-			new Vector2(1, 2)
-		)
+		const polygon = new Polygon(v2(0, 0), v2(3, 0), v2(3, 3), v2(0, 3))
+		const hole = new Polygon(v2(1, 1), v2(2, 1), v2(2, 2), v2(1, 2))
 		const shape = new Shape(polygon, [hole])
 		const surface = shape.triangulate()
 

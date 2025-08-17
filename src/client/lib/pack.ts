@@ -1,4 +1,4 @@
-import { type AMesh, Mesh, Vector3 } from '@tsculpt'
+import { type AMesh, Mesh, Vector3, v3 } from '@tsculpt'
 
 export interface MeshPack {
 	vertices: Float32Array
@@ -31,7 +31,7 @@ export function unpackMesh(pack: MeshPack): AMesh {
 	// Convert Float32Array back to Vector3 array
 	const vectors: Vector3[] = []
 	for (let i = 0; i < pack.vertices.length; i += 3) {
-		vectors.push(new Vector3(pack.vertices[i], pack.vertices[i + 1], pack.vertices[i + 2]))
+		vectors.push(v3(pack.vertices[i], pack.vertices[i + 1], pack.vertices[i + 2]))
 	}
 
 	// Convert Uint32Array back to Numbers3 array

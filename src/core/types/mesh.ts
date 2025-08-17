@@ -1,6 +1,9 @@
-import { cached } from '../ts/decorators'
+import { assert } from '@tsculpt/ts/debug'
+import { cached } from '@tsculpt/ts/decorators'
 import { VectorMap } from '../vectorSet'
 import { Matrix4, Vector, Vector3 } from './bunches'
+
+const { integrity } = assert
 
 type Numbers3 = readonly [number, number, number]
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { circle, square } from './contours'
 import { linearExtrude, rotateExtrude } from './extrusions'
 import { box, cone, cylinder, sphere, torus } from './geometries'
+import { v2, v3 } from './types'
 import { Vector2, Vector3 } from './types/bunches'
 
 describe('Geometry Primitives', () => {
@@ -21,11 +22,11 @@ describe('Geometry Primitives', () => {
 		})
 
 		it('should create a box with custom center', () => {
-			const mesh = box({ center: new Vector3(1, 2, 3) })
+			const mesh = box({ center: v3(1, 2, 3) })
 			expect(mesh.vectors.length).toBe(8)
 			// Check that center is correct
-			const center = mesh.vectors.reduce((acc, v) => Vector3.add(acc, v), new Vector3(0, 0, 0))
-			const avgCenter = new Vector3(center.x / 8, center.y / 8, center.z / 8)
+			const center = mesh.vectors.reduce((acc, v) => Vector3.add(acc, v), v3(0, 0, 0))
+			const avgCenter = v3(center.x / 8, center.y / 8, center.z / 8)
 			expect(avgCenter.x).toBeCloseTo(1, 3)
 			expect(avgCenter.y).toBeCloseTo(2, 3)
 			expect(avgCenter.z).toBeCloseTo(3, 3)
@@ -171,7 +172,7 @@ describe('Geometry Primitives', () => {
 		})
 
 		it('should create a rectangle with vector size', () => {
-			const contour = square({ size: new Vector2(4, 6) })
+			const contour = square({ size: v2(4, 6) })
 			expect(contour.length).toBe(1) // One shape
 			expect(contour[0].polygon.length).toBe(4)
 			// Check size
@@ -247,7 +248,7 @@ describe('Geometry Primitives', () => {
 
 		describe('rotateExtrude', () => {
 			it('should rotate extrude a rectangle to create a cylinder', () => {
-				const rectProfile = square({ size: new Vector2(1, 2), center: new Vector2(0.5, 0) })
+				const rectProfile = square({ size: v2(1, 2), center: v2(0.5, 0) })
 				const extruded = rotateExtrude(rectProfile, {})
 
 				expect(extruded.vectors.length).toBeGreaterThan(10)
@@ -259,7 +260,7 @@ describe('Geometry Primitives', () => {
 			})
 
 			it('should rotate extrude with partial angle', () => {
-				const rectProfile = square({ size: new Vector2(1, 2), center: new Vector2(0.5, 0) })
+				const rectProfile = square({ size: v2(1, 2), center: v2(0.5, 0) })
 				const extruded = rotateExtrude(rectProfile, { angle: Math.PI })
 
 				expect(extruded.vectors.length).toBeGreaterThan(5)
