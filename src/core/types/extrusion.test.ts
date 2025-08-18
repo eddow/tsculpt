@@ -14,7 +14,7 @@ describe('Extrusion Orientation', () => {
 	})
 	const curvedPath: PathFn = (t: number) => ({
 		o: v3(t, Math.sin(t * Math.PI), 0),
-		x: v3(1, Math.cos(t * Math.PI) * Math.PI, 0).normalized(),
+		x: v3(1, Math.cos(t * Math.PI) * Math.PI, 0).normalized,
 		y: v3(0, 0, 1),
 	})
 	const constantCircle = circle({ radius: 0.2 })

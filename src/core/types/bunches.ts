@@ -9,7 +9,9 @@ function error<T>(message: string): T {
 	throw new Error(message)
 }
 
-export function product<V extends Vector>(...vs: (V | number | readonly number[])[]): V | number {
+export function scale(...vs: number[]): number
+export function scale<V extends Vector>(...vs: (V | number | readonly number[])[]): V
+export function scale<V extends Vector>(...vs: (V | number | readonly number[])[]): V | number {
 	const vectors: V[] = []
 	let numeric = 1
 	for (const v of vs) {
@@ -87,9 +89,10 @@ export class Vector extends Array<number> {
 			)
 		) as V
 	}
-	normalized<V extends Vector>(this: V): V {
+	@cached
+	get normalized() {
 		const size = this.size
-		return Vector.from(this.map((x) => x / size)) as V
+		return Vector.from(this.map((x) => x / size)) as typeof this
 	}
 
 	static add<V extends Vector>(...v: V[]): V {
@@ -103,9 +106,9 @@ export class Vector extends Array<number> {
 		return Vector.from(zip(a as number[], b as number[]).map(([a, b]) => a - b)) as V
 	}
 
-	static dot<V extends Vector>(...vs: (V | number | readonly number[])[]): V {
+	static scale<V extends Vector>(...vs: (V | number | readonly number[])[]): V {
 		if (!vs.some((v) => typeof v === 'object')) throw new Error('No vectors in dot product')
-		return product(...vs) as V
+		return scale(...vs) as V
 	}
 }
 export class Vector2 extends Vector {
@@ -144,17 +147,6 @@ export class Vector3 extends Vector {
 	}
 	get z() {
 		return this[2]
-	}
-
-	static cross(a: Vector3, b: Vector3): Vector3 {
-		if (a.length !== 3 || b.length !== 3) {
-			throw new Error('Cross product only defined for 3D vectors')
-		}
-		return new Vector3(
-			a[1] * b[2] - a[2] * b[1],
-			a[2] * b[0] - a[0] * b[2],
-			a[0] * b[1] - a[1] * b[0]
-		)
 	}
 }
 

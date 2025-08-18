@@ -38,6 +38,7 @@ export default defineConfig({
 			'@client': fileURLToPath(new URL('./src/client', import.meta.url)),
 			'@tsculpt': fileURLToPath(new URL('./src/core', import.meta.url)),
 			'@worker': fileURLToPath(new URL('./src/worker', import.meta.url)),
+			'@meta': fileURLToPath(new URL('./src/meta.ts', import.meta.url)),
 		},
 	},
 	css: {

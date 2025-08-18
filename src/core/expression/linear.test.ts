@@ -5,7 +5,7 @@ import { v2 } from '../types/builders'
 import { Vector3 } from '../types/bunches'
 import { AContour, Contour, Polygon, Shape } from '../types/contour'
 import { AMesh, Mesh } from '../types/mesh'
-import { contour, mesh, vector } from './linear'
+import { contour, mesh } from './linear'
 
 // Helper function to create a simple test mesh
 function createTestMesh(): Mesh {

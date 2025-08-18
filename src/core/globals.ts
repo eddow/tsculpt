@@ -1,4 +1,5 @@
 import { MaybePromise } from './ts/maybe'
+import { Semaphore } from './ts/semaphore'
 import { ParametersConfig } from './types/parameters'
 export type GenerationParameters = {
 	/**
@@ -23,25 +24,17 @@ export const defaultGlobals: GenerationParameters = {
 }
 export const generation: GenerationParameters = { ...defaultGlobals }
 
-let globalUsage: Promise<void> | undefined
+const globalUsage = new Semaphore()
 function useGlobals(usedGlobals: GenerationParameters) {
 	for (const key of Object.keys(generation)) delete generation[key]
 	Object.assign(generation, usedGlobals)
 }
-export function withGlobals<T>(
+export async function withGlobals<T>(
 	fn: () => MaybePromise<T>,
 	usedGlobals: GenerationParameters
 ): Promise<T> {
-	if (globalUsage) return globalUsage.then(() => withGlobals(fn, usedGlobals))
-	useGlobals(usedGlobals)
-	const call = fn()
-	if (!(call instanceof Promise)) return Promise.resolve(call)
-	globalUsage = call
-		.then(() => {
-			useGlobals(defaultGlobals)
-		})
-		.finally(() => {
-			globalUsage = undefined
-		})
-	return call
+	return globalUsage.execute(() => {
+		useGlobals(usedGlobals)
+		return fn()
+	})
 }

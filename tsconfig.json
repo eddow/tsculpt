@@ -25,7 +25,8 @@
 		"paths": {
 			"@client/*": ["./src/client/*"],
 			"@tsculpt": ["./src/core"],
-			"@tsculpt/*": ["./src/core/*"]
+			"@tsculpt/*": ["./src/core/*"],
+			"@meta": ["./src/meta.ts"]
 		}
 	}
 }

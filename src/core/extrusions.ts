@@ -1,5 +1,5 @@
 import { generation } from './globals'
-import { lerp } from './math'
+import { cross, lerp } from './math'
 import { Vector2, Vector3, v2, v3 } from './types'
 import { Contour, Polygon } from './types/contour'
 import { ContourFn, PathFn, extrude } from './types/extrusion'
@@ -150,12 +150,12 @@ export function sweep(pathFn: (t: number) => Vector3): PathFn {
 		const dt = 0.01
 		const nextT = Math.min(t + dt, 1)
 		const nextPoint = pathFn(nextT)
-		const tangent = Vector3.sub(nextPoint, point).normalized()
+		const tangent = Vector3.sub(nextPoint, point).normalized
 
 		// Create coordinate frame
 		const up = v3(0, 0, 1) // Default up direction
-		const right = Vector3.cross(tangent, up).normalized()
-		const adjustedUp = Vector3.cross(right, tangent).normalized()
+		const right = cross(tangent, up).normalized
+		const adjustedUp = cross(right, tangent).normalized
 
 		return {
 			o: point,

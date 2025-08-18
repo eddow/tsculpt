@@ -96,7 +96,7 @@ export abstract class AMesh {
 
 		// General case: rotate around arbitrary axis using Rodrigues' rotation formula
 		// Normalize the axis
-		const normalizedAxis = axis.normalized()
+		const normalizedAxis = axis.normalized
 		const x = normalizedAxis.x
 		const y = normalizedAxis.y
 		const z = normalizedAxis.z

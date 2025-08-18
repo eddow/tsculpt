@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useMenuItems } from '@client/App.vue'
+import { thenComputed } from '@client/components/Await.vue'
 import EntryViewer from '@client/components/EntryViewer.vue'
 import { ParametersConfig } from '@tsculpt'
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { entries, onModuleChanged } from '../lib/source'
 
 const props = defineProps<{
@@ -35,13 +36,11 @@ watch(
 	{ immediate: true }
 )
 
-const entryParameters = computed(() =>
-	moduleEntries.value.then((entries) => {
-		const entry = entries[hash.value]
-		if (!entry) throw new Error(`No entry found for ${hash.value}`)
-		return entry
-	})
-)
+const entryParameters = thenComputed(moduleEntries, (entries) => {
+	const entry = entries[hash.value]
+	if (!entry) throw new Error(`No entry found for ${hash.value}`)
+	return entry
+})
 </script>
 <template>
 	<div class="module-viewer">

@@ -2,7 +2,7 @@ import type Op2 from '@tsculpt/op2'
 import type Op3 from '@tsculpt/op3'
 import di from '@tsculpt/ts/di'
 import { MaybePromise, maybeAwait } from '@tsculpt/ts/maybe'
-import { Vector, Vector2, Vector3, isUnity, product } from '../types/bunches'
+import { Vector, Vector2, Vector3, isUnity, scale } from '../types/bunches'
 import { AContour, Contour } from '../types/contour'
 import { AMesh, Mesh } from '../types/mesh'
 import { TemplateParser } from './templated'
@@ -89,14 +89,12 @@ function recur(
 									`Cannot scale multiple geometries: ${geometry} and ${result}`
 								)
 							geometry = result
-						} else factor = product(factor, result)
+						} else factor = scale(factor, result)
 					}
 					if (isUnity(factor)) return geometry || 1
-					const scale = Array.isArray(factor)
-						? (Vector.from(factor) as Vector3)
-						: (factor as number)
-					if (geometry) return geometry.scale(scale)
-					return scale
+					const mult = Array.isArray(factor) ? (Vector.from(factor) as Vector3) : (factor as number)
+					if (geometry) return geometry.scale(mult)
+					return mult
 				}
 			)
 		}
@@ -196,7 +194,7 @@ function recur(
 						// Use the length of the axis vector as the angle
 						const rotationAngle = rotationAxis.size
 						// Implement Vector3 rotation around axis
-						return rotateVector3(vector, rotationAxis.normalized(), rotationAngle)
+						return rotateVector3(vector, rotationAxis.normalized, rotationAngle)
 					}
 
 					// Handle Vector2 rotation
@@ -292,14 +290,14 @@ function translate(...operands: LinearExpression[]): LinearExpression {
 		: { type: 'translate', terms: resultingOperands }
 }
 
-function scale(...operands: LinearExpression[]): LinearExpression {
+function mult(...operands: LinearExpression[]): LinearExpression {
 	const resultingOperands: LinearExpression[] = []
 	let factor: number | readonly number[] = 1
 	function add(expr: LinearExpression) {
 		if (expr.type === 'scale') {
-			factor = product(factor, expr.factor)
+			factor = scale(factor, expr.factor)
 			for (const term of expr.operands) add(term)
-		} else if (expr.type === 'literal') factor = product(factor, expr.value)
+		} else if (expr.type === 'literal') factor = scale(factor, expr.value)
 		else resultingOperands.push(expr)
 	}
 	for (const operand of operands) add(operand)
@@ -333,8 +331,8 @@ const formulas = new TemplateParser<
 		emptyOperator: '*',
 		operations: {
 			'+': translate,
-			'*': scale,
-			'/': (a: LinearExpression, b: LinearExpression) => scale(a, { type: 'invert', operand: b }),
+			'*': mult,
+			'/': (a: LinearExpression, b: LinearExpression) => mult(a, { type: 'invert', operand: b }),
 			'-': (a: LinearExpression, b: LinearExpression) => ({
 				type: 'subtract',
 				operands: [a, b],

@@ -27,7 +27,6 @@ export type SourceFiles = {
 	entries(module: string): Promise<Record<string, ParametersConfig>>
 	render(module: string, entry: string, parameters: GenerationParameters): Promise<MeshPack>
 }
-export type Module = Record<string, any>
 const viteWorker = new WorkerManager<SourceFiles>(
 	new Worker(new URL('@worker/vite.worker.ts', import.meta.url), {
 		type: 'module',

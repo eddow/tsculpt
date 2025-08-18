@@ -1,4 +1,5 @@
-import type { Module, SourceFiles } from '@client/lib/source'
+import type { SourceFiles } from '@client/lib/source'
+import { type Module, parameterizedExports } from '@meta'
 import { AMesh, GenerationParameters, ParametersConfig } from '@tsculpt'
 import { withGlobals } from '@tsculpt/globals'
 import { MaybePromise } from '@tsculpt/ts/maybe'
@@ -10,6 +11,7 @@ const logicalPath = (path: string) => path.match(/^\/(.*)\.sculpt\.ts$/)?.[1]
 
 const modules = import.meta.glob('/**/*.sculpt.ts')
 const moduleCache = new Map<() => Promise<Module>, Promise<Module>>()
+
 /*export function module(path: string) {
 	const module = modules[path] as () => Promise<Module>
 	if (!module) throw new Error(`Module ${path} not found`)
@@ -24,7 +26,7 @@ const moduleCache = new Map<() => Promise<Module>, Promise<Module>>()
 	return rv as Ref<Promise<Module>>
 }
 */
-function readModule(path: string): Promise<Module> {
+async function readModule(path: string): Promise<Module> {
 	path = actualPath(path)
 	const evaluate = modules[path] as () => Promise<Module>
 	if (!evaluate) throw new Error(`Module ${path} not found`)
@@ -38,7 +40,7 @@ function readModule(path: string): Promise<Module> {
 		})
 		moduleCache.delete(evaluate)
 	})
-	return module
+	return parameterizedExports(await module)
 }
 expose<SourceFiles>({
 	modules() {

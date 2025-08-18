@@ -30,7 +30,7 @@ export function box(spec: BoxSpec = {}): Mesh {
 		[1, 1, 1],
 		[-1, 1, 1]
 	).map((v) => {
-		const scaled = Vector3.dot(v, radius)
+		const scaled = Vector3.scale(v, radius)
 		return Vector3.add(scaled, center)
 	})
 
@@ -65,7 +65,7 @@ export function geodesicSphere({
 	center = v3(0, 0, 0),
 }: { radius: number | Vector3; subdivisions: number; center: Vector3 }): Mesh {
 	function midpoint(a: Vector3, b: Vector3): Vector3 {
-		return v3`${a} + ${b}`.normalized() as Vector3
+		return v3`${a} + ${b}`.normalized as Vector3
 	}
 
 	// Start with icosahedron vertices
@@ -372,18 +372,369 @@ export function torus(spec: TorusSpec = {}): Mesh {
 		for (let j = 0; j < ringSegments; j++) {
 			const nextJ = (j + 1) % ringSegments
 
-			const v1 = vertices[i * ringSegments + j]
-			const v2 = vertices[nextI * ringSegments + j]
-			const v3 = vertices[nextI * ringSegments + nextJ]
-			const v4 = vertices[i * ringSegments + nextJ]
+			const x1 = vertices[i * ringSegments + j]
+			const x2 = vertices[nextI * ringSegments + j]
+			const x3 = vertices[nextI * ringSegments + nextJ]
+			const x4 = vertices[i * ringSegments + nextJ]
 
 			// Triangulate the quad
-			faces.push([v1, v2, v3])
-			faces.push([v1, v3, v4])
+			faces.push([x1, x2, x3])
+			faces.push([x1, x3, x4])
 		}
 	}
 
 	// Apply center offset
+	const mesh = new Mesh(faces)
+	return new Mesh(
+		mesh.faces,
+		mesh.vectors.map((v) => v3`${v} + ${center}`)
+	)
+}
+
+// New primitives
+
+type FrustumSpec = {
+	bottomRadius?: number
+	topRadius?: number
+	height?: number
+	center?: Vector3
+	segments?: number
+}
+export function frustum(spec: FrustumSpec = {}): Mesh {
+	const { bottomRadius = 1, topRadius = 0.5, height = 2, center = v3(0, 0, 0), segments } = spec
+	const { grain } = generation
+	const circumference = 2 * Math.PI * Math.max(bottomRadius, topRadius)
+	const segs = segments ?? Math.max(8, Math.ceil(circumference / grain))
+	const bottom: Vector3[] = []
+	const top: Vector3[] = []
+	for (let i = 0; i < segs; i++) {
+		const a = (2 * Math.PI * i) / segs
+		bottom.push(v3(bottomRadius * Math.cos(a), bottomRadius * Math.sin(a), -height / 2))
+		top.push(v3(topRadius * Math.cos(a), topRadius * Math.sin(a), height / 2))
+	}
+	const bottomCenter = v3(0, 0, -height / 2)
+	const topCenter = v3(0, 0, height / 2)
+	const faces: [Vector3, Vector3, Vector3][] = []
+	// bottom cap if radius > 0
+	if (bottomRadius > 0) {
+		for (let i = 0; i < segs; i++) {
+			const next = (i + 1) % segs
+			faces.push([bottomCenter, bottom[next], bottom[i]])
+		}
+	}
+	// top cap if radius > 0
+	if (topRadius > 0) {
+		for (let i = 0; i < segs; i++) {
+			const next = (i + 1) % segs
+			faces.push([topCenter, top[i], top[next]])
+		}
+	}
+	// sides
+	for (let i = 0; i < segs; i++) {
+		const next = (i + 1) % segs
+		faces.push([bottom[i], bottom[next], top[i]])
+		faces.push([bottom[next], top[next], top[i]])
+	}
+	const mesh = new Mesh(faces)
+	return new Mesh(
+		mesh.faces,
+		mesh.vectors.map((v) => v3`${v} + ${center}`)
+	)
+}
+
+type TubeSpec = {
+	inner: number
+	outer: number
+	height?: number
+	center?: Vector3
+	segments?: number
+}
+export function tube(spec: TubeSpec): Mesh {
+	const { inner, outer, height = 2, center = v3(0, 0, 0), segments } = spec
+	if (!(inner > 0 && outer > 0 && inner < outer)) throw new Error('tube requires 0 < inner < outer')
+	const { grain } = generation
+	const circumference = 2 * Math.PI * outer
+	const segs = segments ?? Math.max(8, Math.ceil(circumference / grain))
+	const bo: Vector3[] = [] // bottom outer
+	const bi: Vector3[] = [] // bottom inner
+	const to: Vector3[] = [] // top outer
+	const ti: Vector3[] = [] // top inner
+	for (let i = 0; i < segs; i++) {
+		const a = (2 * Math.PI * i) / segs
+		bo.push(v3(outer * Math.cos(a), outer * Math.sin(a), -height / 2))
+		bi.push(v3(inner * Math.cos(a), inner * Math.sin(a), -height / 2))
+		to.push(v3(outer * Math.cos(a), outer * Math.sin(a), height / 2))
+		ti.push(v3(inner * Math.cos(a), inner * Math.sin(a), height / 2))
+	}
+	const faces: [Vector3, Vector3, Vector3][] = []
+	// bottom annulus (viewed from below, keep winding consistent with outside)
+	for (let i = 0; i < segs; i++) {
+		const next = (i + 1) % segs
+		faces.push([bo[i], bo[next], bi[next]])
+		faces.push([bo[i], bi[next], bi[i]])
+	}
+	// top annulus (viewed from above)
+	for (let i = 0; i < segs; i++) {
+		const next = (i + 1) % segs
+		faces.push([to[i], ti[next], to[next]])
+		faces.push([to[i], ti[i], ti[next]])
+	}
+	// outer side
+	for (let i = 0; i < segs; i++) {
+		const next = (i + 1) % segs
+		faces.push([bo[i], bo[next], to[i]])
+		faces.push([bo[next], to[next], to[i]])
+	}
+	// inner side (reverse winding so normals face inward)
+	for (let i = 0; i < segs; i++) {
+		const next = (i + 1) % segs
+		faces.push([bi[i], ti[i], bi[next]])
+		faces.push([bi[next], ti[i], ti[next]])
+	}
+	const mesh = new Mesh(faces)
+	return new Mesh(
+		mesh.faces,
+		mesh.vectors.map((v) => v3`${v} + ${center}`)
+	)
+}
+
+type EllipsoidSpec = { radius?: number | Vector3; center?: Vector3; subdivisions?: number }
+export function ellipsoid(spec: EllipsoidSpec = {}): Mesh {
+	const { radius = v3(1, 1, 1), center = v3(0, 0, 0), subdivisions } = spec
+	const { grain } = generation
+	const calcR = typeof radius === 'number' ? radius : Math.max(...radius)
+	const defaultSubdivisions = Math.max(0, Math.ceil(Math.log2((1.051 * calcR) / grain)))
+	const subs = subdivisions ?? defaultSubdivisions
+	const base = geodesicSphere({ radius: 1, subdivisions: subs, center: v3(0, 0, 0) })
+	const rVec = typeof radius === 'number' ? v3(radius, radius, radius) : radius
+	return new Mesh(
+		base.faces,
+		base.vectors.map((v) => v3`${Vector3.scale(v, rVec)} + ${center}`)
+	)
+}
+
+type PrismSpec = {
+	sides: number
+	radius?: number
+	height?: number
+	center?: Vector3
+	rotation?: number
+	segments?: number
+}
+export function prism({
+	sides,
+	radius = 1,
+	height = 2,
+	center = v3(0, 0, 0),
+	rotation = 0,
+}: PrismSpec): Mesh {
+	if (sides < 3) throw new Error('prism requires sides >= 3')
+	const vertexesBottom: Vector3[] = []
+	const vertexesTop: Vector3[] = []
+	for (let i = 0; i < sides; i++) {
+		const a = rotation + (2 * Math.PI * i) / sides
+		vertexesBottom.push(v3(radius * Math.cos(a), radius * Math.sin(a), -height / 2))
+		vertexesTop.push(v3(radius * Math.cos(a), radius * Math.sin(a), height / 2))
+	}
+	const faces: [Vector3, Vector3, Vector3][] = []
+	// bottom face
+	const bottomCenter = v3(0, 0, -height / 2)
+	for (let i = 0; i < sides; i++) {
+		const next = (i + 1) % sides
+		faces.push([bottomCenter, vertexesBottom[next], vertexesBottom[i]])
+	}
+	// top face
+	const topCenter = v3(0, 0, height / 2)
+	for (let i = 0; i < sides; i++) {
+		const next = (i + 1) % sides
+		faces.push([topCenter, vertexesTop[i], vertexesTop[next]])
+	}
+	// sides
+	for (let i = 0; i < sides; i++) {
+		const next = (i + 1) % sides
+		faces.push([vertexesBottom[i], vertexesBottom[next], vertexesTop[i]])
+		faces.push([vertexesBottom[next], vertexesTop[next], vertexesTop[i]])
+	}
+	const mesh = new Mesh(faces)
+	return new Mesh(
+		mesh.faces,
+		mesh.vectors.map((v) => v3`${v} + ${center}`)
+	)
+}
+
+type PyramidSpec = { base?: number; height?: number; center?: Vector3 }
+export function pyramid({ base = 1, height = 1.5, center = v3(0, 0, 0) }: PyramidSpec = {}): Mesh {
+	const half = base / 2
+	const b0 = v3(-half, -half, -height / 2)
+	const b1 = v3(half, -half, -height / 2)
+	const b2 = v3(half, half, -height / 2)
+	const b3 = v3(-half, half, -height / 2)
+	const apex = v3(0, 0, height / 2)
+	const faces: [Vector3, Vector3, Vector3][] = [
+		// base (two triangles)
+		[b0, b2, b1],
+		[b0, b3, b2],
+		// sides
+		[apex, b0, b1],
+		[apex, b1, b2],
+		[apex, b2, b3],
+		[apex, b3, b0],
+	]
+	const mesh = new Mesh(faces)
+	return new Mesh(
+		mesh.faces,
+		mesh.vectors.map((v) => v3`${v} + ${center}`)
+	)
+}
+
+type CapsuleSpec = {
+	radius?: number
+	height?: number
+	center?: Vector3
+	segments?: number
+	rings?: number
+}
+export function capsule3D({
+	radius = 0.5,
+	height = 2,
+	center = v3(0, 0, 0),
+	segments,
+	rings,
+}: CapsuleSpec = {}): Mesh {
+	const { grain } = generation
+	const segs = segments ?? Math.max(12, Math.ceil((2 * Math.PI * radius) / grain))
+	const ringCount = rings ?? Math.max(4, Math.ceil((Math.PI * radius) / (2 * grain)))
+	const cyl = Math.max(0, height - 2 * radius)
+	if (cyl <= 0) return sphere({ radius, center })
+	// build vertices
+	const ringsVertexes: Vector3[][] = []
+	// bottom tip
+	const bottomTip = v3(0, 0, -height / 2)
+	// bottom hemisphere rings (exclude tip and equator)
+	for (let j = 1; j < ringCount; j++) {
+		const t = j / ringCount // 0..1
+		const a = -Math.PI / 2 + (Math.PI / 2) * t // -π/2..0
+		const r = radius * Math.cos(a)
+		const z = -height / 2 + radius * (Math.sin(a) + 1)
+		const ring: Vector3[] = []
+		for (let i = 0; i < segs; i++) {
+			const ang = (2 * Math.PI * i) / segs
+			ring.push(v3(r * Math.cos(ang), r * Math.sin(ang), z))
+		}
+		ringsVertexes.push(ring)
+	}
+	// cylinder bottom ring at z=-height/2 + radius
+	const ringBottom: Vector3[] = []
+	for (let i = 0; i < segs; i++) {
+		const ang = (2 * Math.PI * i) / segs
+		ringBottom.push(v3(radius * Math.cos(ang), radius * Math.sin(ang), -height / 2 + radius))
+	}
+	ringsVertexes.push(ringBottom)
+	// cylinder top ring at z=+height/2 - radius
+	const ringTop: Vector3[] = []
+	for (let i = 0; i < segs; i++) {
+		const ang = (2 * Math.PI * i) / segs
+		ringTop.push(v3(radius * Math.cos(ang), radius * Math.sin(ang), height / 2 - radius))
+	}
+	ringsVertexes.push(ringTop)
+	// top hemisphere rings (exclude tip and equator)
+	for (let j = ringCount - 1; j >= 1; j--) {
+		const t = j / ringCount
+		const a = (Math.PI / 2) * t // 0..π/2
+		const r = radius * Math.cos(a)
+		const z = height / 2 - radius + radius * Math.sin(a)
+		const ring: Vector3[] = []
+		for (let i = 0; i < segs; i++) {
+			const ang = (2 * Math.PI * i) / segs
+			ring.push(v3(r * Math.cos(ang), r * Math.sin(ang), z))
+		}
+		ringsVertexes.push(ring)
+	}
+	const topTip = v3(0, 0, height / 2)
+	// faces
+	const faces: [Vector3, Vector3, Vector3][] = []
+	// bottom tip to first ring
+	if (ringsVertexes.length > 0) {
+		const first = ringsVertexes[0]
+		for (let i = 0; i < segs; i++) {
+			const next = (i + 1) % segs
+			faces.push([bottomTip, first[next], first[i]])
+		}
+	}
+	// connect consecutive rings
+	for (let k = 0; k < ringsVertexes.length - 1; k++) {
+		const a = ringsVertexes[k]
+		const b = ringsVertexes[k + 1]
+		for (let i = 0; i < segs; i++) {
+			const next = (i + 1) % segs
+			faces.push([a[i], a[next], b[i]])
+			faces.push([a[next], b[next], b[i]])
+		}
+	}
+	// last ring to top tip
+	if (ringsVertexes.length > 0) {
+		const last = ringsVertexes[ringsVertexes.length - 1]
+		for (let i = 0; i < segs; i++) {
+			const next = (i + 1) % segs
+			faces.push([topTip, last[i], last[next]])
+		}
+	}
+	const mesh = new Mesh(faces)
+	return new Mesh(
+		mesh.faces,
+		mesh.vectors.map((v) => v3`${v} + ${center}`)
+	)
+}
+
+type HemisphereSpec = { radius?: number; center?: Vector3; segments?: number; rings?: number }
+export function hemisphere({
+	radius = 1,
+	center = v3(0, 0, 0),
+	segments,
+	rings,
+}: HemisphereSpec = {}): Mesh {
+	const { grain } = generation
+	const segs = segments ?? Math.max(12, Math.ceil((2 * Math.PI * radius) / grain))
+	const ringCount = rings ?? Math.max(4, Math.ceil((Math.PI * radius) / (2 * grain)))
+	const ringsVertexes: Vector3[][] = []
+	// equator ring at z=0
+	for (let j = 1; j <= ringCount; j++) {
+		const t = j / ringCount // 0..1
+		const a = (Math.PI / 2) * t // 0..π/2
+		const r = radius * Math.cos(a)
+		const z = radius * Math.sin(a)
+		const ring: Vector3[] = []
+		for (let i = 0; i < segs; i++) {
+			const ang = (2 * Math.PI * i) / segs
+			ring.push(v3(r * Math.cos(ang), r * Math.sin(ang), z))
+		}
+		ringsVertexes.push(ring)
+	}
+	const topTip = v3(0, 0, radius)
+	const faces: [Vector3, Vector3, Vector3][] = []
+	// connect rings
+	for (let k = 0; k < ringsVertexes.length - 1; k++) {
+		const a = ringsVertexes[k]
+		const b = ringsVertexes[k + 1]
+		for (let i = 0; i < segs; i++) {
+			const next = (i + 1) % segs
+			faces.push([a[i], a[next], b[i]])
+			faces.push([a[next], b[next], b[i]])
+		}
+	}
+	// top cap
+	const last = ringsVertexes[ringsVertexes.length - 1]
+	for (let i = 0; i < segs; i++) {
+		const next = (i + 1) % segs
+		faces.push([topTip, last[i], last[next]])
+	}
+	// base disk at z=0
+	const baseCenter = v3(0, 0, 0)
+	const baseRing = ringsVertexes[0]
+	for (let i = 0; i < segs; i++) {
+		const next = (i + 1) % segs
+		faces.push([baseCenter, baseRing[next], baseRing[i]])
+	}
 	const mesh = new Mesh(faces)
 	return new Mesh(
 		mesh.faces,
