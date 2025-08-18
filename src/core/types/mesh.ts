@@ -1,7 +1,11 @@
+import Op3 from '@tsculpt/op3'
 import { cached } from '@tsculpt/ts/decorators'
+import di from '@tsculpt/ts/di'
+import { MaybePromise } from '@tsculpt/ts/maybe'
 import { VectorMap } from '../vectorSet'
 import { Matrix4, Vector, Vector3 } from './bunches'
-// TODO: AMesh and AContour should have .union(...), .substract, ...
+
+const { op3 } = di<{ op3: Op3 }>()
 type Numbers3 = readonly [number, number, number]
 
 export abstract class AMesh {
@@ -124,6 +128,21 @@ export abstract class AMesh {
 			1
 		)
 		return this.transform(rotationMatrix)
+	}
+	union(...others: AMesh[]): MaybePromise<AMesh> {
+		return op3.union(this, ...others)
+	}
+	subtract(other: AMesh): MaybePromise<AMesh> {
+		return op3.subtract(this, other)
+	}
+	subtractFrom(other: AMesh): MaybePromise<AMesh> {
+		return op3.subtract(other, this)
+	}
+	intersect(...others: AMesh[]): MaybePromise<AMesh> {
+		return op3.intersect(this, ...others)
+	}
+	hull(...others: AMesh[]): MaybePromise<AMesh> {
+		return op3.hull(this, ...others)
 	}
 }
 

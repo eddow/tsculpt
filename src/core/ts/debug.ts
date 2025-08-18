@@ -35,5 +35,3 @@ export const assert = asserted
 				return () => {}
 			},
 		}
-// TODO: decorator `assert` for property get boolean to validate something after construction
-// Assert stuff on contours,shapes,...

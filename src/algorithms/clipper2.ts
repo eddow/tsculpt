@@ -15,30 +15,21 @@ import { v2 } from '@tsculpt/types/builders'
 // Import the correct types
 import type { Clipper2ZFactoryFunction, MainModule, PathsD } from 'clipper2-wasm/dist/clipper2z'
 
+let module: MainModule = null!
 // Global module instance
-let clipper2Module: MainModule | null = null
-let initPromise: Promise<MainModule> | null = null
 
 async function ensureClipper2Initialized(): Promise<MainModule> {
-	if (clipper2Module) return clipper2Module
-
-	if (initPromise) return initPromise
 
 	// Dynamic import to avoid issues with SSR
 	const module = (await import('clipper2-wasm/dist/es/clipper2z')) as any
 	const Clipper2ZFactory = module.default as Clipper2ZFactoryFunction
 
-	initPromise = Clipper2ZFactory({
+	return Clipper2ZFactory({
 		locateFile: () => {
 			// In a browser environment, the WASM file should be in the public directory
 			return '/clipper2z.wasm'
 		},
-	}).then((module: MainModule) => {
-		clipper2Module = module
-		return module
 	})
-
-	return initPromise
 }
 
 // Clipper2 intermediate classes
@@ -58,14 +49,14 @@ class Clipper2Polygon extends IntermediatePolygon {
 
 	static from(polygon: Polygon): Clipper2Polygon {
 		if (polygon instanceof Clipper2Polygon) return polygon
-		if (!clipper2Module) {
+		if (!module) {
 			throw new Error('Clipper2 module not initialized')
 		}
 		const coords: number[] = []
 		for (const vertex of polygon) {
 			coords.push(vertex.x, vertex.y)
 		}
-		const pathD = clipper2Module.MakePathD(coords)
+		const pathD = module.MakePathD(coords)
 		return new Clipper2Polygon(pathD)
 	}
 }
@@ -76,7 +67,7 @@ class Clipper2Shape extends IntermediateShape {
 	}
 
 	protected toShape(): { polygon: Polygon; holes: Polygon[] } {
-		if (!clipper2Module) {
+		if (!module) {
 			throw new Error('Clipper2 module not initialized')
 		}
 
@@ -109,18 +100,18 @@ class Clipper2Shape extends IntermediateShape {
 
 	static from(shape: Shape): Clipper2Shape {
 		if (shape instanceof Clipper2Shape) return shape
-		if (!clipper2Module) {
+		if (!module) {
 			throw new Error('Clipper2 module not initialized')
 		}
 
-		const pathsD = new clipper2Module.PathsD()
+		const pathsD = new module.PathsD()
 
 		// Main polygon
 		const mainCoords: number[] = []
 		for (const vertex of shape.polygon) {
 			mainCoords.push(vertex.x, vertex.y)
 		}
-		const mainPath = clipper2Module.MakePathD(mainCoords)
+		const mainPath = module.MakePathD(mainCoords)
 		pathsD.push_back(mainPath)
 
 		// Holes
@@ -129,7 +120,7 @@ class Clipper2Shape extends IntermediateShape {
 			for (const vertex of hole) {
 				holeCoords.push(vertex.x, vertex.y)
 			}
-			const holePath = clipper2Module.MakePathD(holeCoords)
+			const holePath = module.MakePathD(holeCoords)
 			pathsD.push_back(holePath)
 		}
 
@@ -143,7 +134,7 @@ class Clipper2Contour extends IntermediateContour {
 	}
 
 	protected toContour(): Shape[] {
-		if (!clipper2Module) {
+		if (!module) {
 			throw new Error('Clipper2 module not initialized')
 		}
 
@@ -236,11 +227,11 @@ class Clipper2Contour extends IntermediateContour {
 // Helper function to convert AContour to Clipper2Contour
 function toClipper2Contour(aContour: AContour): Clipper2Contour {
 	if (aContour instanceof Clipper2Contour) return aContour
-	if (!clipper2Module) {
+	if (!module) {
 		throw new Error('Clipper2 module not initialized')
 	}
 
-	const pathsD = new clipper2Module.PathsD()
+	const pathsD = new module.PathsD()
 
 	for (const shape of aContour) {
 		// Main polygon
@@ -248,7 +239,7 @@ function toClipper2Contour(aContour: AContour): Clipper2Contour {
 		for (const vertex of shape.polygon) {
 			mainCoords.push(vertex.x, vertex.y)
 		}
-		const mainPath = clipper2Module.MakePathD(mainCoords)
+		const mainPath = module.MakePathD(mainCoords)
 		pathsD.push_back(mainPath)
 
 		// Holes
@@ -257,7 +248,7 @@ function toClipper2Contour(aContour: AContour): Clipper2Contour {
 			for (const vertex of hole) {
 				holeCoords.push(vertex.x, vertex.y)
 			}
-			const holePath = clipper2Module.MakePathD(holeCoords)
+			const holePath = module.MakePathD(holeCoords)
 			pathsD.push_back(holePath)
 		}
 	}
@@ -266,6 +257,10 @@ function toClipper2Contour(aContour: AContour): Clipper2Contour {
 }
 
 class Clipper2Op2 extends Op2 {
+	constructor() {
+		super()
+	}
+
 	async union(...contours: AContour[]): Promise<AContour> {
 		if (contours.length === 0) {
 			return new Contour(new Shape(new Polygon(v2(0, 0), v2(1, 0), v2(0, 1))))
@@ -275,8 +270,6 @@ class Clipper2Op2 extends Op2 {
 		}
 
 		try {
-			const module = await ensureClipper2Initialized()
-
 			// Start with the first contour
 			let result = toClipper2Contour(contours[0]).pathsD
 
@@ -303,8 +296,6 @@ class Clipper2Op2 extends Op2 {
 		}
 
 		try {
-			const module = await ensureClipper2Initialized()
-
 			// Start with the first contour
 			let result = toClipper2Contour(contours[0]).pathsD
 
@@ -329,7 +320,6 @@ class Clipper2Op2 extends Op2 {
 
 	async subtract(contour1: AContour, contour2: AContour): Promise<AContour> {
 		try {
-			const module = await ensureClipper2Initialized()
 			const clipperContour1 = toClipper2Contour(contour1)
 			const clipperContour2 = toClipper2Contour(contour2)
 
@@ -357,7 +347,6 @@ class Clipper2Op2 extends Op2 {
 		}
 
 		try {
-			const module = await ensureClipper2Initialized()
 			// Combine all contours into a single PathsD
 			const allPaths = new module.PathsD()
 			for (const contour of contours) {
@@ -380,8 +369,6 @@ class Clipper2Op2 extends Op2 {
 
 	async vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): Promise<boolean> {
 		try {
-			const module = await ensureClipper2Initialized()
-
 			// Create two line segments as PathD objects
 			const lineA = module.MakePathD([vA[0].x, vA[0].y, vA[1].x, vA[1].y])
 			const lineB = module.MakePathD([vB[0].x, vB[0].y, vB[1].x, vB[1].y])
@@ -406,8 +393,6 @@ class Clipper2Op2 extends Op2 {
 	// Override non-abstract methods to use Clipper2's more robust operations
 	async inPolygon(point: Vector2, polygon: APolygon): Promise<boolean> {
 		try {
-			const module = await ensureClipper2Initialized()
-
 			// Create a tiny circle around the point and check if it intersects with the polygon
 			const pointPath = module.MakePathD([
 				point.x,
@@ -436,8 +421,6 @@ class Clipper2Op2 extends Op2 {
 
 	async polygonIntersect(p1: APolygon, p2: APolygon): Promise<boolean> {
 		try {
-			const module = await ensureClipper2Initialized()
-
 			const clipperPolygon1 = Clipper2Polygon.from(p1)
 			const clipperPolygon2 = Clipper2Polygon.from(p2)
 
@@ -458,8 +441,6 @@ class Clipper2Op2 extends Op2 {
 
 	async distinctPolygons(polygons: APolygon[]): Promise<boolean> {
 		try {
-			const module = await ensureClipper2Initialized()
-
 			// Check all pairs of polygons for intersection
 			for (let i = 0; i < polygons.length; i++) {
 				for (let j = i + 1; j < polygons.length; j++) {
@@ -491,4 +472,7 @@ ensureClipper2Initialized().catch((error) => {
 	console.warn('Failed to initialize Clipper2:', error)
 })
 
-export default new Clipper2Op2()
+export default async() => {
+	module = await ensureClipper2Initialized()
+	return new Clipper2Op2()
+}

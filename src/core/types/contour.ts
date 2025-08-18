@@ -1,10 +1,15 @@
 import { ecmaOp2 } from '@tsculpt/op2'
+import Op2 from '@tsculpt/op2'
 import { assert } from '@tsculpt/ts/debug'
 import { cache, cached } from '@tsculpt/ts/decorators'
+import di from '@tsculpt/ts/di'
 import { Indexable } from '@tsculpt/ts/indexable'
+import { MaybePromise } from '@tsculpt/ts/maybe'
 import earcut from 'earcut'
 import { v2 } from './builders'
 import { Matrix3, Vector2 } from './bunches'
+
+const { op2 } = di<{ op2: Op2 }>()
 export type Surface = [Vector2, Vector2, Vector2][]
 
 // Abstract base class for array-like behavior
@@ -278,6 +283,22 @@ export abstract class AContour extends ArraySim<Shape>() {
 		const sin = Math.sin(angle)
 		const rotationMatrix = new Matrix3(cos, -sin, 0, sin, cos, 0, 0, 0, 1)
 		return this.transform(rotationMatrix)
+	}
+
+	union(...others: AContour[]): MaybePromise<AContour> {
+		return op2.union(this, ...others)
+	}
+	intersect(...others: AContour[]): MaybePromise<AContour> {
+		return op2.intersect(this, ...others)
+	}
+	hull(...others: AContour[]): MaybePromise<AContour> {
+		return op2.hull(this, ...others)
+	}
+	subtract(other: AContour): MaybePromise<AContour> {
+		return op2.subtract(this, other)
+	}
+	subtractFrom(other: AContour): MaybePromise<AContour> {
+		return op2.subtract(other, this)
 	}
 }
 
