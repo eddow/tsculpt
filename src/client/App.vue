@@ -82,4 +82,19 @@ const menuItems = computed(() => [
 
 .router-view
 	flex: 1
+
+.p-menubar-submenu
+	max-height: 70vh
+	overflow-y: auto
+
+/* Optional: Style the scrollbar */
+.p-menubar-submenu::-webkit-scrollbar
+	width: 6px
+
+.p-menubar-submenu::-webkit-scrollbar-thumb
+	background: #ccc
+	border-radius: 3px
+
+.p-menubar-submenu::-webkit-scrollbar-thumb:hover
+	background: #999
 </style>

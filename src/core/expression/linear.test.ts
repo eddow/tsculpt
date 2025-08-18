@@ -728,7 +728,7 @@ describe('Mathematical expressions', () => {
 		})
 	})
 
-		describe('Vector3 rotation with mathematical expressions', () => {
+	describe('Vector3 rotation with mathematical expressions', () => {
 		it('should rotate Vector3 around Z-axis by π/4 radians', () => {
 			const vec = v3(1, 0, 0)
 			const result = v3`${vec} ^ (0, 0, π/4)`
@@ -810,9 +810,25 @@ describe('Mathematical expressions', () => {
 			expect(result.z).toBeDefined()
 
 			// The result should be a valid 3D vector (not NaN or infinite)
-			expect(isFinite(result.x)).toBe(true)
-			expect(isFinite(result.y)).toBe(true)
-			expect(isFinite(result.z)).toBe(true)
+			expect(Number.isFinite(result.x)).toBe(true)
+			expect(Number.isFinite(result.y)).toBe(true)
+			expect(Number.isFinite(result.z)).toBe(true)
+		})
+
+		it('should handle negative coordinates', () => {
+			const result = v3`2 * (-π, -1, -0.5)`
+
+			expect(result.x).toBe(-2 * Math.PI)
+			expect(result.y).toBe(-2)
+			expect(result.z).toBe(-1)
+		})
+
+		it('should handle negative vectors', () => {
+			const result = v3`2 * -(π, 1, 0.5)`
+
+			expect(result.x).toBe(-2 * Math.PI)
+			expect(result.y).toBe(-2)
+			expect(result.z).toBe(-1)
 		})
 	})
 

@@ -36,9 +36,12 @@ export function withGlobals<T>(
 	useGlobals(usedGlobals)
 	const call = fn()
 	if (!(call instanceof Promise)) return Promise.resolve(call)
-	globalUsage = call.then(() => {
-		useGlobals(defaultGlobals)
-		globalUsage = undefined
-	})
+	globalUsage = call
+		.then(() => {
+			useGlobals(defaultGlobals)
+		})
+		.finally(() => {
+			globalUsage = undefined
+		})
 	return call
 }

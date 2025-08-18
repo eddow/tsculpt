@@ -60,13 +60,13 @@ expose<SourceFiles>({
 		const module = await readModule(path)
 		entry ??= 'default'
 		if (!module[entry]) throw new Error(`Entry ${entry} not found in module ${path}`)
-		const generator = module[entry] as
+		const generate = module[entry] as
 			| ((parameters: GenerationParameters) => MaybePromise<AMesh>)
 			| MaybePromise<AMesh>
 		const generated =
-			typeof generator === 'function'
-				? withGlobals(() => generator(parameters), parameters)
-				: generator
+			typeof generate === 'function'
+				? withGlobals(() => generate(parameters), parameters)
+				: generate
 		return packMesh(await generated)
 	},
 })

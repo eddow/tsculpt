@@ -5,7 +5,7 @@ import { MaybePromise, maybeAwait } from '@tsculpt/ts/maybe'
 import { Vector, Vector2, Vector3, isUnity, product } from '../types/bunches'
 import { AContour, Contour } from '../types/contour'
 import { AMesh, Mesh } from '../types/mesh'
-import { TemplateParser, paramMarker } from './templated'
+import { TemplateParser } from './templated'
 
 const { op3, op2 } = di<{ op3: Op3; op2: Op2 }>()
 
@@ -101,13 +101,16 @@ function recur(
 			)
 		}
 		case 'compose': {
-			return maybeAwait(expr.operands.map((operand) => recur(operand, values)), (results) => {
-				if (!results.every((result) => typeof result === 'number'))
-					throw new SemanticError(`Cannot compose non-numbers: ${results}`)
-				if (![2, 3].includes(results.length))
-					throw new SemanticError(`Cannot only compose 2 or 3 numbers`)
-				return Vector.from(results) as Vector2 | Vector3
-			})
+			return maybeAwait(
+				expr.operands.map((operand) => recur(operand, values)),
+				(results) => {
+					if (!results.every((result) => typeof result === 'number'))
+						throw new SemanticError(`Cannot compose non-numbers: ${results}`)
+					if (![2, 3].includes(results.length))
+						throw new SemanticError('Cannot only compose 2 or 3 numbers')
+					return Vector.from(results) as Vector2 | Vector3
+				}
+			)
 		}
 		case 'translate': {
 			let vector: Vector = Vector.from([0, 0, 0])
@@ -145,6 +148,7 @@ function recur(
 						return maybeAwait([op2.subtract(a, b)], ([result]) => result)
 					if (typeof a === 'number' && typeof b === 'number') return a - b
 					if (Array.isArray(a) && Array.isArray(b)) return Vector.sub(a, b)
+					if (a === 0 && Array.isArray(b)) return Vector.from(b.map((v) => -v)) as Vector3 | Vector2
 					throw new SemanticError(`Bad operand to subtract: ${a} and ${b}`)
 				}
 			)
@@ -152,7 +156,7 @@ function recur(
 		case 'invert': {
 			return maybeAwait([recur(expr.operand, values)], ([result]) => {
 				if (typeof result === 'number') return 1 / result
-				if (Array.isArray(result)) return Vector.from(result.map((v) => 1 / v)) as Vector3
+				if (Array.isArray(result)) return Vector.from(result.map((v) => 1 / v)) as Vector3 | Vector2
 				throw new SemanticError(`Cannot invert non-number and non-vector: ${result}`)
 			})
 		}
@@ -347,6 +351,12 @@ const formulas = new TemplateParser<
 			'|': (...operands) => ({
 				type: 'union',
 				operands,
+			}),
+		},
+		prefix: {
+			'-': (operand: LinearExpression) => ({
+				type: 'subtract',
+				operands: [{ type: 'literal', value: 0 }, operand],
 			}),
 		},
 		atomics: [

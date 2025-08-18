@@ -6,6 +6,7 @@ import { Vector2, Vector3 } from './bunches'
 import { Contour } from './contour'
 import { Mesh } from './mesh'
 
+// TODO Make more robust path management (composition, lofting, size estimation for grain mgt, &c)
 interface Frame {
 	o: Vector3
 	x: Vector3

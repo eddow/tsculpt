@@ -66,12 +66,11 @@ export abstract class APolygon extends ArraySim<Vector2>() {
 				const b = [j, (j + 1) % this.length]
 				if (a[0] === b[0] || a[0] === b[1] || a[1] === b[0] || a[1] === b[1]) continue
 
-				if (ecmaOp2.vectorIntersect([this[a[0]], this[a[1]]], [this[b[0]], this[b[1]]])) {
-					return false
+				if (ecmaOp2.vectorIntersect([this[a[0]], this[a[1]]], [this[b[0]], this[b[1]]], false)) {
+					return { i, j }
 				}
 			}
 		}
-		return true
 	},
 })
 export class Polygon extends APolygon {

@@ -13,10 +13,10 @@ export default abstract class Op2 {
 	abstract distinctPolygons(polygons: APolygon[]): MaybePromise<boolean>
 }
 class EcmascriptEngine {
-	vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): boolean {
+	vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2], edge = true): boolean {
 		const [A1, A2] = vA // Segment A: A1 to A2
 		const [B1, B2] = vB // Segment B: B1 to B2
-
+		/*
 		// Line A: (A1 to A2) → a1*x + b1*y + c1 = 0
 		const a1 = A2.y - A1.y
 		const b1 = A1.x - A2.x
@@ -59,9 +59,47 @@ class EcmascriptEngine {
 		const isUaValid = ua >= -epsilon && ua <= 1 + epsilon
 		const isUbValid = ub >= -epsilon && ub <= 1 + epsilon
 
-		return isUaValid && isUbValid && isOnSegmentB
+		return isOnSegmentB ? edge : isUaValid && isUbValid*/
+		function orientation(p: Vector2, q: Vector2, r: Vector2): number {
+			const val = (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+			if (val === 0) return 0 // collinear
+			return val > 0 ? 1 : 2 // clock or counterclock wise
+		}
+
+		// Helper function to check if point q lies on segment pr
+		function onSegment(p: Vector2, q: Vector2, r: Vector2): boolean {
+			if (
+				q[0] <= Math.max(p[0], r[0]) &&
+				q[0] >= Math.min(p[0], r[0]) &&
+				q[1] <= Math.max(p[1], r[1]) &&
+				q[1] >= Math.min(p[1], r[1])
+			) {
+				return true
+			}
+			return false
+		}
+
+		const o1 = orientation(A1, A2, B1)
+		const o2 = orientation(A1, A2, B2)
+		const o3 = orientation(B1, B2, A1)
+		const o4 = orientation(B1, B2, A2)
+
+		// Special cases (collinear or edge cases)
+		// A1, A2 and B1 are collinear and B1 lies on segment A1A2
+		if (
+			(o1 === 0 && onSegment(A1, B1, A2)) ||
+			// A1, A2 and B2 are collinear and B2 lies on segment A1A2
+			(o2 === 0 && onSegment(A1, B2, A2)) ||
+			// B1, B2 and A1 are collinear and A1 lies on segment B1B2
+			(o3 === 0 && onSegment(B1, A1, B2)) ||
+			// B1, B2 and A2 are collinear and A2 lies on segment B1B2
+			(o4 === 0 && onSegment(B1, A2, B2))
+		)
+			return edge
+
+		return o1 !== o2 && o3 !== o4
 	}
-	inPolygon(point: Vector2, polygon: APolygon): boolean {
+	inPolygon(point: Vector2, polygon: APolygon, edge = true): boolean {
 		const x = point.x
 		const y = point.y
 		let inside = false
@@ -72,7 +110,7 @@ class EcmascriptEngine {
 		// Check if point is exactly on a vertex
 		for (const vertex of polygon) {
 			if (Math.abs(vertex.x - x) < epsilon && Math.abs(vertex.y - y) < epsilon) {
-				return true
+				return edge
 			}
 		}
 
@@ -103,7 +141,7 @@ class EcmascriptEngine {
 				Math.abs(x - ((xj - xi) * (y - yi)) / (yj - yi) - xi) < epsilon
 
 			if (onHorizontalEdge || onVerticalEdge || onSlopedEdge) {
-				return true
+				return edge
 			}
 
 			// Check for ray intersection (exclude horizontal edges)
@@ -118,14 +156,16 @@ class EcmascriptEngine {
 		return inside
 	}
 
-	polygonIntersect(p1: APolygon, p2: APolygon): boolean {
-		return this.inPolygon(p2.array[0], p1) || p1.array.some((v) => this.inPolygon(v, p2))
+	polygonIntersect(p1: APolygon, p2: APolygon, edge = true): boolean {
+		return (
+			this.inPolygon(p2.array[0], p1, edge) || p1.array.some((v) => this.inPolygon(v, p2, edge))
+		)
 	}
 
-	distinctPolygons(polygons: APolygon[]): boolean {
+	distinctPolygons(polygons: APolygon[], edge = true): boolean {
 		for (let i = 0; i < polygons.length; i++) {
 			for (let j = i + 1; j < polygons.length; j++) {
-				if (this.polygonIntersect(polygons[i], polygons[j])) {
+				if (this.polygonIntersect(polygons[i], polygons[j], edge)) {
 					return false
 				}
 			}

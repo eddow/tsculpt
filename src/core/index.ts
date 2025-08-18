@@ -5,7 +5,7 @@ import di from '@tsculpt/ts/di'
 export { generation, type GenerationParameters } from './globals'
 export * from './expression/linear'
 export { box, sphere, cylinder, cone, torus } from './geometries'
-export { circle, square } from './contours'
+export { circle, square } from './shapes'
 export { linearExtrude, rotateExtrude } from './extrusions'
 export { Contour } from './types/contour'
 

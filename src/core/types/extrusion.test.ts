@@ -1,6 +1,6 @@
 import { lerp } from '@tsculpt/math'
 import { describe, expect, it } from 'vitest'
-import { circle, square } from '../contours'
+import { circle, square } from '../shapes'
 import { v2, v3 } from './builders'
 import { Contour } from './contour'
 import { PathFn, extrude } from './extrusion'

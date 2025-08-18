@@ -202,7 +202,7 @@ class Clipper2Contour extends IntermediateContour {
 		let winding = 0
 		for (let i = 0; i < vertices.length; i++) {
 			const j = (i + 1) % vertices.length
-			winding += (vertices[j].x - vertices[i].x) * (vertices[j].y + vertices[i].y)
+			winding -= (vertices[j].x - vertices[i].x) * (vertices[j].y + vertices[i].y)
 		}
 		return winding
 	}

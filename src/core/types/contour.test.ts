@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { circle, square } from '../contours'
+import { circle, square } from '../shapes'
 import { v2 } from './builders'
 import { Vector2 } from './bunches'
 import { Contour, Polygon, Shape } from './contour'

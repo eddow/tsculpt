@@ -37,7 +37,7 @@ register({${Object.keys(deps).join(',')}});
 				id.includes('.test.') ||
 				id.includes('__tests__')
 
-			return entryPoint ? `import '${virtualModuleId}';\n${code}` : code
+			return entryPoint ? `import '${virtualModuleId}';${code}` : code
 		},
 
 		// 4. Force Vitest to include the virtual module

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { circle, square } from './contours'
 import { linearExtrude, rotateExtrude } from './extrusions'
 import { box, cone, cylinder, sphere, torus } from './geometries'
+import { circle, square } from './shapes'
 import { v2, v3 } from './types'
 import { Vector2, Vector3 } from './types/bunches'
 

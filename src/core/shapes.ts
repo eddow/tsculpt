@@ -23,16 +23,16 @@ export function circle(spec: CircleSpec = {}): Contour {
 	const { radius, center, segments } = circleSpec(spec)
 
 	// Create Vector2 vertices for the circle perimeter
-	const vertices2D: Vector2[] = []
+	const vertices: Vector2[] = []
 	for (let i = 0; i < segments; i++) {
 		const angle = (2 * Math.PI * i) / segments
 		const x = radius * Math.cos(angle) + center.x
 		const y = radius * Math.sin(angle) + center.y
-		vertices2D.push(v2(x, y))
+		vertices.push(v2(x, y))
 	}
 
 	// Create a polygon from the vertices
-	return Contour.from(vertices2D)
+	return Contour.from(vertices)
 }
 
 type SquareSpec = {
