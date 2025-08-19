@@ -92,23 +92,23 @@ export class Vector extends Array<number> {
 	@cached
 	get normalized() {
 		const size = this.size
+		if (size === 0) return this
 		return Vector.from(this.map((x) => x / size)) as typeof this
 	}
 
-	static add<V extends Vector>(...v: V[]): V {
+	add(...v: (this | readonly number[])[]): this {
 		return Vector.from(
-			zip(...(v as number[][])).map((coords) =>
+			zip(this as number[], ...(v as number[][])).map((coords) =>
 				coords.reduce((a: number, b: number) => a + b, 0)
 			) as number[]
-		) as V
+		) as this
 	}
-	static sub<V extends Vector>(a: V, b: V): V {
-		return Vector.from(zip(a as number[], b as number[]).map(([a, b]) => a - b)) as V
+	sub(b: this | readonly number[]): this {
+		return Vector.from(zip(this as number[], b as number[]).map(([a, b]) => a - b)) as this
 	}
 
-	static scale<V extends Vector>(...vs: (V | number | readonly number[])[]): V {
-		if (!vs.some((v) => typeof v === 'object')) throw new Error('No vectors in dot product')
-		return scale(...vs) as V
+	scale(...vs: (this | number | readonly number[])[]): this {
+		return scale(this, ...vs)
 	}
 }
 export class Vector2 extends Vector {
@@ -127,6 +127,13 @@ export class Vector2 extends Vector {
 	get y() {
 		return this[1]
 	}
+
+	atan2(b?: this | readonly number[]): number {
+		return b ? Math.atan2(this.y - b[1], this.x - b[0]) : Math.atan2(this.y, this.x)
+	}
+
+	static [0] = new Vector2(0, 0)
+	static [1] = new Vector2(1, 1)
 }
 
 export class Vector3 extends Vector {
@@ -148,6 +155,9 @@ export class Vector3 extends Vector {
 	get z() {
 		return this[2]
 	}
+
+	static [0] = new Vector3(0, 0, 0)
+	static [1] = new Vector3(1, 1, 1)
 }
 
 export class Vector4 extends Vector {
@@ -172,6 +182,9 @@ export class Vector4 extends Vector {
 	get w() {
 		return this[3]
 	}
+
+	static [0] = new Vector4(0, 0, 0, 0)
+	static [1] = new Vector4(1, 1, 1, 1)
 }
 export abstract class Matrix extends Array<number> {
 	static from(v: readonly number[]): Matrix {

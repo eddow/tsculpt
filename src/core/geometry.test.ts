@@ -25,7 +25,7 @@ describe('Geometry Primitives', () => {
 			const mesh = box({ center: v3(1, 2, 3) })
 			expect(mesh.vectors.length).toBe(8)
 			// Check that center is correct
-			const center = mesh.vectors.reduce((acc, v) => Vector3.add(acc, v), v3(0, 0, 0))
+			const center = mesh.vectors.reduce((acc, v) => v3`${acc} + ${v}`, Vector3[0])
 			const avgCenter = v3(center.x / 8, center.y / 8, center.z / 8)
 			expect(avgCenter.x).toBeCloseTo(1, 3)
 			expect(avgCenter.y).toBeCloseTo(2, 3)

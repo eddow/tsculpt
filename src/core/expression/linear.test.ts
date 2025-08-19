@@ -326,10 +326,10 @@ describe('Mesh operations', () => {
 			expect(result.vectors.length).toBe(3) // Single triangle from tester
 		})
 
-		it('should handle rotation with ^ operator', async () => {
+		it('should handle rotation with @ operator', async () => {
 			const testMesh = createTestMesh()
 
-			const result = await mesh`${testMesh} ^ (0, 0, 1.5)`
+			const result = await mesh`${testMesh} @ (0, 0, 1.5)`
 
 			expect(result).toBeInstanceOf(AMesh)
 			expect(result.vectors.length).toBe(testMesh.vectors.length)
@@ -372,7 +372,7 @@ describe('Mesh operations', () => {
 			const cube = new Mesh(faces)
 
 			// Rotate the cube around Z axis by π/2 radians (90 degrees)
-			const rotatedCube = await mesh`${cube} ^ (0, 0, 1.5708)`
+			const rotatedCube = await mesh`${cube} @ (0, 0, 1.5708)`
 
 			expect(rotatedCube).toBeInstanceOf(AMesh)
 			expect(rotatedCube.vectors.length).toBe(cube.vectors.length)
@@ -509,7 +509,7 @@ describe('Contour operations', () => {
 			const testContour = createTestContour()
 
 			// Rotate by 90 degrees
-			const result = await contour`${testContour} ^ 90`
+			const result = await contour`${testContour} @ 90`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -537,7 +537,7 @@ describe('Contour operations', () => {
 			const testContour = createTestContour()
 
 			// Rotate by 45 degrees
-			const result = await contour`${testContour} ^ 45`
+			const result = await contour`${testContour} @ 45`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -580,7 +580,7 @@ describe('Mathematical expressions', () => {
 	describe('π parsing', () => {
 		it('should parse π (Unicode) as Math.PI', async () => {
 			const testContour = createTestContour()
-			const result = await contour`${testContour} ^ π`
+			const result = await contour`${testContour} @ π`
 
 			expect(result).toBeInstanceOf(AContour)
 			// π should be parsed as Math.PI (approximately 3.14159)
@@ -590,7 +590,7 @@ describe('Mathematical expressions', () => {
 
 		it('should parse π (ASCII) as Math.PI', async () => {
 			const testContour = createTestContour()
-			const result = await contour`${testContour} ^ π`
+			const result = await contour`${testContour} @ π`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -598,7 +598,7 @@ describe('Mathematical expressions', () => {
 
 		it('should parse pi (case-insensitive) as Math.PI', async () => {
 			const testContour = createTestContour()
-			const result = await contour`${testContour} ^ pi`
+			const result = await contour`${testContour} @ pi`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -606,7 +606,7 @@ describe('Mathematical expressions', () => {
 
 		it('should parse Pi (mixed case) as Math.PI', async () => {
 			const testContour = createTestContour()
-			const result = await contour`${testContour} ^ Pi`
+			const result = await contour`${testContour} @ Pi`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -614,7 +614,7 @@ describe('Mathematical expressions', () => {
 
 		it('should parse PI (uppercase) as Math.PI', async () => {
 			const testContour = createTestContour()
-			const result = await contour`${testContour} ^ PI`
+			const result = await contour`${testContour} @ PI`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -624,7 +624,7 @@ describe('Mathematical expressions', () => {
 	describe('Vector2 rotation with mathematical expressions', () => {
 		it('should rotate Vector2 by π/4 radians', () => {
 			const vec = v2(1, 0)
-			const result = v2`${vec} ^ π/4`
+			const result = v2`${vec} @ π/4`
 
 			// π/4 = 45 degrees, so (1,0) rotated should be approximately (0.707, 0.707)
 			expect(Math.abs(result.x - Math.SQRT1_2)).toBeLessThan(epsilon)
@@ -633,7 +633,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate Vector2 by π/2 radians', () => {
 			const vec = v2(1, 0)
-			const result = v2`${vec} ^ π/2`
+			const result = v2`${vec} @ π/2`
 
 			// π/2 = 90 degrees, so (1,0) rotated should be approximately (0, 1)
 			expect(Math.abs(result.x - 0)).toBeLessThan(epsilon)
@@ -642,7 +642,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate Vector2 by π radians', () => {
 			const vec = v2(1, 0)
-			const result = v2`${vec} ^ π`
+			const result = v2`${vec} @ π`
 
 			// π = 180 degrees, so (1,0) rotated should be approximately (-1, 0)
 			expect(Math.abs(result.x - -1)).toBeLessThan(epsilon)
@@ -651,7 +651,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate Vector2 by 2π radians (full rotation)', () => {
 			const vec = v2(1, 0)
-			const result = v2`${vec} ^ 2π`
+			const result = v2`${vec} @ 2π`
 
 			// 2π = 360 degrees, so (1,0) rotated should be approximately (1, 0) again
 			expect(Math.abs(result.x - 1)).toBeLessThan(epsilon)
@@ -660,7 +660,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate Vector2 by 3π/4 radians', () => {
 			const vec = v2(1, 0)
-			const result = v2`${vec} ^ 3π/4`
+			const result = v2`${vec} @ 3π/4`
 
 			// 3π/4 = 135 degrees, so (1,0) rotated should be approximately (-0.707, 0.707)
 			expect(Math.abs(result.x + Math.SQRT1_2)).toBeLessThan(epsilon)
@@ -671,7 +671,7 @@ describe('Mathematical expressions', () => {
 	describe('Contour rotation with mathematical expressions', () => {
 		it('should rotate contour by π/4 radians', async () => {
 			const testContour = createTestContour()
-			const result = await contour`${testContour} ^ π/4`
+			const result = await contour`${testContour} @ π/4`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -694,7 +694,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate contour by π/2 radians', async () => {
 			const testContour = createTestContour()
-			const result = await contour`${testContour} ^ π/2`
+			const result = await contour`${testContour} @ π/2`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -702,7 +702,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate contour by π radians', async () => {
 			const testContour = createTestContour()
-			const result = await contour`${testContour} ^ π`
+			const result = await contour`${testContour} @ π`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -710,7 +710,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate contour by 2π radians (full rotation)', async () => {
 			const testContour = createTestContour()
-			const result = await contour`${testContour} ^ 2π`
+			const result = await contour`${testContour} @ 2π`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -731,7 +731,7 @@ describe('Mathematical expressions', () => {
 	describe('Vector3 rotation with mathematical expressions', () => {
 		it('should rotate Vector3 around Z-axis by π/4 radians', () => {
 			const vec = v3(1, 0, 0)
-			const result = v3`${vec} ^ (0, 0, π/4)`
+			const result = v3`${vec} @ (0, 0, π/4)`
 
 			// π/4 = 45 degrees around Z-axis, so (1,0,0) rotated should be approximately (0.707, 0.707, 0)
 			expect(Math.abs(result.x - Math.SQRT1_2)).toBeLessThan(epsilon)
@@ -741,7 +741,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate Vector3 around Z-axis by π/2 radians', () => {
 			const vec = v3(1, 0, 0)
-			const result = v3`${vec} ^ (0, 0, π/2)`
+			const result = v3`${vec} @ (0, 0, π/2)`
 
 			// π/2 = 90 degrees around Z-axis, so (1,0,0) rotated should be approximately (0, 1, 0)
 			expect(Math.abs(result.x - 0)).toBeLessThan(epsilon)
@@ -751,7 +751,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate Vector3 around Z-axis by π radians', () => {
 			const vec = v3(1, 0, 0)
-			const result = v3`${vec} ^ (0, 0, π)`
+			const result = v3`${vec} @ (0, 0, π)`
 
 			// π = 180 degrees around Z-axis, so (1,0,0) rotated should be approximately (-1, 0, 0)
 			expect(Math.abs(result.x - -1)).toBeLessThan(epsilon)
@@ -761,7 +761,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate Vector3 around Z-axis by 2π radians (full rotation)', () => {
 			const vec = v3(1, 0, 0)
-			const result = v3`${vec} ^ (0, 0, 2π)`
+			const result = v3`${vec} @ (0, 0, 2π)`
 
 			// 2π = 360 degrees around Z-axis, so (1,0,0) rotated should be approximately (1, 0, 0) again
 			expect(Math.abs(result.x - 1)).toBeLessThan(epsilon)
@@ -771,7 +771,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate Vector3 around Z-axis by 3π/4 radians', () => {
 			const vec = v3(1, 0, 0)
-			const result = v3`${vec} ^ (0, 0, 3π/4)`
+			const result = v3`${vec} @ (0, 0, 3π/4)`
 
 			// 3π/4 = 135 degrees around Z-axis, so (1,0,0) rotated should be approximately (-0.707, 0.707, 0)
 			expect(Math.abs(result.x + Math.SQRT1_2)).toBeLessThan(epsilon)
@@ -781,7 +781,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate Vector3 around X-axis by π/2 radians', () => {
 			const vec = v3(0, 1, 0)
-			const result = v3`${vec} ^ (π/2, 0, 0)`
+			const result = v3`${vec} @ (π/2, 0, 0)`
 
 			// π/2 = 90 degrees around X-axis, so (0,1,0) rotated should be approximately (0, 0, 1)
 			expect(Math.abs(result.x - 0)).toBeLessThan(epsilon)
@@ -791,7 +791,7 @@ describe('Mathematical expressions', () => {
 
 		it('should rotate Vector3 around Y-axis by π/2 radians', () => {
 			const vec = v3(1, 0, 0)
-			const result = v3`${vec} ^ (0, π/2, 0)`
+			const result = v3`${vec} @ (0, π/2, 0)`
 
 			// π/2 = 90 degrees around Y-axis, so (1,0,0) rotated should be approximately (0, 0, -1)
 			expect(Math.abs(result.x - 0)).toBeLessThan(epsilon)
@@ -801,7 +801,7 @@ describe('Mathematical expressions', () => {
 
 		it('should handle complex rotation around multiple axes', () => {
 			const vec = v3(1, 0, 0)
-			const result = v3`${vec} ^ (π/4, π/6, π/3)`
+			const result = v3`${vec} @ (π/4, π/6, π/3)`
 
 			// Complex rotation around all three axes
 			// This tests that the rotation system can handle non-zero components on all axes
@@ -835,7 +835,7 @@ describe('Mathematical expressions', () => {
 	describe('Combined operations with mathematical expressions', () => {
 		it('should handle rotation and scaling', async () => {
 			const testContour = createTestContour()
-			const result = await contour`${testContour} ^ π/4 * 2`
+			const result = await contour`${testContour} @ π/4 * 2`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -843,7 +843,7 @@ describe('Mathematical expressions', () => {
 
 		it('should handle rotation and translation', async () => {
 			const testContour = createTestContour()
-			const result = await contour`${testContour} ^ π/2 + ${v2(1, 1)}`
+			const result = await contour`${testContour} @ π/2 + ${v2(1, 1)}`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBe(testContour.array.length)
@@ -853,7 +853,7 @@ describe('Mathematical expressions', () => {
 			const contour1 = createTestContour()
 			const contour2 = createTestContour()
 
-			const result = await contour`(${contour1} ^ π/4) | (${contour2} ^ π/2)`
+			const result = await contour`(${contour1} @ π/4) | (${contour2} @ π/2)`
 
 			expect(result).toBeInstanceOf(AContour)
 			expect(result.array.length).toBeGreaterThan(0)

@@ -69,14 +69,14 @@ export function annulus({ inner, outer, center = v2(0, 0), segments }: AnnulusSp
 	if (inner >= outer) throw new Error('Annulus requires inner < outer')
 	const { grain } = generation
 	const segs = segments ?? Math.max(8, Math.ceil((2 * Math.PI * outer) / grain))
-	const outerVerts: Vector2[] = []
-	const innerVerts: Vector2[] = []
+	const outerVertices: Vector2[] = []
+	const innerVertices: Vector2[] = []
 	for (let i = 0; i < segs; i++) {
 		const a = (2 * Math.PI * i) / segs
-		outerVerts.push(v2(center.x + outer * Math.cos(a), center.y + outer * Math.sin(a)))
-		innerVerts.push(v2(center.x + inner * Math.cos(a), center.y + inner * Math.sin(a)))
+		outerVertices.push(v2(center.x + outer * Math.cos(a), center.y + outer * Math.sin(a)))
+		innerVertices.push(v2(center.x + inner * Math.cos(a), center.y + inner * Math.sin(a)))
 	}
-	return new Contour(new Shape(new Polygon(...outerVerts), [new Polygon(...innerVerts)]))
+	return new Contour(new Shape(new Polygon(...outerVertices), [new Polygon(...innerVertices)]))
 }
 
 // Sector (pie)

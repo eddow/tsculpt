@@ -1,7 +1,7 @@
 import { Contour, Polygon, Shape } from '@tsculpt/types'
 import { v2 } from '@tsculpt/types/builders'
-import { describe, expect, it } from 'vitest'
-import engine from './clipper2'
+import { beforeAll, describe, expect, it } from 'vitest'
+import factory, { Clipper2Op2 } from './clipper2'
 
 // Helper function to create a simple test contour
 function createTestContour(): Contour {
@@ -12,6 +12,10 @@ function createTestContour(): Contour {
 }
 
 describe('Clipper2Engine', () => {
+	let engine: Clipper2Op2
+	beforeAll(async () => {
+		engine = await factory()
+	})
 	it('should perform union operations', async () => {
 		const contour1 = createTestContour()
 		const contour2 = createTestContour()

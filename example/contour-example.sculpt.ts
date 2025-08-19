@@ -33,11 +33,11 @@ export async function translatedCircle() {
 
 // 4. ROTATED SHAPES - Demonstrating rotation
 export async function rotatedSquare() {
-	return linearExtrude(await contour`${square({ size: 1 })} ^ π/4`) // 45 degrees
+	return linearExtrude(await contour`${square({ size: 1 })} @ π/4`) // 45 degrees
 }
 
 export async function rotatedCircle() {
-	return linearExtrude(await contour`${circle({ radius: 1 })} ^ π/2`) // 90 degrees
+	return linearExtrude(await contour`${circle({ radius: 1 })} @ π/2`) // 90 degrees
 }
 
 // 5. BOOLEAN OPERATIONS - Union, intersection, subtraction
@@ -81,7 +81,7 @@ export async function scaledBoolean() {
 
 export async function rotatedBoolean() {
 	return linearExtrude(
-		await contour`(${square({ size: 1 })} ^ π/4) | (${circle({ radius: 0.7 })} ^ π/2)`
+		await contour`(${square({ size: 1 })} @ π/4) | (${circle({ radius: 0.7 })} @ π/2)`
 	)
 }
 
@@ -121,15 +121,15 @@ export async function largeShape() {
 
 // 12. COMPLEX TRANSFORMATIONS - Multiple transformations combined
 export async function complexTransform() {
-	return linearExtrude(await contour`${square({ size: 1 })} * 2 + (0.5, 0.5) ^ pi/4`)
+	return linearExtrude(await contour`${square({ size: 1 })} * 2 + (0.5, 0.5) @ pi/4`)
 }
 
 // 13. BOOLEAN WITH TRANSFORMATIONS - Complex boolean operations with transformations
 export async function advancedBoolean() {
 	return linearExtrude(
 		await contour`
-		(${square({ size: 1 })} * 1.5 + (0.3, 0.3) ^ π/4) |
-		(${circle({ radius: 0.8 })} + (-0.3, -0.3) ^ π/2) |
+		(${square({ size: 1 })} * 1.5 + (0.3, 0.3) @ π/4) |
+		(${circle({ radius: 0.8 })} + (-0.3, -0.3) @ π/2) |
 		(${circle({ radius: 0.6, center: v2(0, -0.5) })} * 0.8)
 	`
 	)
@@ -139,9 +139,9 @@ export async function advancedBoolean() {
 export async function ultimateExample() {
 	return linearExtrude(
 		await contour`
-		((${square({ size: 1.2 })} * 1.2 + (0.4, 0.4) ^ Pi/6) &
-		 (${circle({ radius: 1 })} + (-0.2, 0.2) ^ π/3)) |
-		((${circle({ radius: 0.8, center: v2(0, -0.6) })} ^ π/4 * 0.9) -
+		((${square({ size: 1.2 })} * 1.2 + (0.4, 0.4) @ Pi/6) &
+		 (${circle({ radius: 1 })} + (-0.2, 0.2) @ π/3)) |
+		((${circle({ radius: 0.8, center: v2(0, -0.6) })} @ π/4 * 0.9) -
 		 (${circle({ radius: 0.3, center: v2(0.3, -0.3) })}))
 	`
 	)

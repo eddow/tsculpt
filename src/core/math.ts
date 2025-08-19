@@ -1,6 +1,26 @@
-import { Vector2, Vector3, v2, v3 } from './types'
+import { Vector, Vector2, Vector3, v2, v3 } from './types'
 
 export const epsilon = 1e-6
+
+export function eq(a: number | readonly number[], b: number | readonly number[], e: number = epsilon): boolean {
+	if (typeof a === 'number' && typeof b === 'number') {
+		return Math.abs(a - b) <= e
+	} else if (Array.isArray(a) && Array.isArray(b)) {
+		if (a.length !== b.length) return false
+		for (let i = 0; i < a.length; i++) {
+			if (Math.abs(a[i] - b[i]) > e) return false
+		}
+		return true
+	}
+	if(typeof a === 'number' && Array.isArray(b)) [a, b] = [b, a]
+	if (!Array.isArray(a) || typeof b !== 'number')
+		throw new Error('Invalid eq arguments')
+	for (let i = 0; i < a.length; i++) {
+		if (Math.abs(a[i] - b) > e) return false
+	}
+	return true
+}
+
 export function lerp(a: Vector3, b: Vector3, t: number): Vector3
 export function lerp(a: Vector2, b: Vector2, t: number): Vector2
 export function lerp(a: number, b: number, t: number): number
@@ -22,11 +42,11 @@ export function clamp(value: number, min = 0, max = 1) {
 }
 
 // Type guards
-export function isVector2(v: Vector2 | Vector3): v is Vector2 {
+export function isVector2(v: Vector): v is Vector2 {
 	return v instanceof Vector2
 }
 
-export function isVector3(v: Vector2 | Vector3): v is Vector3 {
+export function isVector3(v: Vector): v is Vector3 {
 	return v instanceof Vector3
 }
 
@@ -129,9 +149,7 @@ export function lengthSquared(v: Vector2 | Vector3): number {
 export function normalize(v: Vector2): Vector2
 export function normalize(v: Vector3): Vector3
 export function normalize(v: Vector2 | Vector3): Vector2 | Vector3 {
-	const size = length(v)
-	if (size === 0) return isVector3(v) ? v3(0, 0, 0) : v2(0, 0)
-	return isVector3(v) ? v3(v.x / size, v.y / size, v.z / size) : v2(v.x / size, v.y / size)
+	return v.normalized
 }
 
 export function distance(a: Vector2, b: Vector2): number
@@ -175,11 +193,11 @@ export function project(u: Vector2 | Vector3, onto: Vector2 | Vector3): Vector2 
 export function reflect(v: Vector2, normal: Vector2): Vector2
 export function reflect(v: Vector3, normal: Vector3): Vector3
 export function reflect(v: Vector2 | Vector3, normal: Vector2 | Vector3): Vector2 | Vector3 {
-	const n2 = normalize(normal as any)
+	const n2 = normal.normalized
 	const scale = 2 * dot(v as any, n2 as any)
 	if (isVector3(normal)) {
 		const n = n2 as Vector3
-		const vv = v as Vector3
+		const vv = v as Vector3 as Vector3
 		return v3(vv.x - scale * n.x, vv.y - scale * n.y, vv.z - scale * n.z)
 	}
 	const n = n2 as Vector2
@@ -215,4 +233,13 @@ export function rotateAroundAxis(
 	const ry = py * cos + cy * sin + a.y * dotAP * (1 - cos)
 	const rz = pz * cos + cz * sin + a.z * dotAP * (1 - cos)
 	return v3(rx + origin.x, ry + origin.y, rz + origin.z)
+}
+
+export function winding(vertices: Vector2[]): number {
+	let winding = 0
+	for (let i = 0; i < vertices.length; i++) {
+		const j = (i + 1) % vertices.length
+		winding -= (vertices[j].x - vertices[i].x) * (vertices[j].y + vertices[i].y)
+	}
+	return winding
 }

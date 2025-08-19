@@ -8,7 +8,10 @@ import { AMesh, Mesh } from '../types/mesh'
 import { TemplateParser } from './templated'
 
 const { op3, op2 } = di<{ op3: Op3; op2: Op2 }>()
-
+const constants: Record<string, number | Vector2 | Vector3> = {
+	'π|π|pi': Math.PI,
+	'°|deg': Math.PI / 180,
+}
 export class SemanticError extends Error {}
 
 // Helper functions for vector rotation
@@ -91,9 +94,19 @@ function recur(
 							geometry = result
 						} else factor = scale(factor, result)
 					}
-					if (isUnity(factor)) return geometry || 1
-					const mult = Array.isArray(factor) ? (Vector.from(factor) as Vector3) : (factor as number)
-					if (geometry) return geometry.scale(mult)
+					if (isUnity(factor)) return geometry || (factor as number | Vector3 | Vector2)
+					const mult = Array.isArray(factor)
+						? (Vector.from(factor) as Vector3 | Vector2)
+						: (factor as number)
+					if (geometry) {
+						if (geometry instanceof AMesh && (typeof mult === 'number' || mult.length === 3))
+							return geometry.scale(mult as Vector3)
+						if (geometry instanceof AContour && (typeof mult === 'number' || mult.length === 2))
+							return geometry.scale(mult as Vector2)
+						throw new SemanticError(
+							`Cannot scale ${geometry.constructor.name} by ${mult.constructor.name}`
+						)
+					}
 					return mult
 				}
 			)
@@ -125,7 +138,7 @@ function recur(
 							geometry = result
 						} else if (typeof result === 'number')
 							throw new SemanticError(`Cannot translate by number: ${result}`)
-						else vector = Vector.add(vector, result)
+						else vector = vector.add(result)
 					}
 					return geometry
 						? geometry instanceof AMesh
@@ -145,7 +158,8 @@ function recur(
 					if (a instanceof AContour && b instanceof AContour)
 						return maybeAwait([op2.subtract(a, b)], ([result]) => result)
 					if (typeof a === 'number' && typeof b === 'number') return a - b
-					if (Array.isArray(a) && Array.isArray(b)) return Vector.sub(a, b)
+					if (Array.isArray(a) && Array.isArray(b) && a.length === b.length)
+						return (a as Vector).sub(b as Vector) as Vector3 | Vector2
 					if (a === 0 && Array.isArray(b)) return Vector.from(b.map((v) => -v)) as Vector3 | Vector2
 					throw new SemanticError(`Bad operand to subtract: ${a} and ${b}`)
 				}
@@ -279,7 +293,7 @@ function translate(...operands: LinearExpression[]): LinearExpression {
 		else if (expr.type === 'literal') {
 			if (typeof expr.value === 'number')
 				throw new SemanticError(`Cannot translate by number: ${expr.value}`)
-			vector = Vector.add(vector, expr.value)
+			vector = vector.add(expr.value)
 		} else resultingOperands.push(expr)
 	}
 	for (const operand of operands) add(operand)
@@ -313,7 +327,7 @@ function rotate(mesh: LinearExpression, axis: LinearExpression): LinearExpressio
 	return { type: 'rotate', object: mesh, axis }
 }
 
-export type LinearPrimitive = Vector2 | Vector3 | number
+export type LinearPrimitive = Vector2 | Vector3 | number | [number, number] | [number, number, number]
 
 const formulas = new TemplateParser<
 	LinearExpression,
@@ -325,7 +339,7 @@ const formulas = new TemplateParser<
 			{ '|': 'nary', '&': 'nary' },
 			{ ',': 'nary' },
 			{ '+': 'nary', '-': 'binary' },
-			{ '^': 'binary' },
+			{ '@': 'binary' },
 			{ '*': 'nary', '/': 'binary' },
 		],
 		emptyOperator: '*',
@@ -337,7 +351,7 @@ const formulas = new TemplateParser<
 				type: 'subtract',
 				operands: [a, b],
 			}),
-			'^': (a: LinearExpression, b: LinearExpression) => rotate(a, b), // Uses number as angle
+			'@': (a: LinearExpression, b: LinearExpression) => rotate(a, b), // Uses number as angle
 			',': (...operands) => ({
 				type: 'compose',
 				operands,
@@ -366,13 +380,13 @@ const formulas = new TemplateParser<
 				}),
 			},
 			{
-				rex: /π|π|pi/iy,
-				build: () => ({ type: 'literal', value: Math.PI }),
-			},
-			{
 				rex: /(?:\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(?:\.\d+(?:[eE][+-]?\d+)?)/y,
 				build: (match) => ({ type: 'literal', value: Number(match[0]) }),
 			},
+			...Object.entries(constants).map(([name, value]) => ({
+				rex: new RegExp(name, 'iy'),
+				build: () => ({ type: 'literal', value }) as const,
+			})),
 		],
 		surroundings: [{ open: '(', close: ')' }],
 	},

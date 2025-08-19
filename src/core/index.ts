@@ -32,7 +32,7 @@ export {
 	star,
 } from './shapes'
 export { linearExtrude, rotateExtrude } from './extrusions'
-export { Contour } from './types/contour'
+export * from './types/contour'
 export { assert } from './ts/debug'
 export * from './math'
 

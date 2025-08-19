@@ -150,7 +150,7 @@ export function sweep(pathFn: (t: number) => Vector3): PathFn {
 		const dt = 0.01
 		const nextT = Math.min(t + dt, 1)
 		const nextPoint = pathFn(nextT)
-		const tangent = Vector3.sub(nextPoint, point).normalized
+		const tangent = nextPoint.sub(point).normalized
 
 		// Create coordinate frame
 		const up = v3(0, 0, 1) // Default up direction

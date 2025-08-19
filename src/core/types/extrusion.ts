@@ -1,7 +1,7 @@
 import { lerp } from '@tsculpt/math'
 import { generation } from '../globals'
+import { VectorMap } from '../optimizations'
 import { assert } from '../ts/debug'
-import { VectorMap } from '../vectorSet'
 import { Vector2, Vector3 } from './bunches'
 import { Contour } from './contour'
 import { Mesh } from './mesh'
@@ -63,7 +63,7 @@ export function extrude(spec: ExtrusionSpec): Mesh {
 		sampling.type === 'count'
 			? sampling.samples
 			: Math.ceil(
-					Vector3.sub(path(range.end).o, path(range.start).o).size /
+					path(range.end).o.sub(path(range.start).o).size /
 						(sampling.maxSegmentLength || generation.grain)
 				)
 	if (pathSamples < 2) {
@@ -81,7 +81,7 @@ export function extrude(spec: ExtrusionSpec): Mesh {
 		const x = v2.x * frame.x.x + v2.y * frame.y.x
 		const y = v2.x * frame.x.y + v2.y * frame.y.y
 		const z = v2.x * frame.x.z + v2.y * frame.y.z
-		return Vector3.add(new Vector3(x, y, z), frame.o)
+		return frame.o.add([x, y, z])
 	}
 
 	// Convert 2D vertex to 3D and get index

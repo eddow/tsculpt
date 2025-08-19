@@ -2,7 +2,7 @@ import Op3 from '@tsculpt/op3'
 import { cached } from '@tsculpt/ts/decorators'
 import di from '@tsculpt/ts/di'
 import { MaybePromise } from '@tsculpt/ts/maybe'
-import { VectorMap } from '../vectorSet'
+import { VectorMap } from '../optimizations'
 import { Matrix4, Vector, Vector3 } from './bunches'
 
 const { op3 } = di<{ op3: Op3 }>()

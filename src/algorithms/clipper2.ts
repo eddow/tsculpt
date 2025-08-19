@@ -1,3 +1,4 @@
+import { winding } from '@tsculpt'
 import Op2, { ecmaOp2 } from '@tsculpt/op2'
 import {
 	AContour,
@@ -19,7 +20,6 @@ let module: MainModule = null!
 // Global module instance
 
 async function ensureClipper2Initialized(): Promise<MainModule> {
-
 	// Dynamic import to avoid issues with SSR
 	const module = (await import('clipper2-wasm/dist/es/clipper2z')) as any
 	const Clipper2ZFactory = module.default as Clipper2ZFactoryFunction
@@ -61,73 +61,6 @@ class Clipper2Polygon extends IntermediatePolygon {
 	}
 }
 
-class Clipper2Shape extends IntermediateShape {
-	constructor(public pathsD: PathsD) {
-		super()
-	}
-
-	protected toShape(): { polygon: Polygon; holes: Polygon[] } {
-		if (!module) {
-			throw new Error('Clipper2 module not initialized')
-		}
-
-		let currentPolygon: Vector2[] = []
-		const holes: Vector2[][] = []
-
-		for (let i = 0; i < this.pathsD.size(); i++) {
-			const path = this.pathsD.get(i)
-			const vertices: Vector2[] = []
-
-			for (let j = 0; j < path.size(); j++) {
-				const point = path.get(j)
-				vertices.push(new Vector2(point.x, point.y))
-			}
-
-			// Determine if this is a hole or main polygon based on winding
-			// For simplicity, we'll assume the first path is the main polygon
-			if (i === 0) {
-				currentPolygon = vertices
-			} else {
-				holes.push(vertices)
-			}
-		}
-
-		return {
-			polygon: new Polygon(...currentPolygon),
-			holes: holes.map((hole) => new Polygon(...hole)),
-		}
-	}
-
-	static from(shape: Shape): Clipper2Shape {
-		if (shape instanceof Clipper2Shape) return shape
-		if (!module) {
-			throw new Error('Clipper2 module not initialized')
-		}
-
-		const pathsD = new module.PathsD()
-
-		// Main polygon
-		const mainCoords: number[] = []
-		for (const vertex of shape.polygon) {
-			mainCoords.push(vertex.x, vertex.y)
-		}
-		const mainPath = module.MakePathD(mainCoords)
-		pathsD.push_back(mainPath)
-
-		// Holes
-		for (const hole of shape.holes) {
-			const holeCoords: number[] = []
-			for (const vertex of hole) {
-				holeCoords.push(vertex.x, vertex.y)
-			}
-			const holePath = module.MakePathD(holeCoords)
-			pathsD.push_back(holePath)
-		}
-
-		return new Clipper2Shape(pathsD)
-	}
-}
-
 class Clipper2Contour extends IntermediateContour {
 	constructor(public pathsD: PathsD) {
 		super()
@@ -159,9 +92,9 @@ class Clipper2Contour extends IntermediateContour {
 			// Determine winding order to classify as main polygon or hole
 			// Positive winding = counterclockwise = main polygon
 			// Negative winding = clockwise = hole
-			const winding = this.calculateWinding(vertices)
+			const w = winding(vertices)
 
-			if (winding > 0) {
+			if (w > 0) {
 				mainPolygons.push(vertices)
 			} else {
 				holes.push(vertices)
@@ -187,15 +120,6 @@ class Clipper2Contour extends IntermediateContour {
 		}
 
 		return shapes
-	}
-
-	private calculateWinding(vertices: Vector2[]): number {
-		let winding = 0
-		for (let i = 0; i < vertices.length; i++) {
-			const j = (i + 1) % vertices.length
-			winding -= (vertices[j].x - vertices[i].x) * (vertices[j].y + vertices[i].y)
-		}
-		return winding
 	}
 
 	private isPolygonInside(outer: Vector2[], inner: Vector2[]): boolean {
@@ -256,11 +180,7 @@ function toClipper2Contour(aContour: AContour): Clipper2Contour {
 	return new Clipper2Contour(pathsD)
 }
 
-class Clipper2Op2 extends Op2 {
-	constructor() {
-		super()
-	}
-
+export class Clipper2Op2 extends Op2 {
 	async union(...contours: AContour[]): Promise<AContour> {
 		if (contours.length === 0) {
 			return new Contour(new Shape(new Polygon(v2(0, 0), v2(1, 0), v2(0, 1))))
@@ -472,7 +392,7 @@ ensureClipper2Initialized().catch((error) => {
 	console.warn('Failed to initialize Clipper2:', error)
 })
 
-export default async() => {
+export default async () => {
 	module = await ensureClipper2Initialized()
 	return new Clipper2Op2()
 }

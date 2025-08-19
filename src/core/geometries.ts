@@ -9,7 +9,7 @@ function bSpec(spec: BoxSpec): { radius: number | Vector3; center: Vector3 } {
 		const [a, b] = spec
 		const min = Vector3.min(a, b)
 		const max = Vector3.max(a, b)
-		return { radius: Vector3.sub(max, min), center: v3`(${min} + ${max}) / 2` }
+		return { radius: v3`(${max} - ${min}) / 2`, center: v3`(${min} + ${max}) / 2` }
 	}
 	const { radius = 1, center = v3(0, 0, 0) } = spec as {
 		radius?: number | Vector3
@@ -30,8 +30,7 @@ export function box(spec: BoxSpec = {}): Mesh {
 		[1, 1, 1],
 		[-1, 1, 1]
 	).map((v) => {
-		const scaled = Vector3.scale(v, radius)
-		return Vector3.add(scaled, center)
+		return v3`${v} * ${radius} + ${center}`
 	})
 
 	const faceIndices: [number, number, number][] = [
@@ -509,7 +508,7 @@ export function ellipsoid(spec: EllipsoidSpec = {}): Mesh {
 	const rVec = typeof radius === 'number' ? v3(radius, radius, radius) : radius
 	return new Mesh(
 		base.faces,
-		base.vectors.map((v) => v3`${Vector3.scale(v, rVec)} + ${center}`)
+		base.vectors.map((v) => v3`${v} * ${rVec} + ${center}`)
 	)
 }
 

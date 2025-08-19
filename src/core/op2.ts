@@ -63,7 +63,7 @@ class EcmascriptEngine {
 		function orientation(p: Vector2, q: Vector2, r: Vector2): number {
 			const val = (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
 			if (val === 0) return 0 // collinear
-			return val > 0 ? 1 : 2 // clock or counterclock wise
+			return val > 0 ? 1 : 2 // clock or counterclockwise
 		}
 
 		// Helper function to check if point q lies on segment pr

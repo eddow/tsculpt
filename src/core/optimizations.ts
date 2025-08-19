@@ -26,3 +26,24 @@ export class VectorMap<V extends Vector> {
 		return this.mapped.size
 	}
 }
+
+export function dicotomic<T>(
+	items: T[],
+	item: T,
+	isASmallerThanB: (a: T, b: T) => boolean = (a, b) => a < b
+): number {
+	// Find the largest index i such that items[i] <= item, according to comparator
+	let lo = 0
+	let hi = items.length - 1
+	while (lo <= hi) {
+		const mid = (lo + hi) >> 1
+		// items[mid] <= item  <=>  !(item < items[mid])
+		if (!isASmallerThanB(item, items[mid])) {
+			lo = mid + 1
+		} else {
+			hi = mid - 1
+		}
+	}
+	// hi is now the last index where items[hi] <= item; may be -1 if all items > item
+	return hi
+}
