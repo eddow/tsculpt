@@ -1,4 +1,4 @@
-import { circle, linearExtrude, op3, rotateExtrude, square, v2, v3 } from '@tsculpt'
+import { circle, linearExtrude, rotateExtrude, square, union, v2, v3 } from '@tsculpt'
 
 // Create a simple square profile
 const squareProfile = square({ size: 1 })
@@ -53,7 +53,7 @@ export const complexExtrusion = linearExtrude(squareProfile, {
 
 // Default export: union of all objects positioned in a grid
 export default function scene() {
-	return op3.union(
+	return union(
 		extrudedBox,
 		twistedPrism.translate(v3(4, 0, 0)),
 		pyramid.translate(v3(-4, 0, 0)),

@@ -1,7 +1,5 @@
 export * from './types'
-import type Op2 from '@tsculpt/op2'
-import type Op3 from '@tsculpt/op3'
-import di from '@tsculpt/ts/di'
+
 export { generation, type GenerationParameters } from './globals'
 export * from './expression/linear'
 export {
@@ -36,4 +34,4 @@ export * from './types/contour'
 export { assert } from './ts/debug'
 export * from './math'
 
-export const { op3, op2 } = di<{ op3: Op3; op2: Op2 }>()
+export * from './algorithms'

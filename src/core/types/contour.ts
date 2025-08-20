@@ -1,15 +1,13 @@
-import { ecmaOp2 } from '@tsculpt/op2'
-import Op2 from '@tsculpt/op2'
 import { assert } from '@tsculpt/ts/debug'
 import { cache, cached } from '@tsculpt/ts/decorators'
 import di from '@tsculpt/ts/di'
 import { Indexable } from '@tsculpt/ts/indexable'
-import { MaybePromise } from '@tsculpt/ts/maybe'
+import { expectResolved, MaybePromise } from '@tsculpt/ts/maybe'
 import earcut from 'earcut'
 import { v2 } from './builders'
 import { Matrix3, Vector2 } from './bunches'
 
-const { op2 } = di<{ op2: Op2 }>()
+const { vectorIntersect, inPolygon, distinctPolygons, union2, intersect2, hull2, subtract2 } = di()
 export type Surface = [Vector2, Vector2, Vector2][]
 
 // Abstract base class for array-like behavior
@@ -71,7 +69,7 @@ export abstract class APolygon extends ArraySim<Vector2>() {
 				const b = [j, (j + 1) % this.length]
 				if (a[0] === b[0] || a[0] === b[1] || a[1] === b[0] || a[1] === b[1]) continue
 
-				if (ecmaOp2.vectorIntersect([this[a[0]], this[a[1]]], [this[b[0]], this[b[1]]], false)) {
+				if (vectorIntersect([this[a[0]], this[a[1]]], [this[b[0]], this[b[1]]], false)) {
 					return { i, j }
 				}
 			}
@@ -188,10 +186,10 @@ export abstract class AShape {
 // Concrete Shape implementation
 @assert.integrity({
 	'All holes in polygon': function () {
-		return this.holes.every((hole) => hole.every((v) => ecmaOp2.inPolygon(v, this.polygon)))
+		return this.holes.every((hole) => hole.every((v) => expectResolved(inPolygon(v, this.polygon))))
 	},
 	'Distinct holes': function () {
-		return ecmaOp2.distinctPolygons(this.holes)
+		return distinctPolygons(this.holes)
 	},
 })
 export class Shape extends AShape {
@@ -286,26 +284,26 @@ export abstract class AContour extends ArraySim<Shape>() {
 	}
 
 	union(...others: AContour[]): MaybePromise<AContour> {
-		return op2.union(this, ...others)
+		return union2(this, ...others)
 	}
 	intersect(...others: AContour[]): MaybePromise<AContour> {
-		return op2.intersect(this, ...others)
+		return intersect2(this, ...others)
 	}
 	hull(...others: AContour[]): MaybePromise<AContour> {
-		return op2.hull(this, ...others)
+		return hull2(this, ...others)
 	}
 	subtract(other: AContour): MaybePromise<AContour> {
-		return op2.subtract(this, other)
+		return subtract2(this, other)
 	}
 	subtractFrom(other: AContour): MaybePromise<AContour> {
-		return op2.subtract(other, this)
+		return subtract2(other, this)
 	}
 }
 
 // Concrete Contour implementation
 @assert.integrity({
 	'Distinct shapes': function () {
-		return ecmaOp2.distinctPolygons(this.map((s) => s.polygon))
+		return distinctPolygons(this.map((s) => s.polygon))
 	},
 })
 export class Contour extends AContour {

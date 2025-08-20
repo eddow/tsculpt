@@ -37,3 +37,8 @@ export function maybeAwait<Input extends MaybePromiseBunch, Output extends Maybe
 	}
 	return transform(params as ResolvedBunch<Input>) as Resolved<Output>
 }
+
+export function expectResolved<T>(value: MaybePromise<T>): Resolved<T> {
+	if (value instanceof Promise) throw new Error('Promise not resolved')
+	return value as Resolved<T>
+}

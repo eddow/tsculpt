@@ -20,14 +20,8 @@ export default defineConfig({
 		}),
 		dependencyInject(
 			process.env.NODE_ENV === 'test' || process.env.VITEST
-				? {
-						op3: './src/algorithms/op3.tester.ts',
-						op2: './src/algorithms/op2.tester.ts',
-					}
-				: {
-						op3: './src/algorithms/jscad.ts',
-						op2: './src/algorithms/clipper2.ts',
-					}
+				? ['ecmaPoly.ts', 'op3.tester.ts', 'op2.tester.ts']
+				: ['ecmaPoly.ts', 'jscad.ts', 'clipper2.ts']
 		),
 	],
 	worker: {

@@ -1,4 +1,4 @@
-import { circle, contour, linearExtrude, op3, square, v2, v3 } from '@tsculpt'
+import { circle, contour, linearExtrude, square, union, v2, v3 } from '@tsculpt'
 
 // 1. SIMPLE SHAPES - Basic geometric primitives
 export async function simpleSquare() {
@@ -154,7 +154,7 @@ export async function holedSquare() {
 
 // Default export: union of all objects positioned in a grid
 export default async function scene() {
-	return op3.union(
+	return union(
 		(await simpleSquare()).translate(v3(-8, 8, 0)),
 		(await simpleCircle()).translate(v3(-6, 8, 0)),
 		(await scaledSquare()).translate(v3(-4, 8, 0)),

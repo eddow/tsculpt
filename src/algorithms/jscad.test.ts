@@ -17,7 +17,7 @@ describe('JscadEngine', () => {
 		const mesh1 = createTestMesh()
 		const mesh2 = createTestMesh()
 
-		const result = await engine.union(mesh1, mesh2)
+		const result = await engine.union3(mesh1, mesh2)
 
 		expect(result).toBeInstanceOf(AMesh)
 		expect(result.vectors.length).toBeGreaterThan(0)
@@ -27,7 +27,7 @@ describe('JscadEngine', () => {
 		const mesh1 = createTestMesh()
 		const mesh2 = createTestMesh()
 
-		const result = await engine.intersect(mesh1, mesh2)
+		const result = await engine.intersect3(mesh1, mesh2)
 
 		expect(result).toBeInstanceOf(AMesh)
 		expect(result.vectors.length).toBeGreaterThan(0)
@@ -37,7 +37,7 @@ describe('JscadEngine', () => {
 		const mesh1 = createTestMesh()
 		const mesh2 = createTestMesh()
 
-		const result = await engine.subtract(mesh1, mesh2)
+		const result = await engine.subtract3(mesh1, mesh2)
 
 		expect(result).toBeInstanceOf(AMesh)
 		// Subtraction of identical meshes might result in empty mesh
@@ -48,7 +48,7 @@ describe('JscadEngine', () => {
 		const mesh1 = createTestMesh()
 		const mesh2 = createTestMesh()
 
-		const result = await engine.hull(mesh1, mesh2)
+		const result = await engine.hull3(mesh1, mesh2)
 
 		expect(result).toBeInstanceOf(AMesh)
 		expect(result.vectors.length).toBeGreaterThan(0)
@@ -59,7 +59,7 @@ describe('JscadEngine', () => {
 		const mesh2 = createTestMesh()
 		const mesh3 = createTestMesh()
 
-		const result = await engine.union(mesh1, mesh2, mesh3)
+		const result = await engine.union3(mesh1, mesh2, mesh3)
 
 		expect(result).toBeInstanceOf(AMesh)
 		expect(result.vectors.length).toBeGreaterThan(0)
@@ -70,7 +70,7 @@ describe('JscadEngine', () => {
 		const mesh2 = createTestMesh()
 		const mesh3 = createTestMesh()
 
-		const result = await engine.intersect(mesh1, mesh2, mesh3)
+		const result = await engine.intersect3(mesh1, mesh2, mesh3)
 
 		expect(result).toBeInstanceOf(AMesh)
 		expect(result.vectors.length).toBeGreaterThan(0)
@@ -81,7 +81,7 @@ describe('JscadEngine', () => {
 		const mesh2 = createTestMesh()
 		const mesh3 = createTestMesh()
 
-		const result = await engine.hull(mesh1, mesh2, mesh3)
+		const result = await engine.hull3(mesh1, mesh2, mesh3)
 
 		expect(result).toBeInstanceOf(AMesh)
 		expect(result.vectors.length).toBeGreaterThan(0)

@@ -1,4 +1,3 @@
-import type Engine from '@tsculpt/op3'
 import { type AMesh, IntermediateMesh, type MeshSpecification, Vector3 } from '@tsculpt/types'
 // TODO: ts-meta/destroyable -> auto dispose
 // Import types for csgrs WASM module

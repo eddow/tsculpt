@@ -1,6 +1,6 @@
 import type { Plugin } from 'vite'
 
-export default function diInject(deps: Record<string, string>): Plugin {
+export default function diInject(deps: string[]): Plugin {
 	const virtualModuleId = 'virtual:di-registrations'
 	const resolvedVirtualModuleId = `\0${virtualModuleId}`
 
@@ -17,14 +17,12 @@ export default function diInject(deps: Record<string, string>): Plugin {
 			if (id === resolvedVirtualModuleId) {
 				// Default: Generate a minimal DI registration
 				return `
-import { register } from '@tsculpt/ts/di';
-${Object.entries(deps)
-	.map(([name, path]) => `import ${name} from '${path}'`)
+import { register } from '@tsculpt/ts/di'
+${deps.map((path, i) => `import dep${i} from './src/algorithms/${path}'`)
 	.join('\n')}
 
 // Register dependencies
-register({${Object.keys(deps).join(',')}});
-				`
+register(${deps.map((_, i) => `dep${i}`).join(',')})`
 			}
 		},
 		// 3. Inject into ALL entry points (app + tests)

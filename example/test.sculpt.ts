@@ -1,4 +1,4 @@
-import { type Decimal, mesh, op3 } from '@tsculpt'
+import { type Decimal, hull, mesh } from '@tsculpt'
 import { box, sphere } from '@tsculpt'
 
 // Test for metadata/vite
@@ -10,7 +10,7 @@ async function op({ radius = 5 as Decimal<1, 10>, hulled = false as boolean } = 
 	// Original boolean subtraction
 	const subtracted = await mesh`${s1} - ${b1}`
 
-	return hulled ? op3.hull(subtracted) : subtracted
+	return hulled ? hull(subtracted) : subtracted
 }
 
 //export default function scene({ radius: size = 5 as Decimal<1, 100>, center = [0, 0, 0] as Vector3 }) {

@@ -1,4 +1,4 @@
-import { type Decimal, Vector3, op3, v3 } from '@tsculpt'
+import { type Decimal, Vector3,  hull,  v3 } from '@tsculpt'
 import { box, sphere } from '@tsculpt'
 
 export default function scene({ radius = 5 as Decimal<1, 100>, center = v3(0, 0, 0) }) {
@@ -24,7 +24,7 @@ export default function scene({ radius = 5 as Decimal<1, 100>, center = v3(0, 0,
 		.scale(0.7) // Scale down
 
 	// Combine all meshes using hull operation
-	const combined = op3.hull(b1, transformedSphere, anotherSphere, thirdSphere)
+	const combined = hull(b1, transformedSphere, anotherSphere, thirdSphere)
 
 	return combined
 }

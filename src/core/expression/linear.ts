@@ -1,5 +1,3 @@
-import type Op2 from '@tsculpt/op2'
-import type Op3 from '@tsculpt/op3'
 import di from '@tsculpt/ts/di'
 import { MaybePromise, maybeAwait } from '@tsculpt/ts/maybe'
 import { Vector, Vector2, Vector3, isUnity, scale } from '../types/bunches'
@@ -7,7 +5,7 @@ import { AContour, Contour } from '../types/contour'
 import { AMesh, Mesh } from '../types/mesh'
 import { TemplateParser } from './templated'
 
-const { op3, op2 } = di<{ op3: Op3; op2: Op2 }>()
+const { union3, intersect3, subtract3, union2, intersect2, subtract2 } = di()
 const constants: Record<string, number | Vector2 | Vector3> = {
 	'π|π|pi': Math.PI,
 	'°|deg': Math.PI / 180,
@@ -154,9 +152,9 @@ function recur(
 				(results) => {
 					const [a, b] = results
 					if (a instanceof AMesh && b instanceof AMesh)
-						return maybeAwait([op3.subtract(a, b)], ([result]) => result)
+						return maybeAwait([subtract3(a, b)], ([result]) => result)
 					if (a instanceof AContour && b instanceof AContour)
-						return maybeAwait([op2.subtract(a, b)], ([result]) => result)
+						return maybeAwait([subtract2(a, b)], ([result]) => result) as MaybePromise<AContour>
 					if (typeof a === 'number' && typeof b === 'number') return a - b
 					if (Array.isArray(a) && Array.isArray(b) && a.length === b.length)
 						return (a as Vector).sub(b as Vector) as Vector3 | Vector2
@@ -245,10 +243,10 @@ function recur(
 						throw new SemanticError('Cannot intersect meshes and contours together')
 					}
 					if (meshes.length > 0) {
-						return op3.intersect(...meshes)
+						return intersect3(...meshes)
 					}
 					if (contours.length > 0) {
-						return op2.intersect(...contours)
+						return intersect2(...contours)
 					}
 					throw new SemanticError('No valid operands for intersection')
 				}
@@ -273,10 +271,10 @@ function recur(
 						throw new SemanticError('Cannot union meshes and contours together')
 					}
 					if (meshes.length > 0) {
-						return op3.union(...meshes)
+						return union3(...meshes)
 					}
 					if (contours.length > 0) {
-						return op2.union(...contours)
+						return union2(...contours)
 					}
 					throw new SemanticError('No valid operands for union')
 				}

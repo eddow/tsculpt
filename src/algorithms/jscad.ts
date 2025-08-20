@@ -1,11 +1,10 @@
 import { Color, Geom3, Poly3 } from '@jscad/modeling/src/geometries/types'
-import type Engine from '@tsculpt/op3'
-
 import { booleans, geometries } from '@jscad/modeling'
 import { Mat4 } from '@jscad/modeling/src/maths/mat4'
 import { Vec3 } from '@jscad/modeling/src/maths/vec3'
 import { hull } from '@jscad/modeling/src/operations/hulls'
 import { type AMesh, IntermediateMesh, type MeshSpecification, Vector3 } from '@tsculpt/types'
+import { Algorithms } from '@tsculpt/ts/di'
 const { union, intersect, subtract } = booleans
 
 const { geom3, poly3 } = geometries
@@ -54,26 +53,29 @@ function jscadMeshes(meshes: AMesh[]): JscadMesh[] {
 	return meshes.map(jscadMesh)
 }
 
-class JscadEngine implements Engine {
-	async union(...meshes: AMesh[]): Promise<AMesh> {
-		const ops = jscadMeshes(meshes)
-		return new JscadMesh(union(...ops))
-	}
-
-	async intersect(...meshes: AMesh[]): Promise<AMesh> {
-		const ops = jscadMeshes(meshes)
-		return new JscadMesh(intersect(...ops))
-	}
-
-	async subtract(mesh1: AMesh, mesh2: AMesh): Promise<AMesh> {
-		const [op1, op2] = jscadMeshes([mesh1, mesh2])
-		return new JscadMesh(subtract(op1, op2))
-	}
-
-	async hull(...meshes: AMesh[]): Promise<AMesh> {
-		const ops = jscadMeshes(meshes)
-		return new JscadMesh(hull(...ops))
-	}
+function union3(mesh1: AMesh, ...meshes: AMesh[]): AMesh {
+	const ops = jscadMeshes([mesh1, ...meshes])
+	return new JscadMesh(union(...ops))
 }
 
-export default new JscadEngine()
+function intersect3(mesh1: AMesh, ...meshes: AMesh[]): AMesh {
+	const ops = jscadMeshes([mesh1, ...meshes])
+	return new JscadMesh(intersect(...ops))
+}
+
+function subtract3(mesh1: AMesh, mesh2: AMesh): AMesh {
+	const [op1, op2] = jscadMeshes([mesh1, mesh2])
+	return new JscadMesh(subtract(op1, op2))
+}
+
+function hull3(mesh1: AMesh, ...meshes: AMesh[]): AMesh {
+	const ops = jscadMeshes([mesh1, ...meshes])
+	return new JscadMesh(hull(...ops))
+}
+
+export default {
+	union3,
+	intersect3,
+	subtract3,
+	hull3,
+} satisfies Partial<Algorithms>

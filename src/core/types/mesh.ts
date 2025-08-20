@@ -1,11 +1,10 @@
-import Op3 from '@tsculpt/op3'
 import { cached } from '@tsculpt/ts/decorators'
 import di from '@tsculpt/ts/di'
 import { MaybePromise } from '@tsculpt/ts/maybe'
 import { VectorMap } from '../optimizations'
 import { Matrix4, Vector, Vector3 } from './bunches'
 
-const { op3 } = di<{ op3: Op3 }>()
+const { union3, subtract3, intersect3, hull3 } = di()
 type Numbers3 = readonly [number, number, number]
 
 export abstract class AMesh {
@@ -130,19 +129,19 @@ export abstract class AMesh {
 		return this.transform(rotationMatrix)
 	}
 	union(...others: AMesh[]): MaybePromise<AMesh> {
-		return op3.union(this, ...others)
+		return union3(this, ...others)
 	}
 	subtract(other: AMesh): MaybePromise<AMesh> {
-		return op3.subtract(this, other)
+		return subtract3(this, other)
 	}
 	subtractFrom(other: AMesh): MaybePromise<AMesh> {
-		return op3.subtract(other, this)
+		return subtract3(other, this)
 	}
 	intersect(...others: AMesh[]): MaybePromise<AMesh> {
-		return op3.intersect(this, ...others)
+		return intersect3(this, ...others)
 	}
 	hull(...others: AMesh[]): MaybePromise<AMesh> {
-		return op3.hull(this, ...others)
+		return hull3(this, ...others)
 	}
 }
 

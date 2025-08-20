@@ -1,4 +1,4 @@
-import type Engine from '@tsculpt/op3'
+import { Algorithms } from '@tsculpt/ts/di'
 import { AMesh, IntermediateMesh, Mesh, Vector3 } from '@tsculpt/types'
 import { v3 } from '@tsculpt/types/builders'
 
@@ -16,41 +16,35 @@ export class FakeMesh extends IntermediateMesh {
 	}
 }
 
-class TesterEngine implements Engine {
-	private operationCount = 0
+let operationCount = 0
 
-	async union(...meshes: AMesh[]): Promise<AMesh> {
-		this.operationCount++
-		// Return a fake mesh with operation info
-		return new FakeMesh(`union_${this.operationCount}_${meshes.length}_meshes`)
-	}
-
-	async intersect(...meshes: AMesh[]): Promise<AMesh> {
-		this.operationCount++
-		// Return a fake mesh with operation info
-		return new FakeMesh(`intersect_${this.operationCount}_${meshes.length}_meshes`)
-	}
-
-	async subtract(_mesh1: AMesh, _mesh2: AMesh): Promise<AMesh> {
-		this.operationCount++
-		// Return a fake mesh with operation info
-		return new FakeMesh(`subtract_${this.operationCount}_mesh1_mesh2`)
-	}
-
-	async hull(...meshes: AMesh[]): Promise<AMesh> {
-		this.operationCount++
-		// Return a fake mesh with operation info
-		return new FakeMesh(`hull_${this.operationCount}_${meshes.length}_meshes`)
-	}
-
-	// Helper method to get operation count for testing
-	getOperationCount(): number {
-		return this.operationCount
-	}
-
-	// Helper method to reset operation count for testing
-	resetOperationCount(): void {
-		this.operationCount = 0
-	}
+function union3(...meshes: AMesh[]): AMesh {
+	operationCount++
+	// Return a fake mesh with operation info
+	return new FakeMesh(`union_${operationCount}_${meshes.length}_meshes`)
 }
-export default new TesterEngine()
+
+function intersect3(...meshes: AMesh[]): AMesh {
+	operationCount++
+	// Return a fake mesh with operation info
+	return new FakeMesh(`intersect_${operationCount}_${meshes.length}_meshes`)
+}
+
+function subtract3(_mesh1: AMesh, _mesh2: AMesh): AMesh {
+	operationCount++
+	// Return a fake mesh with operation info
+	return new FakeMesh(`subtract_${operationCount}_mesh1_mesh2`)
+}
+
+function hull3(...meshes: AMesh[]): AMesh {
+	operationCount++
+	// Return a fake mesh with operation info
+	return new FakeMesh(`hull_${operationCount}_${meshes.length}_meshes`)
+}
+
+export default {
+	union3,
+	intersect3,
+	subtract3,
+	hull3,
+} satisfies Partial<Algorithms>

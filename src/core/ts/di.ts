@@ -1,9 +1,26 @@
-import { MaybePromise, Resolved } from './maybe'
+import type { AContour, AMesh, APolygon, Vector2 } from '@tsculpt/types'
+import { maybeAwait, MaybePromise, Resolved } from './maybe'
+export interface AlgorithmsDef {
+	union2(contour1: AContour, ...contours: AContour[]): AContour
+	intersect2(contour1: AContour, ...contours: AContour[]): AContour
+	subtract2(contour1: AContour, contour2: AContour): AContour
+	hull2(contour1: AContour, ...contours: AContour[]): AContour
+	union3(mesh1: AMesh, ...meshes: AMesh[]): AMesh
+	intersect3(mesh1: AMesh, ...meshes: AMesh[]): AMesh
+	subtract3(mesh1: AMesh, mesh2: AMesh): AMesh
+	hull3(mesh1: AMesh, ...meshes: AMesh[]): AMesh
+	vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2], edge?: boolean): boolean
+	inPolygon(point: Vector2, polygon: APolygon, edge?: boolean): boolean
+	polygonIntersect(p1: APolygon, p2: APolygon, edge?: boolean): boolean
+	distinctPolygons(polygons: APolygon[], edge?: boolean): boolean
+}
+export type Algorithms = ServiceMethods<AlgorithmsDef>
 
-type DIService = Record<string, (...args: any[]) => MaybePromise<any>>
+type ServiceFunction = (...args: any[]) => MaybePromise<any>
+type DIService = Record<string, ServiceFunction>
 type Service = MaybePromise<DIService> | (() => MaybePromise<DIService>)
 
-const dependencies: Record<string, Service> = {}
+const dependencies: Record<string, ServiceFunction> = {}
 const forwarders: Record<string, any> = {}
 
 export class DIError extends Error {
@@ -12,71 +29,51 @@ export class DIError extends Error {
 		this.name = 'DIError'
 	}
 }
-
-export function register(newDependencies: Record<string, any>) {
-	Object.assign(dependencies, newDependencies)
-}
-function assertService(service: Service, serviceName: string) {
-	if (typeof service !== 'object' || service instanceof Promise)
-		throw new DIError(`Service ${String(serviceName)} is not yet loaded`)
-	return service
-}
-function forwarderFunction(serviceName: string, functionName: string) {
-	return (...args: any[]) => {
-		let service = dependencies[serviceName]
-		if (!service) throw new DIError(`Service ${String(serviceName)} not yet registered`)
-		if (typeof service === 'function') service = dependencies[serviceName] = service()
-		if (typeof service !== 'object')
-			throw new DIError(`Service ${String(serviceName)} is not a service`)
-		function forward() {
-			service = assertService(service, serviceName)
-			const functionToCall = service[functionName]
-			if (!functionToCall)
-				throw new DIError(
-					`Function ${String(functionName)} not found in service ${String(serviceName)}`
-				)
-			return functionToCall.apply(service, args)
+let registration: Promise<void> | 'none' | 'done' = 'none'
+export function register(...services: Service[]) {
+	if(registration !== 'none') throw new DIError('Registration already in progress')
+	let resolve: (value: void | PromiseLike<void>) => void
+	registration = new Promise(r => {
+		resolve = r
+	})
+	services = services.map(service => typeof service === 'function' ? service() : service)
+	maybeAwait(services, (services) => {
+		for (const [i, service] of services.entries()) {
+			if (typeof service !== 'object') throw new DIError(`Service ${i} is not a service`)
+			for (const [functionName, functionValue] of Object.entries(service))
+				dependencies[functionName] ??= functionValue
 		}
-		return service instanceof Promise
-			? service.then((resolvedService) => {
-					dependencies[serviceName] = service = resolvedService
-					return forward()
-				})
-			: forward()
+		resolve()
+		registration = 'done'
+	})
+}
+
+function forwarderFunction(functionName: string) {
+	return (...args: any[]) => {
+		const forward = () => {
+			if(!dependencies[functionName])
+				throw new DIError(`Function ${String(functionName)} not found in service`)
+			return dependencies[functionName](...args)
+		}
+		if(registration === 'none')
+			throw new DIError('No registration done/pending')
+		return registration === 'done' ? forward() : registration.then(forward)
 	}
 }
-
-function forwarderService(name: string) {
-	return new Proxy(
-		{},
-		{
-			get(_target, prop) {
-				if (typeof prop !== 'string') return undefined
-				const service = dependencies[name]
-				if (service && typeof service === 'object' && !(service instanceof Promise)) {
-					if (prop in service) return service[prop]
-					throw new DIError(`Function ${String(prop)} not found in service ${String(name)}`)
-				}
-				return forwarderFunction(name, String(prop))
-			},
-		}
-	)
-}
-type ServiceMethods<T> = {
+export type ServiceMethods<T> = {
 	[K in keyof T as T[K] extends (...args: any[]) => MaybePromise<any> ? K : never]: T[K] extends (
 		...args: infer A
 	) => infer R
 		? (...args: A) => MaybePromise<Resolved<R>>
 		: never
 }
-export default function di<T extends Record<string, any>>() {
-	return new Proxy(dependencies, {
+export default function di() {
+	return new Proxy({}, {
 		get(_target, prop) {
-			if (prop in dependencies) return dependencies[String(prop)]
-			if (!forwarders[String(prop)]) {
-				forwarders[String(prop)] = forwarderService(String(prop))
-			}
-			return forwarders[String(prop)]
+			if(typeof prop !== 'string') return undefined
+			if (prop in dependencies) return dependencies[prop]
+			forwarders[prop] ??= forwarderFunction(prop)
+			return forwarders[prop]
 		},
-	}) as { [K in keyof T]: ServiceMethods<T[K]> }
+	}) as Algorithms
 }
