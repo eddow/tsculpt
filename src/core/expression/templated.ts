@@ -1,4 +1,4 @@
-import { MaybePromise } from '@tsculpt/ts/maybe'
+import { MaybePromise } from '@tsculpt/ts/async'
 import { ParseSpecs, Parser } from './expression'
 
 export const paramMarker = '\u200B'

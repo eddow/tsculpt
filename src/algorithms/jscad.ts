@@ -1,10 +1,10 @@
-import { Color, Geom3, Poly3 } from '@jscad/modeling/src/geometries/types'
 import { booleans, geometries } from '@jscad/modeling'
+import { Color, Geom3, Poly3 } from '@jscad/modeling/src/geometries/types'
 import { Mat4 } from '@jscad/modeling/src/maths/mat4'
 import { Vec3 } from '@jscad/modeling/src/maths/vec3'
 import { hull } from '@jscad/modeling/src/operations/hulls'
-import { type AMesh, IntermediateMesh, type MeshSpecification, Vector3 } from '@tsculpt/types'
 import { Algorithms } from '@tsculpt/ts/di'
+import { type AMesh, IntermediateMesh, type MeshSpecification, Vector3 } from '@tsculpt/types'
 const { union, intersect, subtract } = booleans
 
 const { geom3, poly3 } = geometries

@@ -2,19 +2,21 @@ import { Vector, Vector2, Vector3, v2, v3 } from './types'
 
 export const epsilon = 1e-6
 
-export function eq(a: number | readonly number[], b: number | readonly number[], e: number = epsilon): boolean {
-	if (typeof a === 'number' && typeof b === 'number') {
-		return Math.abs(a - b) <= e
-	} else if (Array.isArray(a) && Array.isArray(b)) {
+export function eq(
+	a: number | readonly number[],
+	b: number | readonly number[],
+	e: number = epsilon
+): boolean {
+	if (typeof a === 'number' && typeof b === 'number') return Math.abs(a - b) <= e
+	if (Array.isArray(a) && Array.isArray(b)) {
 		if (a.length !== b.length) return false
 		for (let i = 0; i < a.length; i++) {
 			if (Math.abs(a[i] - b[i]) > e) return false
 		}
 		return true
 	}
-	if(typeof a === 'number' && Array.isArray(b)) [a, b] = [b, a]
-	if (!Array.isArray(a) || typeof b !== 'number')
-		throw new Error('Invalid eq arguments')
+	if (typeof a === 'number' && Array.isArray(b)) [a, b] = [b, a]
+	if (!Array.isArray(a) || typeof b !== 'number') throw new Error('Invalid eq arguments')
 	for (let i = 0; i < a.length; i++) {
 		if (Math.abs(a[i] - b) > e) return false
 	}

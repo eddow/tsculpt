@@ -72,7 +72,7 @@ export class BrowseablePolygon {
 	}
 	arcPoint(arc: number) {
 		arc = ((arc % 1) + 1) % 1
-		const index = dicotomic(this.pointArcs, arc+2*epsilon)
+		const index = dicotomic(this.pointArcs, arc + 2 * epsilon)
 		const nextIndex = (index + 1) % this.polygon.length
 		const prevArc = this.pointArcs[index]
 		if (eq(prevArc, arc)) {

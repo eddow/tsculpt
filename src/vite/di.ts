@@ -18,8 +18,7 @@ export default function diInject(deps: string[]): Plugin {
 				// Default: Generate a minimal DI registration
 				return `
 import { register } from '@tsculpt/ts/di'
-${deps.map((path, i) => `import dep${i} from './src/algorithms/${path}'`)
-	.join('\n')}
+${deps.map((path, i) => `import dep${i} from './src/algorithms/${path}'`).join('\n')}
 
 // Register dependencies
 register(${deps.map((_, i) => `dep${i}`).join(',')})`

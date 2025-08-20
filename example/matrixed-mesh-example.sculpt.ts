@@ -1,4 +1,4 @@
-import { type Decimal, Vector3,  hull,  v3 } from '@tsculpt'
+import { type Decimal, Vector3, hull, v3 } from '@tsculpt'
 import { box, sphere } from '@tsculpt'
 
 export default function scene({ radius = 5 as Decimal<1, 100>, center = v3(0, 0, 0) }) {

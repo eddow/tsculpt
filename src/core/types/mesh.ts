@@ -1,6 +1,6 @@
+import { MaybePromise } from '@tsculpt/ts/async'
 import { cached } from '@tsculpt/ts/decorators'
 import di from '@tsculpt/ts/di'
-import { MaybePromise } from '@tsculpt/ts/maybe'
 import { VectorMap } from '../optimizations'
 import { Matrix4, Vector, Vector3 } from './bunches'
 

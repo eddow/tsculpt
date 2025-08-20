@@ -15,16 +15,18 @@ export const assert = asserted
 						constructor(...args: any[]) {
 							super(...args)
 							// Run all integrity checks after construction
-							for (const [name, check] of Object.entries(rules)) {
-								const checked = check.apply(this as InstanceType<T>)
-								if (![true, undefined].includes(checked)) {
-									console.groupCollapsed('Integrity check failure:', name)
-									console.log('this:', this)
-									if (checked !== false) console.log('details:', checked)
-									console.groupEnd()
-									throw new Error(`Integrity check failed: ${name}`)
+							;(async () => {
+								for (const [name, check] of Object.entries(rules)) {
+									const checked = await check.apply(this as InstanceType<T>)
+									if (![true, undefined].includes(checked)) {
+										console.groupCollapsed('Integrity check failure:', name)
+										console.log('this:', this)
+										if (checked !== false) console.log('details:', checked)
+										console.groupEnd()
+										throw new Error(`Integrity check failed: ${name}`)
+									}
 								}
-							}
+							})()
 						}
 					}
 			},

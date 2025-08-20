@@ -20,8 +20,8 @@ describe('Extrusion Orientation', () => {
 	const constantCircle = circle({ radius: 0.2 })
 	const squareContour = square({ size: 1 })
 
-	it('should work with Frenet orientation (default)', () => {
-		const mesh = extrude({
+	it('should work with Frenet orientation (default)', async () => {
+		const mesh = await extrude({
 			path: curvedPath,
 			contour: constantCircle,
 			sampling: { type: 'count', samples: 20 },
@@ -32,8 +32,8 @@ describe('Extrusion Orientation', () => {
 		expect(mesh.faces.length).toBeGreaterThan(0)
 	})
 
-	it('should work with Fixed Up orientation (constant up vector)', () => {
-		const mesh = extrude({
+	it('should work with Fixed Up orientation (constant up vector)', async () => {
+		const mesh = await extrude({
 			path: curvedPath,
 			contour: constantCircle,
 			sampling: { type: 'count', samples: 20 },
@@ -44,8 +44,8 @@ describe('Extrusion Orientation', () => {
 		expect(mesh.faces.length).toBeGreaterThan(0)
 	})
 
-	it('should work with Fixed Up orientation (function up vector)', () => {
-		const mesh = extrude({
+	it('should work with Fixed Up orientation (function up vector)', async () => {
+		const mesh = await extrude({
 			path: curvedPath,
 			contour: constantCircle,
 			sampling: { type: 'count', samples: 20 },
@@ -56,8 +56,8 @@ describe('Extrusion Orientation', () => {
 		expect(mesh.faces.length).toBeGreaterThan(0)
 	})
 
-	it('should work with linear path and Frenet orientation', () => {
-		const mesh = extrude({
+	it('should work with linear path and Frenet orientation', async () => {
+		const mesh = await extrude({
 			path: linearPath,
 			contour: constantCircle,
 			sampling: { type: 'count', samples: 10 },
@@ -70,10 +70,10 @@ describe('Extrusion Orientation', () => {
 		expect(mesh.vectors.length).toBeGreaterThan(10)
 	})
 
-	it('should work with parametric contour', () => {
+	it('should work with parametric contour', async () => {
 		const parametricContour = (t: number) => circle({ radius: 0.1 + 0.1 * t })
 
-		const mesh = extrude({
+		const mesh = await extrude({
 			path: linearPath,
 			contour: parametricContour,
 			sampling: { type: 'count', samples: 10 },
@@ -84,8 +84,8 @@ describe('Extrusion Orientation', () => {
 		expect(mesh.faces.length).toBeGreaterThan(0)
 	})
 
-	it('should handle adaptive sampling', () => {
-		const mesh = extrude({
+	it('should handle adaptive sampling', async () => {
+		const mesh = await extrude({
 			path: linearPath,
 			contour: constantCircle,
 			sampling: { type: 'adaptive', maxSegmentLength: 0.1 },
@@ -96,8 +96,8 @@ describe('Extrusion Orientation', () => {
 		expect(mesh.faces.length).toBeGreaterThan(0)
 	})
 
-	it('should handle custom range', () => {
-		const mesh = extrude({
+	it('should handle custom range', async () => {
+		const mesh = await extrude({
 			path: linearPath,
 			contour: constantCircle,
 			sampling: { type: 'count', samples: 10 },
@@ -111,9 +111,9 @@ describe('Extrusion Orientation', () => {
 		expect(mesh.vectors.length).toBeLessThan(130)
 	})
 
-	it('should properly deduplicate vertices', () => {
+	it('should properly deduplicate vertices', async () => {
 		// Create a simple linear extrusion that should have shared vertices
-		const mesh = extrude({
+		const mesh = await extrude({
 			path: linearPath,
 			contour: constantCircle,
 			sampling: { type: 'count', samples: 5 },
@@ -136,14 +136,14 @@ describe('Extrusion Orientation', () => {
 		expect(mesh.faces.length).toBeGreaterThan(0)
 	})
 
-	it('should create exact 1x1x1 box from square extrusion', () => {
+	it('should create exact 1x1x1 box from square extrusion', async () => {
 		const linearZPath: PathFn = (t: number) => ({
 			o: v3(0, 0, t), // Linear path along Z from 0 to 1
 			x: v3(1, 0, 0),
 			y: v3(0, 1, 0),
 		})
 
-		const mesh = extrude({
+		const mesh = await extrude({
 			path: linearZPath,
 			contour: squareContour,
 			sampling: { type: 'count', samples: 2 }, // Just start and end
@@ -180,14 +180,14 @@ describe('Extrusion Orientation', () => {
 		expect(mesh.faces.length).toBe(12)
 	})
 
-	it('should create pyramid from square extrusion with scaling', () => {
+	it('should create pyramid from square extrusion with scaling', async () => {
 		const linearZPath: PathFn = (t: number) => ({
 			o: v3(0, 0, t * 2), // Linear path along Z from 0 to 2
 			x: v3(1, 0, 0),
 			y: v3(0, 1, 0),
 		})
 
-		const mesh = extrude({
+		const mesh = await extrude({
 			path: linearZPath,
 			contour: (t: number) => {
 				// Scale the square from 1.0 at bottom to 0.5 at top
@@ -228,11 +228,11 @@ describe('Extrusion Orientation', () => {
 		expect(mesh.faces.length).toBe(12)
 	})
 
-	it('should create pyramid matching the example file specification', () => {
+	it('should create pyramid matching the example file specification', async () => {
 		// This test replicates the exact pyramid from extrusion-example.sculpt.ts
 
 		// This should match the pyramid example in the file
-		const mesh = extrude({
+		const mesh = await extrude({
 			path: (t: number) => ({
 				o: v3(0, 0, (t - 0.5) * 2), // Centered, height 2
 				x: v3(1, 0, 0),
@@ -277,7 +277,7 @@ describe('Extrusion Orientation', () => {
 		expect(mesh.faces.length).toBe(12)
 	})
 
-	it('should create 5-segment rotation extrusion of a triangle', () => {
+	it('should create 5-segment rotation extrusion of a triangle', async () => {
 		// Create a triangle pointing outward (away from rotation axis)
 		const triangleVertices = [
 			v2(0, -0.5), // Bottom right
@@ -287,7 +287,7 @@ describe('Extrusion Orientation', () => {
 		const triangleContour = Contour.from(triangleVertices)
 
 		// Create 5-segment rotation extrusion
-		const mesh = extrude({
+		const mesh = await extrude({
 			path: (t: number) => {
 				const angle = t * 2 * Math.PI
 				return {

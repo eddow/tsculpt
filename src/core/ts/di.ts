@@ -1,5 +1,5 @@
-import type { AContour, AMesh, APolygon, Vector2 } from '@tsculpt/types'
-import { maybeAwait, MaybePromise, Resolved } from './maybe'
+import type { AContour, AMesh, APolygon, AShape, Surface, Vector2 } from '@tsculpt/types'
+import { MaybePromise, Resolved, maybeAwait } from './async'
 export interface AlgorithmsDef {
 	union2(contour1: AContour, ...contours: AContour[]): AContour
 	intersect2(contour1: AContour, ...contours: AContour[]): AContour
@@ -13,6 +13,7 @@ export interface AlgorithmsDef {
 	inPolygon(point: Vector2, polygon: APolygon, edge?: boolean): boolean
 	polygonIntersect(p1: APolygon, p2: APolygon, edge?: boolean): boolean
 	distinctPolygons(polygons: APolygon[], edge?: boolean): boolean
+	triangulate(shape: AShape, winding?: 'ccw' | 'cw'): Surface
 }
 export type Algorithms = ServiceMethods<AlgorithmsDef>
 
@@ -31,12 +32,12 @@ export class DIError extends Error {
 }
 let registration: Promise<void> | 'none' | 'done' = 'none'
 export function register(...services: Service[]) {
-	if(registration !== 'none') throw new DIError('Registration already in progress')
+	if (registration !== 'none') throw new DIError('Registration already in progress')
 	let resolve: (value: void | PromiseLike<void>) => void
-	registration = new Promise(r => {
+	registration = new Promise((r) => {
 		resolve = r
 	})
-	services = services.map(service => typeof service === 'function' ? service() : service)
+	services = services.map((service) => (typeof service === 'function' ? service() : service))
 	maybeAwait(services, (services) => {
 		for (const [i, service] of services.entries()) {
 			if (typeof service !== 'object') throw new DIError(`Service ${i} is not a service`)
@@ -51,12 +52,11 @@ export function register(...services: Service[]) {
 function forwarderFunction(functionName: string) {
 	return (...args: any[]) => {
 		const forward = () => {
-			if(!dependencies[functionName])
+			if (!dependencies[functionName])
 				throw new DIError(`Function ${String(functionName)} not found in service`)
 			return dependencies[functionName](...args)
 		}
-		if(registration === 'none')
-			throw new DIError('No registration done/pending')
+		if (registration === 'none') throw new DIError('No registration done/pending')
 		return registration === 'done' ? forward() : registration.then(forward)
 	}
 }
@@ -68,12 +68,14 @@ export type ServiceMethods<T> = {
 		: never
 }
 export default function di() {
-	return new Proxy({}, {
-		get(_target, prop) {
-			if(typeof prop !== 'string') return undefined
-			if (prop in dependencies) return dependencies[prop]
-			forwarders[prop] ??= forwarderFunction(prop)
-			return forwarders[prop]
-		},
-	}) as Algorithms
+	return new Proxy(
+		{},
+		{
+			get(_target, prop) {
+				if (typeof prop !== 'string') return undefined
+				forwarders[prop] ??= forwarderFunction(prop)
+				return forwarders[prop]
+			},
+		}
+	) as Algorithms
 }

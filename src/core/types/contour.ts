@@ -1,13 +1,20 @@
+import { MaybePromise, PromiseChain, maybeAwait } from '@tsculpt/ts/async'
 import { assert } from '@tsculpt/ts/debug'
 import { cache, cached } from '@tsculpt/ts/decorators'
 import di from '@tsculpt/ts/di'
 import { Indexable } from '@tsculpt/ts/indexable'
-import { expectResolved, MaybePromise } from '@tsculpt/ts/maybe'
-import earcut from 'earcut'
-import { v2 } from './builders'
 import { Matrix3, Vector2 } from './bunches'
 
-const { vectorIntersect, inPolygon, distinctPolygons, union2, intersect2, hull2, subtract2 } = di()
+const {
+	vectorIntersect,
+	inPolygon,
+	distinctPolygons,
+	union2,
+	intersect2,
+	hull2,
+	subtract2,
+	triangulate,
+} = di()
 export type Surface = [Vector2, Vector2, Vector2][]
 
 // Abstract base class for array-like behavior
@@ -62,14 +69,14 @@ export abstract class APolygon extends ArraySim<Vector2>() {
 
 // Concrete Polygon implementation
 @assert.integrity({
-	'No intersections': function () {
+	async 'No intersections'() {
 		for (let i = 0; i < this.length - 1; i++) {
 			for (let j = i + 2; j < this.length; j++) {
 				const a = [i, i + 1]
 				const b = [j, (j + 1) % this.length]
 				if (a[0] === b[0] || a[0] === b[1] || a[1] === b[0] || a[1] === b[1]) continue
 
-				if (vectorIntersect([this[a[0]], this[a[1]]], [this[b[0]], this[b[1]]], false)) {
+				if (await vectorIntersect([this[a[0]], this[a[1]]], [this[b[0]], this[b[1]]], false)) {
 					return { i, j }
 				}
 			}
@@ -111,11 +118,6 @@ export abstract class IntermediatePolygon extends APolygon {
 	}
 }
 
-export interface IndexedHolesShape {
-	polygons: number[]
-	holesIndices: number[]
-}
-
 // Abstract base class for Shape
 export abstract class AShape {
 	abstract readonly polygon: APolygon
@@ -131,65 +133,22 @@ export abstract class AShape {
 		)
 	}
 
-	@cached
-	get indexedHoles(): IndexedHolesShape {
-		const { polygon, holes } = this
-		// Flatten the main polygon into [x0, y0, x1, y1, ...]
-		const vertices = polygon.flatMap((v) => [v.x, v.y])
-
-		// Flatten all holes (in reverse order) and record their start indices
-		const holeVertices = holes.flatMap((hole) => hole.reversed.flatMap((v) => [v.x, v.y]))
-
-		// Compute the start index of each hole in the combined vertex array
-		// (earcut expects an array of hole start indices, not lengths)
-		const holeIndices: number[] = []
-		let currentIndex = polygon.length * 2 // Start after the main polygon
-		for (const hole of holes) {
-			holeIndices.push(currentIndex / 2) // Divide by 2 because earcut works in vertex counts, not coordinates
-			currentIndex += hole.length * 2
-		}
-
-		// Combine main polygon and holes into a single vertex array
-		return {
-			polygons: [...vertices, ...holeVertices],
-			holesIndices: holeIndices,
-		}
-	}
-
-	triangulate(winding: 'ccw' | 'cw' = 'ccw'): Surface {
-		const { polygons: allVertices, holesIndices } = this.indexedHoles
-
-		// Triangulate using earcut
-		const indices = earcut(allVertices, holesIndices)
-		function vertex(i: number) {
-			return v2(allVertices[i * 2], allVertices[i * 2 + 1])
-		}
-		// Convert indices back to triangles
-		const surface: Surface = []
-		for (let i = 0; i < indices.length; i += 3) {
-			const a = vertex(indices[i])
-			const b = vertex(indices[i + 1])
-			const c = vertex(indices[i + 2])
-
-			// Apply winding order
-			if (winding === 'cw') {
-				surface.push([a, c, b]) // Reverse winding for clockwise
-			} else {
-				surface.push([a, b, c]) // Default counter-clockwise
-			}
-		}
-
-		return surface
+	triangulate(winding: 'ccw' | 'cw' = 'ccw'): PromiseChain<Surface> {
+		return triangulate(this, winding)
 	}
 }
 
 // Concrete Shape implementation
 @assert.integrity({
-	'All holes in polygon': function () {
-		return this.holes.every((hole) => hole.every((v) => expectResolved(inPolygon(v, this.polygon))))
+	async 'All holes in polygon'() {
+		return this.holes
+			.map(async (hole) =>
+				(await Promise.all(hole.map((v) => inPolygon(v, this.polygon)))).every((x) => x)
+			)
+			.every((x) => x)
 	},
-	'Distinct holes': function () {
-		return distinctPolygons(this.holes)
+	async 'Distinct holes'() {
+		return await distinctPolygons(this.holes)
 	},
 })
 export class Shape extends AShape {
@@ -283,20 +242,26 @@ export abstract class AContour extends ArraySim<Shape>() {
 		return this.transform(rotationMatrix)
 	}
 
-	union(...others: AContour[]): MaybePromise<AContour> {
+	union(...others: AContour[]): PromiseChain<AContour> {
 		return union2(this, ...others)
 	}
-	intersect(...others: AContour[]): MaybePromise<AContour> {
+	intersect(...others: AContour[]): PromiseChain<AContour> {
 		return intersect2(this, ...others)
 	}
-	hull(...others: AContour[]): MaybePromise<AContour> {
+	hull(...others: AContour[]): PromiseChain<AContour> {
 		return hull2(this, ...others)
 	}
-	subtract(other: AContour): MaybePromise<AContour> {
+	subtract(other: AContour): PromiseChain<AContour> {
 		return subtract2(this, other)
 	}
-	subtractFrom(other: AContour): MaybePromise<AContour> {
+	subtractFrom(other: AContour): PromiseChain<AContour> {
 		return subtract2(other, this)
+	}
+	triangulate(winding?: 'ccw' | 'cw'): PromiseChain<Surface> {
+		return maybeAwait(
+			this.map((shape) => shape.triangulate(winding)),
+			(surfaces) => surfaces.flat()
+		)
 	}
 }
 

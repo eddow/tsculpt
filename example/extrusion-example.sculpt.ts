@@ -35,7 +35,7 @@ const rectProfile = square({ size: v2(0.5, 2), center: v2(0.25, 0) })
 export const cylinder = rotateExtrude(rectProfile)
 
 // Rotational extrusion - create a torus from a circle
-const circleProfile = circle({ radius: 0.5 })
+const circleProfile = circle({ radius: 0.5, center: v2(1, 0) })
 export const torus = rotateExtrude(circleProfile, {})
 
 // Rotational extrusion with partial angle - create a half cylinder
@@ -52,15 +52,15 @@ export const complexExtrusion = linearExtrude(squareProfile, {
 })
 
 // Default export: union of all objects positioned in a grid
-export default function scene() {
+export default async function scene() {
 	return union(
-		extrudedBox,
-		twistedPrism.translate(v3(4, 0, 0)),
-		pyramid.translate(v3(-4, 0, 0)),
-		rectPyramid.translate(v3(0, 4, 0)),
-		cylinder.translate(v3(0, -4, 0)),
-		torus.translate(v3(8, 0, 0)),
-		halfCylinder.translate(v3(-8, 0, 0)),
-		complexExtrusion.translate(v3(0, -8, 0))
+		await extrudedBox,
+		(await twistedPrism).translate(v3(4, 0, 0)),
+		(await pyramid).translate(v3(-4, 0, 0)),
+		(await rectPyramid).translate(v3(0, 4, 0)),
+		(await cylinder).translate(v3(0, -4, 0)),
+		(await torus).translate(v3(8, 0, 0)),
+		(await halfCylinder).translate(v3(-8, 0, 0)),
+		(await complexExtrusion).translate(v3(0, -8, 0))
 	)
 }

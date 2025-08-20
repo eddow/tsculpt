@@ -1,4 +1,4 @@
-import { MaybePromise } from './maybe'
+import { MaybePromise } from './async'
 
 export class Semaphore {
 	private count: number

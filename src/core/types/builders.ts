@@ -15,7 +15,10 @@ function expectSync(v: Vector | Promise<Vector>, dim: number) {
 
 export function v2(x: number, y: number): Vector2
 export function v2(v: readonly number[]): Vector2
-export function v2(expr: TemplateStringsArray, ...values: readonly (number | [number, number] | Vector2)[]): Vector2
+export function v2(
+	expr: TemplateStringsArray,
+	...values: readonly (number | [number, number] | Vector2)[]
+): Vector2
 export function v2(coord: { x: number; y: number }): Vector2
 export function v2(
 	v: readonly number[] | number | TemplateStringsArray | { x: number; y: number },
@@ -33,7 +36,10 @@ export function v2(
 
 export function v3(x: number, y: number, z: number): Vector3
 export function v3(v: readonly number[]): Vector3
-export function v3(expr: TemplateStringsArray, ...values: readonly (number | [number, number, number] | Vector3)[]): Vector3
+export function v3(
+	expr: TemplateStringsArray,
+	...values: readonly (number | [number, number, number] | Vector3)[]
+): Vector3
 export function v3(coord: { x: number; y: number; z: number }): Vector3
 export function v3(
 	v: readonly number[] | number | TemplateStringsArray | { x: number; y: number; z: number },

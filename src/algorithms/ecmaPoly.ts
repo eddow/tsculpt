@@ -1,6 +1,6 @@
+import { Algorithms } from '@tsculpt/ts/di'
 import type { APolygon, Vector2 } from '@tsculpt/types'
 import { epsilon } from '../core/math'
-import { Algorithms } from '@tsculpt/ts/di'
 
 function vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2], edge = true): boolean {
 	const [A1, A2] = vA // Segment A: A1 to A2
@@ -104,9 +104,7 @@ function inPolygon(point: Vector2, polygon: APolygon, edge = true): boolean {
 }
 
 function polygonIntersect(p1: APolygon, p2: APolygon, edge = true): boolean {
-	return (
-		inPolygon(p2.array[0], p1, edge) || p1.array.some((v) => inPolygon(v, p2, edge))
-	)
+	return inPolygon(p2.array[0], p1, edge) || p1.array.some((v) => inPolygon(v, p2, edge))
 }
 
 function distinctPolygons(polygons: APolygon[], edge = true): boolean {

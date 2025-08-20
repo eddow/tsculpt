@@ -1,4 +1,4 @@
-import { winding } from '@tsculpt'
+import { assert, winding } from '@tsculpt'
 import { Algorithms } from '@tsculpt/ts/di'
 import {
 	AContour,
@@ -101,6 +101,7 @@ class Clipper2Contour extends IntermediateContour {
 				)
 			)
 		}
+		//assert.equal(shapes.reduce((acc, shape) => acc + shape.holes.length, 0), holes.length)
 
 		return shapes
 	}
@@ -164,7 +165,6 @@ function toClipper2Contour(aContour: AContour): Clipper2Contour {
 }
 
 function union2(contour1: AContour, ...contours: AContour[]): AContour {
-
 	// Start with the first contour
 	let result = toClipper2Contour(contour1).pathsD
 
@@ -179,7 +179,6 @@ function union2(contour1: AContour, ...contours: AContour[]): AContour {
 }
 
 function intersect2(contour1: AContour, ...contours: AContour[]): AContour {
-
 	// Start with the first contour
 	let result = toClipper2Contour(contour1).pathsD
 
@@ -214,7 +213,6 @@ function subtract2(contour1: AContour, contour2: AContour): AContour {
 }
 
 function hull2(contour1: AContour, ...contours: AContour[]): AContour {
-
 	// Combine all contours into a single PathsD
 	const allPaths = new module.PathsD()
 	for (const contour of [contour1, ...contours]) {

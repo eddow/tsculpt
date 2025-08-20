@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { eq } from '@tsculpt/math'
+import { describe, expect, it } from 'vitest'
 import { v2 } from '../builders'
 import { BrowseablePolygon } from './loft'
-import { eq } from '@tsculpt/math'
 
 function wrap2pi(a: number): number {
 	const twoPi = Math.PI * 2
@@ -17,11 +17,12 @@ function angleEq(a: number, b: number, eps = 1e-6): boolean {
 	return Math.abs(wrapPi(a - b)) <= eps
 }
 
-const matchArcPoints = (bp: BrowseablePolygon) => (arc: number, expectedNormal: number, expectedPoint: number[]) => {
-	const { point, normal } = bp.arcPoint(arc)
-	expect(angleEq(normal, expectedNormal)).toBe(true)
-	expect(eq(point, expectedPoint)).toBe(true)
-}
+const matchArcPoints =
+	(bp: BrowseablePolygon) => (arc: number, expectedNormal: number, expectedPoint: number[]) => {
+		const { point, normal } = bp.arcPoint(arc)
+		expect(angleEq(normal, expectedNormal)).toBe(true)
+		expect(eq(point, expectedPoint)).toBe(true)
+	}
 
 describe('BrowseablePolygon - arcPoint', () => {
 	describe('equilateral triangle (unit circle)', () => {
@@ -32,11 +33,11 @@ describe('BrowseablePolygon - arcPoint', () => {
 		])
 		it.each([
 			[0, 0, [1, 0]],
-			[1/6, Math.PI/3, [0.25, Math.sqrt(3)/4]],
-			[1/3, 2*Math.PI/3, [-0.5, Math.sqrt(3)/2]],
-			[1/2, Math.PI, [-0.5, 0]],
-			[2/3, 4*Math.PI/3, [-0.5, -Math.sqrt(3)/2]],
-			[5/6, -Math.PI/3, [0.25, -Math.sqrt(3)/4]],
+			[1 / 6, Math.PI / 3, [0.25, Math.sqrt(3) / 4]],
+			[1 / 3, (2 * Math.PI) / 3, [-0.5, Math.sqrt(3) / 2]],
+			[1 / 2, Math.PI, [-0.5, 0]],
+			[2 / 3, (4 * Math.PI) / 3, [-0.5, -Math.sqrt(3) / 2]],
+			[5 / 6, -Math.PI / 3, [0.25, -Math.sqrt(3) / 4]],
 		])('arc %s', matchArcPoints(bp))
 	})
 
@@ -90,14 +91,11 @@ describe('BrowseablePolygon - arcPoint', () => {
 			[
 				9 / 10,
 				(9 * Math.PI) / 5,
-				[
-					(Math.cos((8 * Math.PI) / 5) + 1) / 2,
-					(Math.sin((8 * Math.PI) / 5) + 0) / 2,
-				],
+				[(Math.cos((8 * Math.PI) / 5) + 1) / 2, (Math.sin((8 * Math.PI) / 5) + 0) / 2],
 			],
 		])('mid-edge arc %s', matchArcPoints(bp))
 	})
-/* TODO: find a better example
+	/* TODO: find a better example
 	describe('irregular axis-aligned hexagon (readable lengths)', () => {
 		// CCW polygon with edge lengths: 4,1,2,2,6,3 → perimeter 18
 		// Summits:

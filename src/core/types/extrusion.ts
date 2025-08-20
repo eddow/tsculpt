@@ -1,4 +1,5 @@
 import { lerp } from '@tsculpt/math'
+import { MaybePromise } from '@tsculpt/ts/async'
 import { generation } from '../globals'
 import { VectorMap } from '../optimizations'
 import { assert } from '../ts/debug'
@@ -49,7 +50,7 @@ export interface ExtrusionSpec {
 	caps?: boolean // default: true
 }
 
-export function extrude(spec: ExtrusionSpec): Mesh {
+export async function extrude(spec: ExtrusionSpec): Promise<Mesh> {
 	const {
 		path,
 		contour,
@@ -152,7 +153,7 @@ export function extrude(spec: ExtrusionSpec): Mesh {
 	if (caps) {
 		// Start cap (first contour) - use shape triangulation with CCW winding
 		for (const shape of firstContour) {
-			const surface = shape.triangulate('cw')
+			const surface = await shape.triangulate('cw')
 			for (const triangle of surface) {
 				const indices = triangle.map((vertex) => vertexToIndex(vertex, firstFrame))
 				faces.push(indices as [number, number, number])
@@ -163,7 +164,7 @@ export function extrude(spec: ExtrusionSpec): Mesh {
 		const lastContour = getContour(range.end)
 		const lastFrame = path(range.end)
 		for (const shape of lastContour) {
-			const surface = shape.triangulate('ccw')
+			const surface = await shape.triangulate('ccw')
 			for (const triangle of surface) {
 				const indices = triangle.map((vertex) => vertexToIndex(vertex, lastFrame))
 				faces.push(indices as [number, number, number])
@@ -171,5 +172,5 @@ export function extrude(spec: ExtrusionSpec): Mesh {
 		}
 	}
 
-	return new Mesh(faces, vectorMap.vectors)
+	return new Mesh(await Promise.all(faces), vectorMap.vectors)
 }

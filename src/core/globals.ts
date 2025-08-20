@@ -1,4 +1,4 @@
-import { MaybePromise } from './ts/maybe'
+import { MaybePromise } from './ts/async'
 import { Semaphore } from './ts/semaphore'
 import { ParametersConfig } from './types/parameters'
 export type GenerationParameters = {

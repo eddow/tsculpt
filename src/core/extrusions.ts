@@ -1,9 +1,10 @@
 import { generation } from './globals'
 import { cross, lerp } from './math'
+import { MaybePromise } from './ts/async'
 import { Vector2, Vector3, v2, v3 } from './types'
 import { Contour, Polygon } from './types/contour'
 import { ContourFn, PathFn, extrude } from './types/extrusion'
-import { Mesh } from './types/mesh'
+import { AMesh, Mesh } from './types/mesh'
 
 // Extrusion functions
 type LinearExtrudeSpec = {
@@ -13,7 +14,7 @@ type LinearExtrudeSpec = {
 	scale?: number | Vector2
 }
 
-export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): Mesh {
+export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): MaybePromise<AMesh> {
 	const { height = 1, center = false, twist = 0, scale = 1 } = spec
 	const { grain } = generation
 
@@ -78,7 +79,7 @@ type RotateExtrudeSpec = {
 	segments?: number
 }
 
-export function rotateExtrude(contour: Contour, spec: RotateExtrudeSpec = {}): Mesh {
+export function rotateExtrude(contour: Contour, spec: RotateExtrudeSpec = {}): MaybePromise<AMesh> {
 	const { angle = 2 * Math.PI, segments } = spec
 	const { grain } = generation
 

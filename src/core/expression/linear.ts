@@ -1,5 +1,5 @@
 import di from '@tsculpt/ts/di'
-import { MaybePromise, maybeAwait } from '@tsculpt/ts/maybe'
+import { MaybePromise, maybeAwait } from '@tsculpt/ts/async'
 import { Vector, Vector2, Vector3, isUnity, scale } from '../types/bunches'
 import { AContour, Contour } from '../types/contour'
 import { AMesh, Mesh } from '../types/mesh'
@@ -243,10 +243,10 @@ function recur(
 						throw new SemanticError('Cannot intersect meshes and contours together')
 					}
 					if (meshes.length > 0) {
-						return intersect3(...meshes)
+						return intersect3(...meshes as [AMesh, ...AMesh[]])
 					}
 					if (contours.length > 0) {
-						return intersect2(...contours)
+						return intersect2(...contours as [AContour, ...AContour[]])
 					}
 					throw new SemanticError('No valid operands for intersection')
 				}
@@ -271,10 +271,10 @@ function recur(
 						throw new SemanticError('Cannot union meshes and contours together')
 					}
 					if (meshes.length > 0) {
-						return union3(...meshes)
+						return union3(...meshes as [AMesh, ...AMesh[]])
 					}
 					if (contours.length > 0) {
-						return union2(...contours)
+						return union2(...contours as [AContour, ...AContour[]])
 					}
 					throw new SemanticError('No valid operands for union')
 				}
