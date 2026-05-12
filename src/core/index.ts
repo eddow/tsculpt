@@ -1,4 +1,6 @@
 export * from './types'
+export * from './computed'
+export { Contour, Mesh } from './facades'
 
 export { generation, type GenerationParameters } from './globals'
 export * from './expression/linear'
@@ -15,11 +17,10 @@ export {
 	pyramid,
 	capsule3D,
 	hemisphere,
-} from './geometries'
-export {
-	circle,
+	rect,
 	square,
 	ellipse,
+	circle,
 	annulus,
 	sector,
 	ringSector,
@@ -28,9 +29,13 @@ export {
 	capsule,
 	slot,
 	star,
-} from './shapes'
-export { linearExtrude, rotateExtrude } from './extrusions'
-export * from './types/contour'
+} from './public'
+export {
+	linearExtrude,
+	rotateExtrude,
+	linearExtrudeBase,
+	rotateExtrudeBase,
+} from './extrusions'
 export { assert } from './ts/debug'
 export * from './math'
 

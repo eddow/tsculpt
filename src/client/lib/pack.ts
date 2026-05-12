@@ -1,4 +1,4 @@
-import { type AMesh, Mesh, Vector3, v3 } from '@tsculpt'
+import { type AMesh, MeshBase, Vector3, v3 } from '@tsculpt'
 
 export interface MeshPack {
 	vertices: Float32Array
@@ -41,5 +41,5 @@ export function unpackMesh(pack: MeshPack): AMesh {
 	}
 
 	// Create a new Mesh from the unpacked data
-	return new Mesh(faces, vectors)
+	return new MeshBase(faces, vectors)
 }

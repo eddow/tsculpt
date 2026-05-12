@@ -209,9 +209,9 @@ describe('Geometry Primitives', () => {
 
 	describe('extrusion', () => {
 		describe('linearExtrude', () => {
-			it('should extrude a square to create a box', () => {
+			it('should extrude a square to create a box', async () => {
 				const squareProfile = square({ size: 2 })
-				const extruded = linearExtrude(squareProfile, { height: 3 })
+				const extruded = await linearExtrude(squareProfile, { height: 3 }).compute()
 
 				// Check that we get a reasonable number of vertices and faces
 				expect(extruded.vectors.length).toBeGreaterThan(10)
@@ -223,17 +223,17 @@ describe('Geometry Primitives', () => {
 				expect(maxZ - minZ).toBeGreaterThan(0)
 			})
 
-			it('should extrude with twist', () => {
+			it('should extrude with twist', async () => {
 				const circleProfile = circle({ radius: 1 })
-				const extruded = linearExtrude(circleProfile, { height: 2, twist: Math.PI })
+				const extruded = await linearExtrude(circleProfile, { height: 2, twist: Math.PI }).compute()
 
 				expect(extruded.vectors.length).toBeGreaterThan(10)
 				expect(extruded.faces.length).toBeGreaterThan(10)
 			})
 
-			it('should extrude with scaling', () => {
+			it('should extrude with scaling', async () => {
 				const squareProfile = square({ size: 1 })
-				const extruded = linearExtrude(squareProfile, { height: 2, scale: 2 })
+				const extruded = await linearExtrude(squareProfile, { height: 2, scale: 2 }).compute()
 
 				// Check that we get a reasonable number of vertices and faces
 				expect(extruded.vectors.length).toBeGreaterThan(10)
@@ -247,9 +247,9 @@ describe('Geometry Primitives', () => {
 		})
 
 		describe('rotateExtrude', () => {
-			it('should rotate extrude a rectangle to create a cylinder', () => {
+			it('should rotate extrude a rectangle to create a cylinder', async () => {
 				const rectProfile = square({ size: v2(1, 2), center: v2(0.5, 0) })
-				const extruded = rotateExtrude(rectProfile, {})
+				const extruded = await rotateExtrude(rectProfile, {}).compute()
 
 				expect(extruded.vectors.length).toBeGreaterThan(10)
 				expect(extruded.faces.length).toBeGreaterThan(10)
@@ -259,9 +259,9 @@ describe('Geometry Primitives', () => {
 				expect(maxRadius).toBeGreaterThan(0)
 			})
 
-			it('should rotate extrude with partial angle', () => {
+			it('should rotate extrude with partial angle', async () => {
 				const rectProfile = square({ size: v2(1, 2), center: v2(0.5, 0) })
-				const extruded = rotateExtrude(rectProfile, { angle: Math.PI })
+				const extruded = await rotateExtrude(rectProfile, { angle: Math.PI }).compute()
 
 				expect(extruded.vectors.length).toBeGreaterThan(5)
 				expect(extruded.faces.length).toBeGreaterThan(5)
@@ -271,9 +271,9 @@ describe('Geometry Primitives', () => {
 				expect(maxRadius).toBeGreaterThan(0)
 			})
 
-			it('should create a torus from a circle profile', () => {
+			it('should create a torus from a circle profile', async () => {
 				const circleProfile = circle({ radius: 0.5 })
-				const extruded = rotateExtrude(circleProfile, {})
+				const extruded = await rotateExtrude(circleProfile, {}).compute()
 
 				expect(extruded.vectors.length).toBeGreaterThan(20)
 				expect(extruded.faces.length).toBeGreaterThan(20)

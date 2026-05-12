@@ -2,7 +2,7 @@ import type { SourceFiles } from '@client/lib/source'
 import { type Module, parameterizedExports } from '@meta'
 import { AMesh, GenerationParameters, ParametersConfig } from '@tsculpt'
 import { withGlobals } from '@tsculpt/globals'
-import { MaybePromise } from '@tsculpt/ts/async'
+import { MaybeComputable, resolveComputable } from '@tsculpt/ts/async'
 import { MeshPack, packMesh } from '../client/lib/pack'
 import expose from './workerRef'
 
@@ -11,6 +11,9 @@ const logicalPath = (path: string) => path.match(/^\/(.*)\.sculpt\.ts$/)?.[1]
 
 const modules = import.meta.glob('/**/*.sculpt.ts')
 const moduleCache = new Map<() => Promise<Module>, Promise<Module>>()
+type RenderableEntry =
+	| ((parameters: GenerationParameters) => MaybeComputable<AMesh>)
+	| MaybeComputable<AMesh>
 
 /*export function module(path: string) {
 	const module = modules[path] as () => Promise<Module>
@@ -62,14 +65,12 @@ expose<SourceFiles>({
 		const module = await readModule(path)
 		entry ??= 'default'
 		if (!module[entry]) throw new Error(`Entry ${entry} not found in module ${path}`)
-		const generate = module[entry] as
-			| ((parameters: GenerationParameters) => MaybePromise<AMesh>)
-			| MaybePromise<AMesh>
-		const generated =
-			typeof generate === 'function'
-				? withGlobals(() => generate(parameters), parameters)
-				: generate
-		return packMesh(await generated)
+		const generate = module[entry] as RenderableEntry
+		const mesh = await withGlobals(() => {
+			const generated = typeof generate === 'function' ? generate(parameters) : generate
+			return resolveComputable(generated)
+		}, parameters)
+		return packMesh(mesh)
 	},
 })
 

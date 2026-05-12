@@ -3,12 +3,12 @@ import { box, sphere } from '@tsculpt'
 
 // Test for metadata/vite
 
-async function op({ radius = 5 as Decimal<1, 10>, hulled = false as boolean } = {}) {
+function op({ radius = 5 as Decimal<1, 10>, hulled = false as boolean } = {}) {
 	const s1 = sphere({ radius })
 	const b1 = box({ radius: 4 })
 
 	// Original boolean subtraction
-	const subtracted = await mesh`${s1} - ${b1}`
+	const subtracted = mesh`${s1} - ${b1}`
 
 	return hulled ? hull(subtracted) : subtracted
 }

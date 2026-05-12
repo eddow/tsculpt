@@ -1,8 +1,10 @@
 import di from '@tsculpt/ts/di'
 import { MaybePromise, maybeAwait } from '@tsculpt/ts/async'
+import { isComputation, isPromiseLike, resolveInputs } from '../computed/base'
+import type { Computable } from '../computed/types'
 import { Vector, Vector2, Vector3, isUnity, scale } from '../types/bunches'
-import { AContour, Contour } from '../types/contour'
-import { AMesh, Mesh } from '../types/mesh'
+import { AContour } from '../types/contour'
+import { AMesh } from '../types/mesh'
 import { TemplateParser } from './templated'
 
 const { union3, intersect3, subtract3, union2, intersect2, subtract2 } = di()
@@ -326,6 +328,16 @@ function rotate(mesh: LinearExpression, axis: LinearExpression): LinearExpressio
 }
 
 export type LinearPrimitive = Vector2 | Vector3 | number | [number, number] | [number, number, number]
+type LinearValue = AMesh | AContour | LinearPrimitive
+type LinearInput = Computable<LinearValue>
+
+function resolveLinearInputs(values: readonly LinearInput[]): MaybePromise<readonly LinearValue[]> {
+	if (!values.some((value) => isComputation(value) || isPromiseLike(value))) {
+		return values as readonly LinearValue[]
+	}
+
+	return resolveInputs(values as readonly unknown[]) as Promise<readonly LinearValue[]>
+}
 
 const formulas = new TemplateParser<
 	LinearExpression,
@@ -404,22 +416,30 @@ function expectClass<T>(value: unknown, type: abstract new (...args: any[]) => T
 
 export function mesh(
 	expr: TemplateStringsArray,
-	...values: readonly (Mesh | Contour | LinearPrimitive)[]
+	...values: readonly LinearInput[]
 ) {
-	return maybeAwait([formulas.calculate(expr, ...values)], ([result]) => expectClass(result, AMesh))
+	return maybeAwait([resolveLinearInputs(values)], ([resolvedValues]) =>
+		maybeAwait([formulas.calculate(expr, ...(resolvedValues as readonly LinearValue[]))], ([result]) =>
+			expectClass(result, AMesh)
+		)
+	)
 }
 
 export function contour(
 	expr: TemplateStringsArray,
-	...values: readonly (Mesh | Contour | LinearPrimitive)[]
+	...values: readonly LinearInput[]
 ) {
-	return maybeAwait([formulas.calculate(expr, ...values)], ([result]) =>
-		expectClass(result, AContour)
+	return maybeAwait([resolveLinearInputs(values)], ([resolvedValues]) =>
+		maybeAwait([formulas.calculate(expr, ...(resolvedValues as readonly LinearValue[]))], ([result]) =>
+			expectClass(result, AContour)
+		)
 	)
 }
 
-export function vector(expr: TemplateStringsArray, ...values: readonly LinearPrimitive[]) {
-	return maybeAwait([formulas.calculate(expr, ...values)], ([result]) =>
-		expectClass(result, Vector)
+export function vector(expr: TemplateStringsArray, ...values: readonly LinearInput[]) {
+	return maybeAwait([resolveLinearInputs(values)], ([resolvedValues]) =>
+		maybeAwait([formulas.calculate(expr, ...(resolvedValues as readonly LinearValue[]))], ([result]) =>
+			expectClass(result, Vector)
+		)
 	)
 }

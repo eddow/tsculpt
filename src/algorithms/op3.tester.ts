@@ -1,5 +1,5 @@
 import { Algorithms } from '@tsculpt/ts/di'
-import { AMesh, IntermediateMesh, Mesh, Vector3 } from '@tsculpt/types'
+import { AMesh, IntermediateMesh, MeshBase, Vector3 } from '@tsculpt/types'
 import { v3 } from '@tsculpt/types/builders'
 
 // Fake mesh for testing purposes
@@ -8,11 +8,11 @@ export class FakeMesh extends IntermediateMesh {
 		super()
 	}
 
-	toMesh(): Mesh {
+	toMesh(): MeshBase {
 		// Create a simple test mesh with a single triangle
 		const vertices: Vector3[] = [v3(0, 0, 0), v3(1, 0, 0), v3(0, 1, 0)]
 		const faces: [Vector3, Vector3, Vector3][] = [[vertices[0], vertices[1], vertices[2]]]
-		return new Mesh(faces)
+		return new MeshBase(faces)
 	}
 }
 

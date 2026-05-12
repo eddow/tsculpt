@@ -2,9 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { circle, square } from '../shapes'
 import { v2 } from './builders'
 import { Vector2 } from './bunches'
-import { Contour, Polygon, Shape } from './contour'
+import { Contour, ContourBase, Polygon, PolygonBase, Shape, ShapeBase } from './contour'
 
 describe('Contour', () => {
+	it('should expose base aliases for the computed migration', () => {
+		expect(ContourBase).toBe(Contour)
+		expect(PolygonBase).toBe(Polygon)
+		expect(ShapeBase).toBe(Shape)
+	})
+
 	it('should create a shape from a circle', () => {
 		const contour = circle({ radius: 2 })
 
@@ -152,10 +158,10 @@ describe('Shape', () => {
 		expect(transformed.holes[0][0].y).toBe(0.5)
 	})
 
-	it('should triangulate shape without holes', () => {
+	it('should triangulate shape without holes', async () => {
 		const polygon = new Polygon(v2(0, 0), v2(1, 0), v2(1, 1), v2(0, 1))
 		const shape = new Shape(polygon)
-		const surface = shape.triangulate()
+		const surface = await shape.triangulate()
 
 		expect(surface).toBeInstanceOf(Array)
 		expect(surface.length).toBe(2) // Square should triangulate to 2 triangles
@@ -165,11 +171,11 @@ describe('Shape', () => {
 		expect(surface[1].every((v) => v instanceof Vector2)).toBe(true)
 	})
 
-	it('should triangulate shape with holes', () => {
+	it('should triangulate shape with holes', async () => {
 		const polygon = new Polygon(v2(0, 0), v2(3, 0), v2(3, 3), v2(0, 3))
 		const hole = new Polygon(v2(1, 1), v2(2, 1), v2(2, 2), v2(1, 2))
 		const shape = new Shape(polygon, [hole])
-		const surface = shape.triangulate()
+		const surface = await shape.triangulate()
 
 		expect(surface).toBeInstanceOf(Array)
 		expect(surface.length).toBeGreaterThan(0) // Should have triangles

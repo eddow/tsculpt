@@ -1,8 +1,9 @@
-import { MaybePromise, PromiseChain, maybeAwait } from '@tsculpt/ts/async'
+import { MaybePromise, maybeAwait } from '@tsculpt/ts/async'
 import { assert } from '@tsculpt/ts/debug'
 import { cache, cached } from '@tsculpt/ts/decorators'
 import di from '@tsculpt/ts/di'
 import { Indexable } from '@tsculpt/ts/indexable'
+import { markComputedMethod } from '../computed/decorators'
 import { Matrix3, Vector2 } from './bunches'
 
 const {
@@ -53,7 +54,7 @@ export abstract class APolygon extends ArraySim<Vector2>() {
 	 * Returns a reversed copy of the polygon
 	 */
 	@cached
-	get reversed(): Polygon {
+	get reversed(): APolygon {
 		const reversed = new Polygon(...this.array.reverse())
 		cache(reversed, 'reversed', this)
 		return reversed
@@ -133,7 +134,7 @@ export abstract class AShape {
 		)
 	}
 
-	triangulate(winding: 'ccw' | 'cw' = 'ccw'): PromiseChain<Surface> {
+	triangulate(winding: 'ccw' | 'cw' = 'ccw'): MaybePromise<Surface> {
 		return triangulate(this, winding)
 	}
 }
@@ -242,22 +243,22 @@ export abstract class AContour extends ArraySim<Shape>() {
 		return this.transform(rotationMatrix)
 	}
 
-	union(...others: AContour[]): PromiseChain<AContour> {
+	union(...others: AContour[]): MaybePromise<AContour> {
 		return union2(this, ...others)
 	}
-	intersect(...others: AContour[]): PromiseChain<AContour> {
+	intersect(...others: AContour[]): MaybePromise<AContour> {
 		return intersect2(this, ...others)
 	}
-	hull(...others: AContour[]): PromiseChain<AContour> {
+	hull(...others: AContour[]): MaybePromise<AContour> {
 		return hull2(this, ...others)
 	}
-	subtract(other: AContour): PromiseChain<AContour> {
+	subtract(other: AContour): MaybePromise<AContour> {
 		return subtract2(this, other)
 	}
-	subtractFrom(other: AContour): PromiseChain<AContour> {
+	subtractFrom(other: AContour): MaybePromise<AContour> {
 		return subtract2(other, this)
 	}
-	triangulate(winding?: 'ccw' | 'cw'): PromiseChain<Surface> {
+	triangulate(winding?: 'ccw' | 'cw'): MaybePromise<Surface> {
 		return maybeAwait(
 			this.map((shape) => shape.triangulate(winding)),
 			(surfaces) => surfaces.flat()
@@ -323,6 +324,23 @@ export abstract class IntermediateContour extends AContour {
 		return this.toContour()
 	}
 }
+
+markComputedMethod(AShape.prototype, 'mapVertex')
+markComputedMethod(AShape.prototype, 'triangulate', { returns: 'value' })
+
+markComputedMethod(AContour.prototype, 'mapVertex')
+markComputedMethod(AContour.prototype, 'transform')
+markComputedMethod(AContour.prototype, 'translate')
+markComputedMethod(AContour.prototype, 'scale')
+markComputedMethod(AContour.prototype, 'rotate')
+markComputedMethod(AContour.prototype, 'union')
+markComputedMethod(AContour.prototype, 'intersect')
+markComputedMethod(AContour.prototype, 'hull')
+markComputedMethod(AContour.prototype, 'subtract')
+markComputedMethod(AContour.prototype, 'subtractFrom')
+markComputedMethod(AContour.prototype, 'triangulate', { returns: 'value' })
+
+export { Polygon as PolygonBase, Shape as ShapeBase, Contour as ContourBase }
 
 // Internal MatrixedContour class - not exported
 class MatrixedContour extends IntermediateContour {

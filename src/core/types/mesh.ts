@@ -1,6 +1,7 @@
 import { MaybePromise } from '@tsculpt/ts/async'
 import { cached } from '@tsculpt/ts/decorators'
 import di from '@tsculpt/ts/di'
+import { markComputedMethod } from '../computed/decorators'
 import { VectorMap } from '../optimizations'
 import { Matrix4, Vector, Vector3 } from './bunches'
 
@@ -15,13 +16,16 @@ export abstract class AMesh {
 	get verticed() {
 		return this.faces.map((face) => face.map((i) => this.vectors[i]) as [Vector3, Vector3, Vector3])
 	}
+
 	map(fct: (v: Vector3) => Vector3): Mesh {
 		return new Mesh(this.faces, this.vectors.map(fct))
 	}
+
 	translate(t: Vector3): AMesh {
 		const translationMatrix = new Matrix4(1, 0, 0, t[0], 0, 1, 0, t[1], 0, 0, 1, t[2], 0, 0, 0, 1)
 		return this.transform(translationMatrix)
 	}
+
 	scale(s: number | Vector3): AMesh {
 		const scaleVector = typeof s === 'number' ? new Vector3(s, s, s) : s
 		const scaleMatrix = new Matrix4(
@@ -128,18 +132,23 @@ export abstract class AMesh {
 		)
 		return this.transform(rotationMatrix)
 	}
+
 	union(...others: AMesh[]): MaybePromise<AMesh> {
 		return union3(this, ...others)
 	}
+
 	subtract(other: AMesh): MaybePromise<AMesh> {
 		return subtract3(this, other)
 	}
+
 	subtractFrom(other: AMesh): MaybePromise<AMesh> {
 		return subtract3(other, this)
 	}
+
 	intersect(...others: AMesh[]): MaybePromise<AMesh> {
 		return intersect3(this, ...others)
 	}
+
 	hull(...others: AMesh[]): MaybePromise<AMesh> {
 		return hull3(this, ...others)
 	}
@@ -267,3 +276,20 @@ class MatrixedMesh extends IntermediateMesh {
 		return result
 	}
 }
+
+markComputedMethod(AMesh.prototype, 'map')
+markComputedMethod(AMesh.prototype, 'translate')
+markComputedMethod(AMesh.prototype, 'scale')
+markComputedMethod(AMesh.prototype, 'bbox', { returns: 'value' })
+markComputedMethod(AMesh.prototype, 'transform')
+markComputedMethod(AMesh.prototype, 'rotateX')
+markComputedMethod(AMesh.prototype, 'rotateY')
+markComputedMethod(AMesh.prototype, 'rotateZ')
+markComputedMethod(AMesh.prototype, 'rotate')
+markComputedMethod(AMesh.prototype, 'union')
+markComputedMethod(AMesh.prototype, 'subtract')
+markComputedMethod(AMesh.prototype, 'subtractFrom')
+markComputedMethod(AMesh.prototype, 'intersect')
+markComputedMethod(AMesh.prototype, 'hull')
+
+export { Mesh as MeshBase }

@@ -1,11 +1,10 @@
 import { lerp } from '@tsculpt/math'
-import { MaybePromise } from '@tsculpt/ts/async'
 import { generation } from '../globals'
 import { VectorMap } from '../optimizations'
 import { assert } from '../ts/debug'
 import { Vector2, Vector3 } from './bunches'
-import { Contour } from './contour'
-import { Mesh } from './mesh'
+import { ContourBase } from './contour'
+import { MeshBase } from './mesh'
 
 // TODO Make more robust path management (composition, lofting, size estimation for grain mgt, &c)
 interface Frame {
@@ -22,7 +21,7 @@ export type PathFn = (t: number) => Frame
 /**
  * Parametric contour/profile along the path. Allows the profile to vary with t.
  */
-export type ContourFn = (t: number) => Contour
+export type ContourFn = (t: number) => ContourBase
 
 /**
  * Sampling strategy for the path
@@ -35,11 +34,11 @@ export type SamplingMode =
  *
  * The resulting sweep is conceptually the "product" of:
  * - a 1D path in 3D (path(t) -> Vector3)
- * - a 2D contour varying along the path (contour(t) -> Contour)
+ * - a 2D contour varying along the path (contour(t) -> ContourBase)
  */
 export interface ExtrusionSpec {
 	path: PathFn
-	contour: ContourFn | Contour
+	contour: ContourFn | ContourBase
 	// Path sampling
 	sampling?: SamplingMode // default: adaptive with grain-based length
 
@@ -50,7 +49,7 @@ export interface ExtrusionSpec {
 	caps?: boolean // default: true
 }
 
-export async function extrude(spec: ExtrusionSpec): Promise<Mesh> {
+export async function extrude(spec: ExtrusionSpec): Promise<MeshBase> {
 	const {
 		path,
 		contour,
@@ -172,5 +171,5 @@ export async function extrude(spec: ExtrusionSpec): Promise<Mesh> {
 		}
 	}
 
-	return new Mesh(await Promise.all(faces), vectorMap.vectors)
+	return new MeshBase(await Promise.all(faces), vectorMap.vectors)
 }

@@ -1,9 +1,9 @@
 import { Algorithms } from '@tsculpt/ts/di'
-import { Contour, Polygon, Shape } from '@tsculpt/types'
+import { ContourBase, Polygon, Shape } from '@tsculpt/types'
 import { v2 } from '@tsculpt/types/builders'
 
 // Fake contour for testing purposes
-export class FakeContour extends Contour {
+export class FakeContour extends ContourBase {
 	constructor(public readonly id: string) {
 		super(new Shape(new Polygon(v2(0, 0), v2(1, 0), v2(0, 1))))
 	}
@@ -11,25 +11,25 @@ export class FakeContour extends Contour {
 
 let operationCount = 0
 
-function union2(...contours: Contour[]): Contour {
+function union2(...contours: ContourBase[]): ContourBase {
 	operationCount++
 	// Return a fake contour with operation info
 	return new FakeContour(`union_${operationCount}_${contours.length}_contours`)
 }
 
-function intersect2(...contours: Contour[]): Contour {
+function intersect2(...contours: ContourBase[]): ContourBase {
 	operationCount++
 	// Return a fake contour with operation info
 	return new FakeContour(`intersect_${operationCount}_${contours.length}_contours`)
 }
 
-function subtract2(_contour1: Contour, _contour2: Contour): Contour {
+function subtract2(_contour1: ContourBase, _contour2: ContourBase): ContourBase {
 	operationCount++
 	// Return a fake contour with operation info
 	return new FakeContour(`subtract_${operationCount}_contour1_contour2`)
 }
 
-function hull2(...contours: Contour[]): Contour {
+function hull2(...contours: ContourBase[]): ContourBase {
 	operationCount++
 	// Return a fake contour with operation info
 	return new FakeContour(`hull_${operationCount}_${contours.length}_contours`)

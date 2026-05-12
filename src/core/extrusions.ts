@@ -1,20 +1,27 @@
 import { generation } from './globals'
 import { cross, lerp } from './math'
+import './facades'
+import { createDerivedComputation } from './computed/base'
+import { computedRegistry } from './computed/registry'
+import type { Computable, Computed } from './computed/types'
 import { MaybePromise } from './ts/async'
 import { Vector2, Vector3, v2, v3 } from './types'
-import { Contour, Polygon } from './types/contour'
+import { Contour, ContourBase, Polygon, PolygonBase } from './types/contour'
 import { ContourFn, PathFn, extrude } from './types/extrusion'
-import { AMesh, Mesh } from './types/mesh'
+import { MeshBase } from './types/mesh'
 
 // Extrusion functions
-type LinearExtrudeSpec = {
+export type LinearExtrudeSpec = {
 	height?: number
 	center?: boolean
 	twist?: number
 	scale?: number | Vector2
 }
 
-export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): MaybePromise<AMesh> {
+export function linearExtrudeBase(
+	contour: ContourBase,
+	spec: LinearExtrudeSpec = {}
+): MaybePromise<MeshBase> {
 	const { height = 1, center = false, twist = 0, scale = 1 } = spec
 	const { grain } = generation
 
@@ -74,12 +81,30 @@ export function linearExtrude(contour: Contour, spec: LinearExtrudeSpec = {}): M
 	})
 }
 
-type RotateExtrudeSpec = {
+export function linearExtrude(
+	contour: Computable<ContourBase>,
+	spec: Computable<LinearExtrudeSpec> = {}
+): Computed<MeshBase> {
+	return computedRegistry.wrap(
+		createDerivedComputation([contour, spec], (resolvedArgs) => {
+			const [resolvedContour, resolvedSpec] = resolvedArgs
+			return linearExtrudeBase(
+				resolvedContour as ContourBase,
+				resolvedSpec as LinearExtrudeSpec
+			)
+		})
+	)
+}
+
+export type RotateExtrudeSpec = {
 	angle?: number
 	segments?: number
 }
 
-export function rotateExtrude(contour: Contour, spec: RotateExtrudeSpec = {}): MaybePromise<AMesh> {
+export function rotateExtrudeBase(
+	contour: ContourBase,
+	spec: RotateExtrudeSpec = {}
+): MaybePromise<MeshBase> {
 	const { angle = 2 * Math.PI, segments } = spec
 	const { grain } = generation
 
@@ -113,11 +138,26 @@ export function rotateExtrude(contour: Contour, spec: RotateExtrudeSpec = {}): M
 	return mesh
 }
 
+export function rotateExtrude(
+	contour: Computable<ContourBase>,
+	spec: Computable<RotateExtrudeSpec> = {}
+): Computed<MeshBase> {
+	return computedRegistry.wrap(
+		createDerivedComputation([contour, spec], (resolvedArgs) => {
+			const [resolvedContour, resolvedSpec] = resolvedArgs
+			return rotateExtrudeBase(
+				resolvedContour as ContourBase,
+				resolvedSpec as RotateExtrudeSpec
+			)
+		})
+	)
+}
+
 /**
  * Helper function to create a loft between two polygons
  * Returns a ContourFn that interpolates between the two polygons
  */
-export function loft(polygon1: Polygon, polygon2: Polygon): ContourFn {
+export function loft(polygon1: PolygonBase, polygon2: PolygonBase): ContourFn {
 	// For now, assume both polygons have the same number of vertices
 	if (polygon1.length !== polygon2.length) {
 		throw new Error('Lofting requires polygons with the same number of vertices')
