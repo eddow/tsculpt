@@ -3,6 +3,14 @@ import { type AMesh, IntermediateMesh, type MeshSpecification, Vector3 } from '@
 // Import types for csgrs WASM module
 // Note: These would need to be generated from the actual csgrs WASM bindings
 // TODO: Generate proper TypeScript definitions from csgrs WASM bindings
+
+/**
+ * Factory function type for csgrs-wasm module initialization
+ */
+export type CsgrsFactoryFunction = (init: {
+	locateFile?: (file: string) => string
+}) => Promise<CsgrsModule>
+
 interface CsgrsModule {
 	// Core CSG operations
 	union(mesh1: any, mesh2: any): any
@@ -18,21 +26,52 @@ interface CsgrsModule {
 	freeMesh(mesh: any): void
 }
 
+/**
+ * Engine interface for 3D CSG operations
+ */
+interface Engine {
+	union(...meshes: AMesh[]): Promise<AMesh>
+	intersect(...meshes: AMesh[]): Promise<AMesh>
+	subtract(mesh1: AMesh, mesh2: AMesh): Promise<AMesh>
+	hull(...meshes: AMesh[]): Promise<AMesh>
+}
+
 let module: CsgrsModule = null!
 
-async function ensureCsgrsInitialized(): Promise<CsgrsModule> {
-	// Dynamic import to avoid SSR issues
-	// Note: This path would need to be updated based on actual csgrs WASM build
-	// TODO: Create WASM bindings for csgrs and update this import path
-	const csgrsModule = (await import('csgrs-wasm/dist/csgrs')) as any
-	const CsgrsFactory = csgrsModule.default
+/**
+ * Check if csgrs-wasm is available
+ */
+export async function isCsgrsAvailable(): Promise<boolean> {
+	try {
+		await ensureCsgrsInitialized()
+		return true
+	} catch {
+		return false
+	}
+}
 
-	return CsgrsFactory({
-		locateFile: () => {
-			// WASM file should be in public directory
-			return '/csgrs.wasm'
-		},
-	})
+async function ensureCsgrsInitialized(): Promise<CsgrsModule> {
+	if (module) return module
+
+	try {
+		// Try to load csgrs-wasm
+		// Note: csgrs-wasm package does not exist on npm
+		// Alternative: Consider using @bitbybit-dev/manifold or manifold3d
+		// TODO: Create WASM bindings for csgrs or switch to manifold-3d
+		const csgrsModule = (await import('csgrs-wasm')) as { default: CsgrsFactoryFunction }
+		const CsgrsFactory = csgrsModule.default
+
+		module = await CsgrsFactory({
+			locateFile: () => {
+				return '/csgrs.wasm'
+			},
+		})
+
+		return module
+	} catch (error) {
+		console.warn('csgrs-wasm not available, CSG operations will use fallback:', error)
+		throw new Error('csgrs-wasm module not available')
+	}
 }
 
 class CsgrsMesh extends IntermediateMesh {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { createComputation } from './base'
 import { computed } from './decorators'
 import { computedClass, lift } from './factories'
-import { createComputation } from './base'
 import { computedRegistry } from './registry'
 
 class CounterBase {

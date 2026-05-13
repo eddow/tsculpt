@@ -2,8 +2,8 @@ import {
 	ComputedValue,
 	createComputation,
 	createDerivedComputation,
-	isComputed,
 	isComputation,
+	isComputed,
 	isPromiseLike,
 } from './base'
 import type {
@@ -33,7 +33,9 @@ function instantiateComputedClass<Base extends Constructor>(
 	return internalComputedClass[computedClassFactorySymbol](computation)
 }
 
-function findComputedClassForResolvedValue(value: unknown): ComputedClass<Constructor<object>> | undefined {
+function findComputedClassForResolvedValue(
+	value: unknown
+): ComputedClass<Constructor<object>> | undefined {
 	if ((typeof value !== 'object' && typeof value !== 'function') || value === null) {
 		return undefined
 	}
@@ -78,31 +80,28 @@ function wrapDeferredComputedValue<T>(computation: Computation<Awaited<T>>): Com
 
 			return (...args: readonly unknown[]) =>
 				computedRegistry.wrap(
-					createComputation(
-						async () => {
-							const promoted = await promote()
-							if (promoted) {
-								const method = Reflect.get(promoted as object, property)
-								if (typeof method !== 'function') {
-									throw new Error(
-										`Property "${property}" is not exposed by the registered computed facade`
-									)
-								}
-
-								const result = Reflect.apply(method, promoted, args)
-								return isComputation(result) ? result.compute() : result
+					createComputation(async () => {
+						const promoted = await promote()
+						if (promoted) {
+							const method = Reflect.get(promoted as object, property)
+							if (typeof method !== 'function') {
+								throw new Error(
+									`Property "${property}" is not exposed by the registered computed facade`
+								)
 							}
 
-							const fallbackMethod = Reflect.get(genericFacade as object, property)
-							if (typeof fallbackMethod !== 'function') {
-								throw new Error(`Property "${property}" is not a function on the computed value`)
-							}
-
-							const result = Reflect.apply(fallbackMethod, genericFacade, args)
+							const result = Reflect.apply(method, promoted, args)
 							return isComputation(result) ? result.compute() : result
-						},
-						[computation, ...args]
-					)
+						}
+
+						const fallbackMethod = Reflect.get(genericFacade as object, property)
+						if (typeof fallbackMethod !== 'function') {
+							throw new Error(`Property "${property}" is not a function on the computed value`)
+						}
+
+						const result = Reflect.apply(fallbackMethod, genericFacade, args)
+						return isComputation(result) ? result.compute() : result
+					}, [computation, ...args])
 				)
 		},
 	}) as unknown as Computed<Awaited<T>>

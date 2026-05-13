@@ -1,4 +1,4 @@
-import type { AContour, AMesh, APolygon, AShape, Surface, Vector2 } from '@tsculpt/types'
+import type { AContour, AMesh, APolygon, AShape, Surface, Vector2, Vector3 } from '@tsculpt/types'
 import { MaybePromise, Resolved, maybeAwait } from './async'
 export interface AlgorithmsDef {
 	union2(contour1: AContour, ...contours: AContour[]): AContour
@@ -14,6 +14,12 @@ export interface AlgorithmsDef {
 	polygonIntersect(p1: APolygon, p2: APolygon, edge?: boolean): boolean
 	distinctPolygons(polygons: APolygon[], edge?: boolean): boolean
 	triangulate(shape: AShape, winding?: 'ccw' | 'cw'): Surface
+	extrudeWasm(
+		path: (t: number) => { o: Vector3; x: Vector3; y: Vector3 },
+		contour: AContour | ((t: number) => any),
+		samples: number,
+		caps?: boolean
+	): Promise<AMesh>
 }
 export type Algorithms = ServiceMethods<AlgorithmsDef>
 

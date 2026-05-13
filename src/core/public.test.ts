@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { contour as contourExpr } from './expression/linear'
 import { isComputed } from './computed/base'
-import { circle, square } from './public'
+import { contour as contourExpr } from './expression/linear'
 import { linearExtrude, union } from './index'
+import { circle, square } from './public'
+import { v2, v3 } from './types/builders'
 import { AContour } from './types/contour'
 import { AMesh, MeshBase } from './types/mesh'
-import { v2, v3 } from './types/builders'
 
 describe('public computed geometry surface', () => {
 	it('returns computed contours from public shape constructors', async () => {

@@ -28,3 +28,5 @@ rlp
 
 /components.d.ts
 plans
+/crates/target
+test-results

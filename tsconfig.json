@@ -21,7 +21,6 @@
 		"noFallthroughCasesInSwitch": true,
 		"allowSyntheticDefaultImports": true,
 		"esModuleInterop": true,
-		"baseUrl": ".",
 		"paths": {
 			"@client/*": ["./src/client/*"],
 			"@tsculpt": ["./src/core"],

@@ -21,7 +21,7 @@ export default defineConfig({
 		dependencyInject(
 			process.env.NODE_ENV === 'test' || process.env.VITEST
 				? ['ecmaPoly', 'earcut', 'op3.tester', 'op2.tester']
-				: ['ecmaPoly', 'earcut', 'jscad', 'clipper2']
+				: ['ecmaPoly', 'earcut', 'jscad', 'clipper2', 'ts-extrude']
 		),
 	],
 	worker: {
@@ -46,7 +46,12 @@ export default defineConfig({
 		fs: {
 			allow: ['.'],
 		},
+		headers: {
+			'Cross-Origin-Opener-Policy': 'same-origin',
+			'Cross-Origin-Embedder-Policy': 'require-corp',
+		},
 	},
+	assetsInclude: ['**/*.amf', '**/*.dxf', '**/*.obj', '**/*.stl', '**/*.svg', '**/*.wasm', '**/*.x3d'],
 	build: {
 		rollupOptions: {
 			output: {

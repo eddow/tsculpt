@@ -1,4 +1,4 @@
-import { computedClass, type Computed } from './computed'
+import { type Computed, computedClass } from './computed'
 import { ContourBase } from './types/contour'
 import { MeshBase } from './types/mesh'
 

@@ -1,21 +1,43 @@
 import { epsilon } from './math'
 import type { Vector } from './types/bunches'
+import { Vector3 } from './types/bunches'
 export class VectorMap<V extends Vector> {
-	private mapped = new Map<string, number>()
+	private mapped = new Map<number, number>()
 	public readonly vectors = [] as V[]
 
+	// Helper to get vector components from either tuple or object format
+	private getComponents(v: V): [number, number, number] {
+		// Handle object-based vectors (e.g., {x, y, z})
+		if (typeof v === 'object' && v !== null && 'x' in v) {
+			const obj = v as { x?: number; y?: number; z?: number }
+			return [obj.x ?? 0, obj.y ?? 0, obj.z ?? 0]
+		}
+		// Handle tuple-based vectors (e.g., [x, y, z])
+		return [v[0] ?? 0, v[1] ?? 0, v[2] ?? 0]
+	}
+
 	// Quantize coordinates to a grid of size epsilon
-	private key(v: V): string {
-		const q = v.map((n) => Math.round(n / epsilon))
-		return q.join(',')
+	// Combine three quantized values into a single integer key
+	private key(v: V): number {
+		const [x, y, z] = this.getComponents(v)
+		const qx = Math.round(x / epsilon)
+		const qy = Math.round(y / epsilon)
+		const qz = Math.round(z / epsilon)
+		// Simple hash: combine using bit shifts
+		return (qx << 20) ^ (qy << 10) ^ qz
 	}
 
 	index(v: V): number {
 		const k = this.key(v)
 		if (!this.mapped.has(k)) {
 			this.mapped.set(k, this.vectors.length)
-			// @ts-expect-error number[] -> Vector
-			this.vectors.push(v.map((n) => Math.round(n / epsilon) * epsilon))
+			const [x, y, z] = this.getComponents(v)
+			const qx = Math.round(x / epsilon) * epsilon
+			const qy = Math.round(y / epsilon) * epsilon
+			const qz = Math.round(z / epsilon) * epsilon
+
+			// Always create a new Vector3 instance (supports both [i] and .x/.y/.z access)
+			this.vectors.push(new Vector3(qx, qy, qz) as unknown as V)
 		}
 		return this.mapped.get(k)!
 	}

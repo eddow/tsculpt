@@ -1,5 +1,5 @@
-import di from '@tsculpt/ts/di'
 import { MaybePromise, maybeAwait } from '@tsculpt/ts/async'
+import di from '@tsculpt/ts/di'
 import { isComputation, isPromiseLike, resolveInputs } from '../computed/base'
 import type { Computable } from '../computed/types'
 import { Vector, Vector2, Vector3, isUnity, scale } from '../types/bunches'
@@ -245,10 +245,10 @@ function recur(
 						throw new SemanticError('Cannot intersect meshes and contours together')
 					}
 					if (meshes.length > 0) {
-						return intersect3(...meshes as [AMesh, ...AMesh[]])
+						return intersect3(...(meshes as [AMesh, ...AMesh[]]))
 					}
 					if (contours.length > 0) {
-						return intersect2(...contours as [AContour, ...AContour[]])
+						return intersect2(...(contours as [AContour, ...AContour[]]))
 					}
 					throw new SemanticError('No valid operands for intersection')
 				}
@@ -273,10 +273,10 @@ function recur(
 						throw new SemanticError('Cannot union meshes and contours together')
 					}
 					if (meshes.length > 0) {
-						return union3(...meshes as [AMesh, ...AMesh[]])
+						return union3(...(meshes as [AMesh, ...AMesh[]]))
 					}
 					if (contours.length > 0) {
-						return union2(...contours as [AContour, ...AContour[]])
+						return union2(...(contours as [AContour, ...AContour[]]))
 					}
 					throw new SemanticError('No valid operands for union')
 				}
@@ -327,7 +327,12 @@ function rotate(mesh: LinearExpression, axis: LinearExpression): LinearExpressio
 	return { type: 'rotate', object: mesh, axis }
 }
 
-export type LinearPrimitive = Vector2 | Vector3 | number | [number, number] | [number, number, number]
+export type LinearPrimitive =
+	| Vector2
+	| Vector3
+	| number
+	| [number, number]
+	| [number, number, number]
 type LinearValue = AMesh | AContour | LinearPrimitive
 type LinearInput = Computable<LinearValue>
 
@@ -414,32 +419,29 @@ function expectClass<T>(value: unknown, type: abstract new (...args: any[]) => T
 	return value as T
 }
 
-export function mesh(
-	expr: TemplateStringsArray,
-	...values: readonly LinearInput[]
-) {
+export function mesh(expr: TemplateStringsArray, ...values: readonly LinearInput[]) {
 	return maybeAwait([resolveLinearInputs(values)], ([resolvedValues]) =>
-		maybeAwait([formulas.calculate(expr, ...(resolvedValues as readonly LinearValue[]))], ([result]) =>
-			expectClass(result, AMesh)
+		maybeAwait(
+			[formulas.calculate(expr, ...(resolvedValues as readonly LinearValue[]))],
+			([result]) => expectClass(result, AMesh)
 		)
 	)
 }
 
-export function contour(
-	expr: TemplateStringsArray,
-	...values: readonly LinearInput[]
-) {
+export function contour(expr: TemplateStringsArray, ...values: readonly LinearInput[]) {
 	return maybeAwait([resolveLinearInputs(values)], ([resolvedValues]) =>
-		maybeAwait([formulas.calculate(expr, ...(resolvedValues as readonly LinearValue[]))], ([result]) =>
-			expectClass(result, AContour)
+		maybeAwait(
+			[formulas.calculate(expr, ...(resolvedValues as readonly LinearValue[]))],
+			([result]) => expectClass(result, AContour)
 		)
 	)
 }
 
 export function vector(expr: TemplateStringsArray, ...values: readonly LinearInput[]) {
 	return maybeAwait([resolveLinearInputs(values)], ([resolvedValues]) =>
-		maybeAwait([formulas.calculate(expr, ...(resolvedValues as readonly LinearValue[]))], ([result]) =>
-			expectClass(result, Vector)
+		maybeAwait(
+			[formulas.calculate(expr, ...(resolvedValues as readonly LinearValue[]))],
+			([result]) => expectClass(result, Vector)
 		)
 	)
 }

@@ -1,13 +1,13 @@
 import { ComputedObject, createDerivedComputation } from './base'
-import { listComputedMethodMetadata, type ComputedReturnMode } from './decorators'
+import { type ComputedReturnMode, listComputedMethodMetadata } from './decorators'
 import { computedRegistry, wrapComputedValue } from './registry'
 import {
-	computedClassFactorySymbol,
 	type Computation,
 	type ComputedClass,
 	type ComputedFunction,
 	type Constructor,
 	type InternalComputedClass,
+	computedClassFactorySymbol,
 } from './types'
 
 export interface ComputedClassOptions {
@@ -70,9 +70,7 @@ function wrapMethodResult<Base extends Constructor>(
 	returns: ComputedReturnMode
 ) {
 	if (returns === 'self') {
-		return computedClass[computedClassFactorySymbol](
-			computation as Computation<InstanceType<Base>>
-		)
+		return computedClass[computedClassFactorySymbol](computation as Computation<InstanceType<Base>>)
 	}
 
 	if (returns === 'value') {
@@ -124,10 +122,7 @@ export function computedClass<Base extends Constructor>(
 							(resolvedInputs) => {
 								const [self, ...resolvedArgs] = resolvedInputs
 
-								if (
-									(typeof self !== 'object' && typeof self !== 'function') ||
-									self === null
-								) {
+								if ((typeof self !== 'object' && typeof self !== 'function') || self === null) {
 									throw new Error(
 										`Cannot call computed method "${property}" on a non-object resolved value`
 									)
@@ -137,11 +132,7 @@ export function computedClass<Base extends Constructor>(
 							}
 						)
 
-						return wrapMethodResult(
-							internalComputedClass,
-							resultComputation,
-							metadata.returns
-						)
+						return wrapMethodResult(internalComputedClass, resultComputation, metadata.returns)
 					}
 				},
 			})

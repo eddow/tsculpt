@@ -1,10 +1,4 @@
-import type {
-	Computable,
-	Computation,
-	Computed,
-	InvalidationListener,
-	MaybeAsync,
-} from './types'
+import type { Computable, Computation, Computed, InvalidationListener, MaybeAsync } from './types'
 
 const computedFacadeMarker = Symbol('computedFacadeMarker')
 const forbiddenSyntheticMethods = new Set(['then', 'catch', 'finally'])
@@ -61,7 +55,9 @@ export function resolveComputable<T>(value: Computable<T>): Promise<Awaited<T>> 
 export function resolveInputs(inputs: readonly unknown[]): Promise<readonly unknown[]> {
 	return Promise.all(
 		inputs.map((input) =>
-			isComputation(input) || isPromiseLike(input) ? Promise.resolve(resolveComputable(input)) : input
+			isComputation(input) || isPromiseLike(input)
+				? Promise.resolve(resolveComputable(input))
+				: input
 		)
 	)
 }
@@ -78,7 +74,10 @@ export function collectComputations(inputs: readonly unknown[]): readonly Comput
 	return uniqueComputations(dependencies)
 }
 
-function createComputedProxy<T>(target: ComputedValue<T>, options: ComputedProxyOptions): Computed<T> {
+function createComputedProxy<T>(
+	target: ComputedValue<T>,
+	options: ComputedProxyOptions
+): Computed<T> {
 	const methodCache = new Map<string, unknown>()
 
 	Object.defineProperty(target, computedFacadeMarker, {

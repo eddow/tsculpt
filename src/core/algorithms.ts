@@ -35,7 +35,10 @@ export function unionBase<Target extends AContour | AMesh>(
 		: (union3(source1, ...(source as AMesh[])) as MaybePromise<Target>)
 }
 
-export function union(source1: Computable<AContour>, ...source: Computable<AContour>[]): Computed<AContour>
+export function union(
+	source1: Computable<AContour>,
+	...source: Computable<AContour>[]
+): Computed<AContour>
 export function union(source1: Computable<AMesh>, ...source: Computable<AMesh>[]): Computed<AMesh>
 export function union<Target extends AContour | AMesh>(
 	source1: Computable<Target>,
@@ -64,7 +67,10 @@ export function intersect(
 	source1: Computable<AContour>,
 	...source: Computable<AContour>[]
 ): Computed<AContour>
-export function intersect(source1: Computable<AMesh>, ...source: Computable<AMesh>[]): Computed<AMesh>
+export function intersect(
+	source1: Computable<AMesh>,
+	...source: Computable<AMesh>[]
+): Computed<AMesh>
 export function intersect<Target extends AContour | AMesh>(
 	source1: Computable<Target>,
 	...source: Computable<Target>[]
@@ -116,7 +122,10 @@ export function hullBase<Target extends AContour | AMesh>(
 		: (hull3(source1, ...(source as AMesh[])) as MaybePromise<Target>)
 }
 
-export function hull(source1: Computable<AContour>, ...source: Computable<AContour>[]): Computed<AContour>
+export function hull(
+	source1: Computable<AContour>,
+	...source: Computable<AContour>[]
+): Computed<AContour>
 export function hull(source1: Computable<AMesh>, ...source: Computable<AMesh>[]): Computed<AMesh>
 export function hull<Target extends AContour | AMesh>(
 	source1: Computable<Target>,

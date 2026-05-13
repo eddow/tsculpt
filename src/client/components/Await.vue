@@ -52,7 +52,7 @@ export function hasResult<T>(value: AwaitedValue<T>): value is T {
 }
 
 export function erroneous(result: any): result is Error {
-	if (result instanceof Error) console.log(result)
+	if (result instanceof Error) console.error(result)
 	return result instanceof Error
 }
 

@@ -2,6 +2,7 @@ import { lerp } from '@tsculpt/math'
 import { generation } from '../globals'
 import { VectorMap } from '../optimizations'
 import { assert } from '../ts/debug'
+import di from '../ts/di'
 import { Vector2, Vector3 } from './bunches'
 import { ContourBase } from './contour'
 import { MeshBase } from './mesh'
@@ -69,107 +70,119 @@ export async function extrude(spec: ExtrusionSpec): Promise<MeshBase> {
 	if (pathSamples < 2) {
 		throw new Error('Path must have at least 2 samples')
 	}
+
 	// Handle contour (constant or parametric)
 	const getContour = typeof contour === 'function' ? contour : () => contour
 
-	// Use VectorMap for vertex deduplication
-	const vectorMap = new VectorMap<Vector3>()
-	const faces: [number, number, number][] = []
+	// Try WASM extrusion first
+	try {
+		const wasmResult = await di().extrudeWasm(path, contour, pathSamples, caps)
+		// Convert AMesh to MeshBase (Mesh)
+		return new MeshBase(wasmResult.faces as [number, number, number][], wasmResult.vectors)
+	} catch (error) {
+		// Fall back to JS implementation if WASM fails
+		console.warn('WASM extrusion failed, falling back to JS:', error)
 
-	// Transform a 2D vertex to 3D using the given frame
-	const transformVertex = (v2: Vector2, frame: Frame): Vector3 => {
-		const x = v2.x * frame.x.x + v2.y * frame.y.x
-		const y = v2.x * frame.x.y + v2.y * frame.y.y
-		const z = v2.x * frame.x.z + v2.y * frame.y.z
-		return frame.o.add([x, y, z])
-	}
+		// Original JS implementation follows...
+		// Use VectorMap for vertex deduplication
+		const vectorMap = new VectorMap<Vector3>()
+		const faces: [number, number, number][] = []
 
-	// Convert 2D vertex to 3D and get index
-	const vertexToIndex = (v2: Vector2, frame: Frame): number => {
-		const v3 = transformVertex(v2, frame)
-		return vectorMap.index(v3)
-	}
+		// Transform a 2D vertex to 3D using the given frame
+		const transformVertex = (v2: Vector2, frame: Frame): Vector3 => {
+			const x = v2.x * frame.x.x + v2.y * frame.y.x
+			const y = v2.x * frame.x.y + v2.y * frame.y.y
+			const z = v2.x * frame.x.z + v2.y * frame.y.z
+			return frame.o.add([x, y, z])
+		}
 
-	const firstFrame = path(range.start)
-	const firstContour = getContour(range.start)
-	// Process contours in pairs (lastContour, nextContour)
-	let lastContoured = firstContour.flatPolygons.map((polygon) =>
-		polygon.map((vertex) => vertexToIndex(vertex, firstFrame))
-	)
+		// Convert 2D vertex to 3D and get index
+		const vertexToIndex = (v2: Vector2, frame: Frame): number => {
+			const v3 = transformVertex(v2, frame)
+			return vectorMap.index(v3)
+		}
 
-	for (let i = 1; i < pathSamples; i++) {
-		const t = lerp(range.start, range.end, i / (pathSamples - 1))
-		const frame = path(t)
-		const contour = getContour(t)
-
-		// Convert contour to mesh indices for extrusion
-		const nextContoured = contour.flatPolygons.map((polygon) =>
-			polygon.map((vertex) => vertexToIndex(vertex, frame))
+		const firstFrame = path(range.start)
+		const firstContour = getContour(range.start)
+		// Process contours in pairs (lastContour, nextContour)
+		let lastContoured = firstContour.flatPolygons.map((polygon) =>
+			polygon.map((vertex) => vertexToIndex(vertex, firstFrame))
 		)
 
-		// Generate faces between lastContour and nextContour
-		assert.equal(
-			lastContoured.length,
-			nextContoured.length,
-			'lastContour and nextContour must have the same number of polygons'
-		)
-		// For each polygon in the contour
-		for (let polyIndex = 0; polyIndex < lastContoured.length; polyIndex++) {
-			const lastPoly = lastContoured[polyIndex]
-			const nextPoly = nextContoured[polyIndex]
-			assert.equal(
-				lastPoly.length,
-				nextPoly.length,
-				'lastPoly and nextPoly must have the same number of vertices'
+		for (let i = 1; i < pathSamples; i++) {
+			const t = lerp(range.start, range.end, i / (pathSamples - 1))
+			const frame = path(t)
+			const contour = getContour(t)
+
+			// Convert contour to mesh indices for extrusion
+			const nextContoured = contour.flatPolygons.map((polygon) =>
+				polygon.map((vertex) => vertexToIndex(vertex, frame))
 			)
-			const verticesPerPoly = lastPoly.length
 
-			/*
-			faces (4 edges) =
-				L (Last rotation) & R (current Rotation) x
-				P (current Polygon) & N (Next polygon)
-			*/
-			let vPL = lastPoly[verticesPerPoly - 1]
-			let vNL = nextPoly[verticesPerPoly - 1]
-			// Create faces for each edge of the polygon
-			for (let j = 0; j < verticesPerPoly; j++) {
-				const vPR = lastPoly[j]
-				const vNR = nextPoly[j]
+			// Generate faces between lastContour and nextContour
+			assert.equal(
+				lastContoured.length,
+				nextContoured.length,
+				'lastContour and nextContour must have the same number of polygons'
+			)
+			// For each polygon in the contour
+			for (let polyIndex = 0; polyIndex < lastContoured.length; polyIndex++) {
+				const lastPoly = lastContoured[polyIndex]
+				const nextPoly = nextContoured[polyIndex]
+				assert.equal(
+					lastPoly.length,
+					nextPoly.length,
+					'lastPoly and nextPoly must have the same number of vertices'
+				)
+				const verticesPerPoly = lastPoly.length
 
-				// Triangulate the quad
-				faces.push([vNL, vPR, vNR])
-				faces.push([vPL, vPR, vNL])
+				/*
+				faces (4 edges) =
+					L (Last rotation) & R (current Rotation) x
+					P (current Polygon) & N (Next polygon)
+				*/
+				let vPL = lastPoly[verticesPerPoly - 1]
+				let vNL = nextPoly[verticesPerPoly - 1]
+				// Create faces for each edge of the polygon
+				for (let j = 0; j < verticesPerPoly; j++) {
+					const vPR = lastPoly[j]
+					const vNR = nextPoly[j]
 
-				vPL = vPR
-				vNL = vNR
+					// Triangulate the quad
+					faces.push([vNL, vPR, vNR])
+					faces.push([vPL, vPR, vNL])
+
+					vPL = vPR
+					vNL = vNR
+				}
+			}
+
+			lastContoured = nextContoured
+		}
+
+		// Add caps for the first and last contours
+		if (caps) {
+			// Start cap (first contour) - use shape triangulation with CCW winding
+			for (const shape of firstContour) {
+				const surface = await shape.triangulate('cw')
+				for (const triangle of surface) {
+					const indices = triangle.map((vertex) => vertexToIndex(vertex, firstFrame))
+					faces.push(indices as [number, number, number])
+				}
+			}
+
+			// End cap (last contour) - use shape triangulation with CW winding
+			const lastContour = getContour(range.end)
+			const lastFrame = path(range.end)
+			for (const shape of lastContour) {
+				const surface = await shape.triangulate('ccw')
+				for (const triangle of surface) {
+					const indices = triangle.map((vertex) => vertexToIndex(vertex, lastFrame))
+					faces.push(indices as [number, number, number])
+				}
 			}
 		}
 
-		lastContoured = nextContoured
+		return new MeshBase(await Promise.all(faces), vectorMap.vectors)
 	}
-
-	// Add caps for the first and last contours
-	if (caps) {
-		// Start cap (first contour) - use shape triangulation with CCW winding
-		for (const shape of firstContour) {
-			const surface = await shape.triangulate('cw')
-			for (const triangle of surface) {
-				const indices = triangle.map((vertex) => vertexToIndex(vertex, firstFrame))
-				faces.push(indices as [number, number, number])
-			}
-		}
-
-		// End cap (last contour) - use shape triangulation with CW winding
-		const lastContour = getContour(range.end)
-		const lastFrame = path(range.end)
-		for (const shape of lastContour) {
-			const surface = await shape.triangulate('ccw')
-			for (const triangle of surface) {
-				const indices = triangle.map((vertex) => vertexToIndex(vertex, lastFrame))
-				faces.push(indices as [number, number, number])
-			}
-		}
-	}
-
-	return new MeshBase(await Promise.all(faces), vectorMap.vectors)
 }

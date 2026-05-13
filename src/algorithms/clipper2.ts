@@ -164,69 +164,111 @@ function toClipper2Contour(aContour: AContour): Clipper2Contour {
 	return new Clipper2Contour(pathsD)
 }
 
-function union2(contour1: AContour, ...contours: AContour[]): AContour {
-	// Start with the first contour
-	let result = toClipper2Contour(contour1).pathsD
+/**
+ * Internal union that works with Clipper2Contour directly
+ * For chaining operations without round-trip conversion
+ */
+function union2Internal(
+	contour1: Clipper2Contour,
+	...contours: Clipper2Contour[]
+): Clipper2Contour {
+	if (!module) {
+		throw new Error('Clipper2 module not initialized')
+	}
 
-	// Union with each subsequent contour
+	let result = contour1.pathsD
+
 	for (const contour of contours) {
-		const clipperContour = toClipper2Contour(contour)
-		const unionResult = module.UnionD(result, clipperContour.pathsD, module.FillRule.EvenOdd, 2)
+		const unionResult = module.UnionD(result, contour.pathsD, module.FillRule.EvenOdd, 2)
 		result = unionResult
 	}
 
 	return new Clipper2Contour(result)
 }
 
-function intersect2(contour1: AContour, ...contours: AContour[]): AContour {
-	// Start with the first contour
-	let result = toClipper2Contour(contour1).pathsD
+/**
+ * Internal intersect that works with Clipper2Contour directly
+ */
+function intersect2Internal(
+	contour1: Clipper2Contour,
+	...contours: Clipper2Contour[]
+): Clipper2Contour {
+	if (!module) {
+		throw new Error('Clipper2 module not initialized')
+	}
 
-	// Intersect with each subsequent contour
+	let result = contour1.pathsD
+
 	for (const contour of contours) {
-		const clipperContour = toClipper2Contour(contour)
-		const intersectResult = module.IntersectD(
-			result,
-			clipperContour.pathsD,
-			module.FillRule.EvenOdd,
-			2
-		)
+		const intersectResult = module.IntersectD(result, contour.pathsD, module.FillRule.EvenOdd, 2)
 		result = intersectResult
 	}
 
 	return new Clipper2Contour(result)
 }
 
-function subtract2(contour1: AContour, contour2: AContour): AContour {
-	const clipperContour1 = toClipper2Contour(contour1)
-	const clipperContour2 = toClipper2Contour(contour2)
+/**
+ * Internal subtract that works with Clipper2Contour directly
+ */
+function subtract2Internal(contour1: Clipper2Contour, contour2: Clipper2Contour): Clipper2Contour {
+	if (!module) {
+		throw new Error('Clipper2 module not initialized')
+	}
 
-	// Perform difference operation
-	const result = module.DifferenceD(
-		clipperContour1.pathsD,
-		clipperContour2.pathsD,
-		module.FillRule.EvenOdd,
-		2
-	)
+	const result = module.DifferenceD(contour1.pathsD, contour2.pathsD, module.FillRule.EvenOdd, 2)
 
 	return new Clipper2Contour(result)
 }
 
-function hull2(contour1: AContour, ...contours: AContour[]): AContour {
-	// Combine all contours into a single PathsD
+/**
+ * Internal hull that works with Clipper2Contour directly
+ */
+function hull2Internal(...contours: Clipper2Contour[]): Clipper2Contour {
+	if (!module) {
+		throw new Error('Clipper2 module not initialized')
+	}
+
 	const allPaths = new module.PathsD()
-	for (const contour of [contour1, ...contours]) {
-		const clipperContour = toClipper2Contour(contour)
-		for (let i = 0; i < clipperContour.pathsD.size(); i++) {
-			allPaths.push_back(clipperContour.pathsD.get(i))
+	for (const contour of contours) {
+		for (let i = 0; i < contour.pathsD.size(); i++) {
+			allPaths.push_back(contour.pathsD.get(i))
 		}
 	}
 
-	// For convex hull, we'll use a simple approach
-	// Clipper2 doesn't have a direct convex hull function, so we'll use union
 	const result = module.UnionSelfD(allPaths, module.FillRule.EvenOdd, 2)
-
 	return new Clipper2Contour(result)
+}
+
+function union2(contour1: AContour, ...contours: AContour[]): AContour {
+	// Convert first contour
+	let result = toClipper2Contour(contour1)
+
+	// Convert remaining contours and perform union internally
+	const clipperContours = contours.map(toClipper2Contour)
+	result = union2Internal(result, ...clipperContours)
+
+	// Only convert back at the end
+	return result
+}
+
+function intersect2(contour1: AContour, ...contours: AContour[]): AContour {
+	let result = toClipper2Contour(contour1)
+	const clipperContours = contours.map(toClipper2Contour)
+	result = intersect2Internal(result, ...clipperContours)
+	return result
+}
+
+function subtract2(contour1: AContour, contour2: AContour): AContour {
+	const clipperContour1 = toClipper2Contour(contour1)
+	const clipperContour2 = toClipper2Contour(contour2)
+	const result = subtract2Internal(clipperContour1, clipperContour2)
+	return result
+}
+
+function hull2(contour1: AContour, ...contours: AContour[]): AContour {
+	const clipperContours = [contour1, ...contours].map(toClipper2Contour)
+	const result = hull2Internal(...clipperContours)
+	return result
 }
 
 function vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): boolean {

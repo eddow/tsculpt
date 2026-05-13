@@ -7,11 +7,14 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
+		"build:wasm": "cd crates/ts-extrude && wasm-pack build --target web --out-dir ../../public/ts-extrude-wasm",
+		"build:wasm:math": "cd crates/ts-math && wasm-pack build --target web --out-dir ../../public/ts-math-wasm",
 		"biome": "biome check --fix",
 		"preview": "vite preview",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
-		"test:ui": "vitest --ui"
+		"test:ui": "vitest --ui",
+		"e2e": "playwright test --config=e2e/playwright.config.ts"
 	},
 	"dependencies": {
 		"@jscad/amf-deserializer": "^2.3.10",
@@ -36,12 +39,15 @@
 		"primeicons": "^7.0.0",
 		"primevue": "^4.3.5",
 		"three": "^0.177.0",
+		"ts-extrude-wasm": "file:./public/ts-extrude-wasm",
+		"ts-math-wasm": "file:./public/ts-math-wasm",
 		"ts-morph": "^26.0.0",
 		"vue": "^3.4.15",
 		"vue-router": "^4.5.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
+		"@playwright/test": "^1.60.0",
 		"@primevue/auto-import-resolver": "^4.3.7",
 		"@types/earcut": "^3.0.0",
 		"@types/node": "^20.11.16",

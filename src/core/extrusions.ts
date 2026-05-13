@@ -88,10 +88,7 @@ export function linearExtrude(
 	return computedRegistry.wrap(
 		createDerivedComputation([contour, spec], (resolvedArgs) => {
 			const [resolvedContour, resolvedSpec] = resolvedArgs
-			return linearExtrudeBase(
-				resolvedContour as ContourBase,
-				resolvedSpec as LinearExtrudeSpec
-			)
+			return linearExtrudeBase(resolvedContour as ContourBase, resolvedSpec as LinearExtrudeSpec)
 		})
 	)
 }
@@ -145,10 +142,7 @@ export function rotateExtrude(
 	return computedRegistry.wrap(
 		createDerivedComputation([contour, spec], (resolvedArgs) => {
 			const [resolvedContour, resolvedSpec] = resolvedArgs
-			return rotateExtrudeBase(
-				resolvedContour as ContourBase,
-				resolvedSpec as RotateExtrudeSpec
-			)
+			return rotateExtrudeBase(resolvedContour as ContourBase, resolvedSpec as RotateExtrudeSpec)
 		})
 	)
 }

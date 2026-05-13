@@ -54,11 +54,11 @@ export const complexExtrusion = linearExtrude(squareProfile, {
 // Default export: union of all objects positioned in a grid
 export default union(
 	extrudedBox,
-	twistedPrism.translate(v3(4, 0, 0)),
-	pyramid.translate(v3(-4, 0, 0)),
 	rectPyramid.translate(v3(0, 4, 0)),
-	cylinder.translate(v3(0, -4, 0)),
-	torus.translate(v3(8, 0, 0)),
 	halfCylinder.translate(v3(-8, 0, 0)),
+	pyramid.translate(v3(-4, 0, 0)),
+	twistedPrism.translate(v3(4, 0, 0)),
+	torus.translate(v3(8, 0, 0)),
+	cylinder.translate(v3(0, -4, 0)),
 	complexExtrusion.translate(v3(0, -8, 0))
 )

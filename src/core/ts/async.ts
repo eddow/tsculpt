@@ -1,5 +1,8 @@
 import { zip } from '@tsculpt/ts/arrays'
-import { isComputation as isRuntimeComputation, resolveComputable as resolveRuntimeComputable } from '../computed/base'
+import {
+	isComputation as isRuntimeComputation,
+	resolveComputable as resolveRuntimeComputable,
+} from '../computed/base'
 import type { Computation } from '../computed/types'
 
 export type MaybePromise<T> = T | Promise<T>

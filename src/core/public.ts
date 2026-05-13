@@ -1,20 +1,6 @@
 import { lift } from './computed'
 export { Contour, type Contour, Mesh, type Mesh } from './facades'
 import {
-	annulus as annulusBase,
-	capsule as capsuleBase,
-	circle as circleBase,
-	ellipse as ellipseBase,
-	rect as rectBase,
-	regularPolygon as regularPolygonBase,
-	ringSector as ringSectorBase,
-	roundedRectangle as roundedRectangleBase,
-	sector as sectorBase,
-	slot as slotBase,
-	square as squareBase,
-	star as starBase,
-} from './shapes'
-import {
 	box as boxBase,
 	capsule3D as capsule3DBase,
 	cone as coneBase,
@@ -28,6 +14,20 @@ import {
 	torus as torusBase,
 	tube as tubeBase,
 } from './geometries'
+import {
+	annulus as annulusBase,
+	capsule as capsuleBase,
+	circle as circleBase,
+	ellipse as ellipseBase,
+	rect as rectBase,
+	regularPolygon as regularPolygonBase,
+	ringSector as ringSectorBase,
+	roundedRectangle as roundedRectangleBase,
+	sector as sectorBase,
+	slot as slotBase,
+	square as squareBase,
+	star as starBase,
+} from './shapes'
 
 export const rect = lift(rectBase, { name: 'rect' })
 export const square = lift(squareBase, { name: 'square' })

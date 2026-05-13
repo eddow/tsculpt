@@ -195,6 +195,62 @@ export class Mesh extends AMesh {
 	}
 }
 
+/**
+ * Mesh variant that uses typed arrays for better memory layout
+ */
+export class TypedMesh extends AMesh {
+	private _vertices: Float32Array
+	private _faces: Uint32Array
+
+	constructor(faces: Numbers3[], vectors: Vector3[]) {
+		super()
+
+		// Convert to typed arrays
+		this._vertices = new Float32Array(vectors.length * 3)
+		for (let i = 0; i < vectors.length; i++) {
+			this._vertices[i * 3] = vectors[i][0]
+			this._vertices[i * 3 + 1] = vectors[i][1]
+			this._vertices[i * 3 + 2] = vectors[i][2]
+		}
+
+		this._faces = new Uint32Array(faces.length * 3)
+		for (let i = 0; i < faces.length; i++) {
+			this._faces[i * 3] = faces[i][0]
+			this._faces[i * 3 + 1] = faces[i][1]
+			this._faces[i * 3 + 2] = faces[i][2]
+		}
+	}
+
+	get faces(): readonly Numbers3[] {
+		// Convert typed array back to array for compatibility
+		const result: Numbers3[] = []
+		for (let i = 0; i < this._faces.length; i += 3) {
+			result.push([this._faces[i], this._faces[i + 1], this._faces[i + 2]])
+		}
+		return result
+	}
+
+	get vectors(): readonly Vector3[] {
+		// Convert typed array back to array for compatibility
+		const result: Vector3[] = []
+		for (let i = 0; i < this._vertices.length; i += 3) {
+			result.push([this._vertices[i], this._vertices[i + 1], this._vertices[i + 2]] as Vector3)
+		}
+		return result
+	}
+
+	/**
+	 * Direct access to typed arrays for zero-copy operations
+	 */
+	get verticesTyped(): Float32Array {
+		return this._vertices
+	}
+
+	get facesTyped(): Uint32Array {
+		return this._faces
+	}
+}
+
 export abstract class IntermediateMesh extends AMesh {
 	protected abstract toMesh(): MeshSpecification
 	private _mesh: Mesh | undefined

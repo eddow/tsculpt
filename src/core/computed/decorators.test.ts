@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { getComputedMethodOptions } from './decorators'
 import { AContour, AShape } from '../types/contour'
 import { AMesh } from '../types/mesh'
+import { getComputedMethodOptions } from './decorators'
 
 describe('computed decorator metadata', () => {
 	it('should expose the contour and shape methods that feed the computed facade', () => {

@@ -81,8 +81,10 @@ export class WorkerManager<Works extends Record<string, (...args: any[]) => any>
 		}
 
 		// Resolve or reject the promise
-		if (error) pendingRequest.reject(new Error(error))
-		else pendingRequest.resolve(result)
+		if (error) {
+			console.error(`Worker error for request ${requestId}:`, error)
+			pendingRequest.reject(new Error(error))
+		} else pendingRequest.resolve(result)
 
 		this.pendingRequests.delete(requestId)
 	}

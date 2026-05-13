@@ -15,10 +15,9 @@ export type Computable<T> = T | Promise<T> | Computation<T>
 
 export type UnknownFunction = (...args: never[]) => unknown
 
-export type Constructor<
-	Instance extends object = object,
-	Args extends unknown[] = never[],
-> = new (...args: Args) => Instance
+export type Constructor<Instance extends object = object, Args extends unknown[] = never[]> = new (
+	...args: Args
+) => Instance
 
 export type AbstractConstructor<
 	Instance extends object = object,

@@ -23,11 +23,17 @@ export const rotatedSquare = linearExtrude(contour`${square({ size: 1 })} @ π/4
 export const rotatedCircle = linearExtrude(contour`${circle({ radius: 1 })} @ π/2`) // 90 degrees
 
 // 5. BOOLEAN OPERATIONS - Union, intersection, subtraction
-export const unionExample = linearExtrude(contour`${square({ size: 1 })} | ${circle({ radius: 0.7 })}`)
+export const unionExample = linearExtrude(
+	contour`${square({ size: 1 })} | ${circle({ radius: 0.7 })}`
+)
 
-export const intersectionExample = linearExtrude(contour`${square({ size: 1 })} & ${circle({ radius: 0.7 })}`)
+export const intersectionExample = linearExtrude(
+	contour`${square({ size: 1 })} & ${circle({ radius: 0.7 })}`
+)
 
-export const subtractionExample = linearExtrude(contour`${square({ size: 1 })} - ${circle({ radius: 0.5 })}`)
+export const subtractionExample = linearExtrude(
+	contour`${square({ size: 1 })} - ${circle({ radius: 0.5 })}`
+)
 
 // 6. MULTIPLE BOOLEAN OPERATIONS - Complex combinations
 export const complexUnion = linearExtrude(
@@ -61,7 +67,9 @@ export const crossPattern = (() => {
 // 9. HOLE PATTERNS - Shapes with holes
 export const donut = linearExtrude(contour`${circle({ radius: 1 })} - ${circle({ radius: 0.5 })}`)
 
-export const thickDonut = linearExtrude(contour`${circle({ radius: 1.5 })} - ${circle({ radius: 0.3 })}`)
+export const thickDonut = linearExtrude(
+	contour`${circle({ radius: 1.5 })} - ${circle({ radius: 0.3 })}`
+)
 
 // 10. COMPLEX HOLE PATTERNS - Multiple holes
 export const swissCheese = (() => {
@@ -78,7 +86,9 @@ export const tinyShape = linearExtrude(square({ size: 0.1 }))
 export const largeShape = linearExtrude(square({ size: 5 }))
 
 // 12. COMPLEX TRANSFORMATIONS - Multiple transformations combined
-export const complexTransform = linearExtrude(contour`${square({ size: 1 })} * 2 + (0.5, 0.5) @ pi/4`)
+export const complexTransform = linearExtrude(
+	contour`${square({ size: 1 })} * 2 + (0.5, 0.5) @ pi/4`
+)
 
 // 13. BOOLEAN WITH TRANSFORMATIONS - Complex boolean operations with transformations
 export const advancedBoolean = linearExtrude(

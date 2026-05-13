@@ -46,8 +46,22 @@ class JscadMesh extends IntermediateMesh implements Geom3 {
 
 function jscadMesh(mesh: AMesh): JscadMesh {
 	if (mesh instanceof JscadMesh) return mesh
-	const polys = mesh.verticed.map((face) => poly3.create(face as unknown as Vec3[]))
-	return new JscadMesh(geom3.create(polys))
+
+	// Validate mesh has valid data
+	if (mesh.verticed.length === 0) {
+		return new JscadMesh(geom3.create([]))
+	}
+
+	// Filter out faces with undefined vertices and create polygons
+	const validPolys = mesh.verticed
+		.filter((face) => face[0] && face[1] && face[2])
+		.map((face) => poly3.create(face as unknown as Vec3[]))
+
+	if (validPolys.length === 0) {
+		return new JscadMesh(geom3.create([]))
+	}
+
+	return new JscadMesh(geom3.create(validPolys))
 }
 function jscadMeshes(meshes: AMesh[]): JscadMesh[] {
 	return meshes.map(jscadMesh)

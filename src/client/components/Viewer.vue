@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import type { AMesh } from '@tsculpt/types'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { isDark } from '../lib/stores'
 
@@ -40,19 +40,18 @@ const props = defineProps<{
 
 const container = ref<HTMLDivElement>()
 const canvas = ref<HTMLCanvasElement>()
-const cameraState = ref({
-	position: new THREE.Vector3(0, 0, 5),
-	target: new THREE.Vector3(0, 0, 0),
-})
 let scene: THREE.Scene
 let camera: THREE.PerspectiveCamera
 let renderer: THREE.WebGLRenderer
 let controls: OrbitControls
-let mesh: THREE.Mesh
-let edges: THREE.LineSegments
+let mesh: THREE.Mesh | null = null
+let edges: THREE.LineSegments | null = null
 let axes: THREE.Group | null = null
 let isInitialized = false
 let hasSeenRealMesh = false
+let lastViewedMesh: AMesh | null = null
+let animationFrameId: number | null = null
+let isOrbiting = false
 
 // Watch for theme changes
 watch(isDark, updateColors, { immediate: false })
@@ -84,24 +83,53 @@ function updateColors() {
 	})
 }
 
-// Expose resetCamera for external use
+// Expose resetCamera and getCameraState for external use
 function resetCamera() {
 	if (!camera || !controls || !mesh) return
 
 	const geometry = mesh.geometry
-	geometry.computeBoundingSphere()
+	// Manually compute bounding sphere for better performance
+	if (!geometry.boundingSphere) {
+		geometry.boundingSphere = new THREE.Sphere()
+	}
+	const position = geometry.attributes.position
+	const center = new THREE.Vector3()
+	const count = position.count
+	for (let i = 0; i < count; i++) {
+		center.x += position.getX(i)
+		center.y += position.getY(i)
+		center.z += position.getZ(i)
+	}
+	center.divideScalar(count)
+	let maxRadiusSq = 0
+	for (let i = 0; i < count; i++) {
+		const dx = position.getX(i) - center.x
+		const dy = position.getY(i) - center.y
+		const dz = position.getZ(i) - center.z
+		const distSq = dx * dx + dy * dy + dz * dz
+		if (distSq > maxRadiusSq) maxRadiusSq = distSq
+	}
+	geometry.boundingSphere.set(center, Math.sqrt(maxRadiusSq))
 
 	if (geometry.boundingSphere) {
-		const { center, radius } = geometry.boundingSphere
+		const { center: sphereCenter, radius } = geometry.boundingSphere
 		const fov = (camera.fov * Math.PI) / 180
 		const distance = (radius * 2.5) / Math.tan(fov / 2)
 
-		camera.position.set(center.x, center.y, center.z + distance)
-		controls.target.copy(center)
+		camera.position.set(sphereCenter.x, sphereCenter.y, sphereCenter.z + distance)
+		controls.target.copy(sphereCenter)
 		controls.update()
 	}
 }
-defineExpose({ resetCamera })
+
+function getCameraState() {
+	return {
+		position: camera.position.clone(),
+		target: controls.target.clone(),
+	}
+}
+
+defineExpose({ resetCamera, getCameraState })
 
 function init() {
 	if (!container.value || !canvas.value) return
@@ -124,7 +152,7 @@ function init() {
 	const width = container.value.clientWidth
 	const height = container.value.clientHeight
 	camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 10000)
-	camera.position.copy(cameraState.value.position)
+	camera.position.set(0, 0, 5)
 
 	// Renderer setup
 	renderer = new THREE.WebGLRenderer({
@@ -132,12 +160,31 @@ function init() {
 		antialias: true,
 	})
 	renderer.setSize(width, height)
+	renderer.setAnimationLoop(null) // Disable automatic render loop
 
 	// Controls setup
 	controls = new OrbitControls(camera, canvas.value)
 	controls.enableDamping = true
 	controls.zoomToCursor = true
-	controls.target.copy(cameraState.value.target)
+	controls.target.set(0, 0, 0)
+
+	// Set up demand-driven rendering via OrbitControls events
+	controls.addEventListener('start', () => {
+		isOrbiting = true
+		animate()
+	})
+	controls.addEventListener('end', () => {
+		isOrbiting = false
+		if (animationFrameId !== null) {
+			cancelAnimationFrame(animationFrameId)
+			animationFrameId = null
+		}
+	})
+	controls.addEventListener('change', () => {
+		if (!isOrbiting) {
+			renderer.render(scene, camera)
+		}
+	})
 
 	// Lighting setup
 	setupLights()
@@ -146,15 +193,12 @@ function init() {
 	updateGeometry()
 
 	// If no previous camera position, set initial view
-	if (
-		cameraState.value.position.equals(new THREE.Vector3(0, 0, 5)) &&
-		cameraState.value.target.equals(new THREE.Vector3(0, 0, 0))
-	) {
+	if (!hasSeenRealMesh) {
 		resetCamera()
 	}
 
-	// Animation loop
-	animate()
+	// Initial render
+	renderer.render(scene, camera)
 }
 
 function setupLights() {
@@ -258,56 +302,136 @@ function showAxes(show: boolean) {
 
 function updateGeometry() {
 	if (!scene) return
-	if (mesh) scene.remove(mesh)
-	if (edges) scene.remove(edges)
 
-	const geometry = new THREE.BufferGeometry()
 	const theme = isDark.value ? colors.dark : colors.light
+	const isIdentityChange = lastViewedMesh === props.viewed
 
-	if (props.viewed.vectors && props.viewed.faces) {
-		// For flat normals, duplicate vertices for each face
-		const faceVertices: number[] = []
-
-		for (const face of props.viewed.faces) {
-			for (const vertexIndex of face) {
-				const vertex = props.viewed.vectors[vertexIndex]
-				faceVertices.push(vertex[0], vertex[1], vertex[2])
-			}
+	if (props.viewed.vectors && props.viewed.vectors.length > 0 && props.viewed.faces && props.viewed.faces.length > 0) {
+		// Build indexed geometry - use unique vertices with index buffer
+		const vertexCount = props.viewed.vectors.length
+		const positions = new Float32Array(vertexCount * 3)
+		for (let i = 0; i < vertexCount; i++) {
+			const vertex = props.viewed.vectors[i]
+			positions[i * 3] = vertex[0]
+			positions[i * 3 + 1] = vertex[1]
+			positions[i * 3 + 2] = vertex[2]
 		}
 
-		const vertices = new Float32Array(faceVertices)
-		geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+		// Build face indices
+		const faceIndices: number[] = []
+		for (const face of props.viewed.faces) {
+			faceIndices.push(face[0], face[1], face[2])
+		}
+		const indices = new Uint16Array(faceIndices)
 
-		// Don't use indices since vertices are already duplicated per face
-		geometry.computeVertexNormals() // This gives flat normals since vertices aren't shared
-		geometry.computeBoundingSphere()
+		if (isIdentityChange && mesh) {
+			// Reuse existing geometry - just update position attribute
+			const positionAttribute = mesh.geometry.attributes.position
+			for (let i = 0; i < vertexCount; i++) {
+				const vertex = props.viewed.vectors[i]
+				positionAttribute.setXYZ(i, vertex[0], vertex[1], vertex[2])
+			}
+			positionAttribute.needsUpdate = true
+
+			// Update index if needed
+			mesh.geometry.setIndex(new THREE.BufferAttribute(indices, 1))
+
+			// Manually update bounding sphere
+			if (!mesh.geometry.boundingSphere) {
+				mesh.geometry.boundingSphere = new THREE.Sphere()
+			}
+			const center = new THREE.Vector3()
+			const count = vertexCount
+			for (let i = 0; i < count; i++) {
+				center.x += positions[i * 3]
+				center.y += positions[i * 3 + 1]
+				center.z += positions[i * 3 + 2]
+			}
+			center.divideScalar(count)
+			let maxRadiusSq = 0
+			for (let i = 0; i < count; i++) {
+				const dx = positions[i * 3] - center.x
+				const dy = positions[i * 3 + 1] - center.y
+				const dz = positions[i * 3 + 2] - center.z
+				const distSq = dx * dx + dy * dy + dz * dz
+				if (distSq > maxRadiusSq) maxRadiusSq = distSq
+			}
+			mesh.geometry.boundingSphere.set(center, Math.sqrt(maxRadiusSq))
+
+			// Recompute vertex normals for flat shading
+			mesh.geometry.computeVertexNormals()
+
+			// Update edges geometry
+			const edgesGeometry = new THREE.EdgesGeometry(mesh.geometry)
+			if (edges) {
+				edges.geometry.dispose()
+				edges.geometry = edgesGeometry
+			}
+		} else {
+			// Create new geometry
+			if (mesh) scene.remove(mesh)
+			if (edges) scene.remove(edges)
+
+			const geometry = new THREE.BufferGeometry()
+			geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+			geometry.setIndex(new THREE.BufferAttribute(indices, 1))
+			geometry.computeVertexNormals()
+
+			// Manually compute bounding sphere
+			geometry.boundingSphere = new THREE.Sphere()
+			const center = new THREE.Vector3()
+			const count = vertexCount
+			for (let i = 0; i < count; i++) {
+				center.x += positions[i * 3]
+				center.y += positions[i * 3 + 1]
+				center.z += positions[i * 3 + 2]
+			}
+			center.divideScalar(count)
+			let maxRadiusSq = 0
+			for (let i = 0; i < count; i++) {
+				const dx = positions[i * 3] - center.x
+				const dy = positions[i * 3 + 1] - center.y
+				const dz = positions[i * 3 + 2] - center.z
+				const distSq = dx * dx + dy * dy + dz * dz
+				if (distSq > maxRadiusSq) maxRadiusSq = distSq
+			}
+			geometry.boundingSphere.set(center, Math.sqrt(maxRadiusSq))
+
+			const material = new THREE.MeshStandardMaterial({
+				color: theme.mesh,
+				wireframe: props.displayMode === 'wireframe',
+			})
+
+			mesh = new THREE.Mesh(geometry, material)
+			mesh.frustumCulled = true
+			scene.add(mesh)
+
+			// Add edges for solid-edges mode
+			const edgesGeometry = new THREE.EdgesGeometry(geometry)
+			const edgesMaterial = new THREE.LineBasicMaterial({
+				color: theme.edges,
+				linewidth: 1,
+			})
+			edges = new THREE.LineSegments(edgesGeometry, edgesMaterial)
+			edges.frustumCulled = true
+			edges.visible = props.displayMode === 'solid-edges'
+			scene.add(edges)
+		}
 	}
 
-	const material = new THREE.MeshStandardMaterial({
-		color: theme.mesh,
-		wireframe: props.displayMode === 'wireframe',
-	})
+	// Store reference for identity check
+	lastViewedMesh = props.viewed
 
-	mesh = new THREE.Mesh(geometry, material)
-	scene.add(mesh)
-
-	// Add edges for solid-edges mode
-	const edgesGeometry = new THREE.EdgesGeometry(geometry)
-	const edgesMaterial = new THREE.LineBasicMaterial({
-		color: theme.edges,
-		linewidth: 1,
-	})
-	edges = new THREE.LineSegments(edgesGeometry, edgesMaterial)
-	edges.visible = props.displayMode === 'solid-edges'
-	scene.add(edges)
+	// Request a render
+	if (!isOrbiting) {
+		renderer.render(scene, camera)
+	}
 }
 
 function animate() {
-	requestAnimationFrame(animate)
+	if (!isOrbiting) return
+	animationFrameId = requestAnimationFrame(animate)
 	controls.update()
-	// Store camera state on each frame
-	cameraState.value.position.copy(camera.position)
-	cameraState.value.target.copy(controls.target)
 	renderer.render(scene, camera)
 }
 
@@ -345,7 +469,7 @@ onBeforeUnmount(() => {
 	window.removeEventListener('resize', handleResize)
 })
 
-// Watch for geometry changes
+// Watch for geometry changes - use identity check inside updateGeometry
 watch(
 	() => props.viewed,
 	() => {
@@ -354,8 +478,7 @@ watch(
 			hasSeenRealMesh = true
 			resetCamera()
 		}
-	},
-	{ deep: true }
+	}
 )
 
 // Watch for display mode changes

@@ -61,7 +61,9 @@ export function getComputedMethodMetadata(
 	return undefined
 }
 
-export function listComputedMethodMetadata(target: object): ReadonlyMap<PropertyKey, ComputedMethodMetadata> {
+export function listComputedMethodMetadata(
+	target: object
+): ReadonlyMap<PropertyKey, ComputedMethodMetadata> {
 	const metadata = new Map<PropertyKey, ComputedMethodMetadata>()
 	const prototypes: object[] = []
 
@@ -82,14 +84,13 @@ export function listComputedMethodMetadata(target: object): ReadonlyMap<Property
 	return metadata
 }
 
-export function getComputedMethodOptions(target: object): ReadonlyMap<PropertyKey, ComputedDecoratorOptions> {
+export function getComputedMethodOptions(
+	target: object
+): ReadonlyMap<PropertyKey, ComputedDecoratorOptions> {
 	const options = new Map<PropertyKey, ComputedDecoratorOptions>()
 
 	for (const [propertyKey, metadata] of listComputedMethodMetadata(target)) {
-		options.set(
-			propertyKey,
-			metadata.returns === 'registry' ? {} : { returns: metadata.returns }
-		)
+		options.set(propertyKey, metadata.returns === 'registry' ? {} : { returns: metadata.returns })
 	}
 
 	return options

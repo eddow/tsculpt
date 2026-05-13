@@ -6,7 +6,16 @@ export interface MeshPack {
 }
 
 export function packMesh(mesh: AMesh): MeshPack {
-	// Extract vertex coordinates from Vector3 array
+	// Check if mesh has typed array methods (TypedMesh)
+	if ('verticesTyped' in mesh && 'facesTyped' in mesh) {
+		const typedMesh = mesh as any
+		return {
+			vertices: typedMesh.verticesTyped,
+			indices: typedMesh.facesTyped,
+		}
+	}
+
+	// Fallback to conversion for regular Mesh
 	const vertices = new Float32Array(mesh.vectors.length * 3)
 	let i = 0
 	for (const vector of mesh.vectors) {
