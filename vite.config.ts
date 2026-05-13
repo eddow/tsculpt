@@ -21,7 +21,7 @@ export default defineConfig({
 		dependencyInject(
 			process.env.NODE_ENV === 'test' || process.env.VITEST
 				? ['ecmaPoly', 'earcut', 'op3.tester', 'op2.tester']
-				: ['ecmaPoly', 'earcut', 'jscad', 'clipper2', 'ts-extrude']
+				: ['ecmaPoly', 'earcut', 'jscad', 'clipper2', 'ts-extrude', 'ts-csg']
 		),
 	],
 	worker: {

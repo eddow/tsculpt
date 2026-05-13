@@ -2,6 +2,7 @@ import { MaybePromise } from '@tsculpt/ts/async'
 import { cached } from '@tsculpt/ts/decorators'
 import di from '@tsculpt/ts/di'
 import { markComputedMethod } from '../computed/decorators'
+import { analyzeGeometry, type GeometryStats } from '../geometry-utils'
 import { VectorMap } from '../optimizations'
 import { Matrix4, Vector, Vector3 } from './bunches'
 
@@ -151,6 +152,15 @@ export abstract class AMesh {
 
 	hull(...others: AMesh[]): MaybePromise<AMesh> {
 		return hull3(this, ...others)
+	}
+
+	/**
+	 * Analyze mesh geometry for printability and statistics.
+	 * Returns comprehensive stats including watertight/manifold checks,
+	 * surface area, volume, and a printability assessment.
+	 */
+	analyze(): GeometryStats {
+		return analyzeGeometry(this)
 	}
 }
 
@@ -347,5 +357,6 @@ markComputedMethod(AMesh.prototype, 'subtract')
 markComputedMethod(AMesh.prototype, 'subtractFrom')
 markComputedMethod(AMesh.prototype, 'intersect')
 markComputedMethod(AMesh.prototype, 'hull')
+markComputedMethod(AMesh.prototype, 'analyze', { returns: 'value' })
 
 export { Mesh as MeshBase }

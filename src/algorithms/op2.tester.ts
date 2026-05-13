@@ -45,9 +45,15 @@ export function resetOperationCount(): void {
 	operationCount = 0
 }
 
+function offset2(_contour: ContourBase, _delta: number): ContourBase {
+	operationCount++
+	return new FakeContour(`offset_${operationCount}`)
+}
+
 export default {
 	union2,
 	intersect2,
 	subtract2,
 	hull2,
+	offset2,
 } satisfies Partial<Algorithms>

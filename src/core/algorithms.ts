@@ -2,7 +2,7 @@ import di from '@tsculpt/ts/di'
 import './facades'
 import { createDerivedComputation } from './computed/base'
 import { computedRegistry } from './computed/registry'
-import type { Computable, Computed } from './computed/types'
+import type { Computable, Computation, Computed } from './computed/types'
 import { MaybePromise } from './ts/async'
 import { AContour, AMesh } from './types'
 
@@ -11,6 +11,7 @@ const {
 	intersect2,
 	hull2,
 	subtract2,
+	offset2,
 	union3,
 	intersect3,
 	hull3,
@@ -26,6 +27,10 @@ export { vectorIntersect, inPolygon, polygonIntersect, distinctPolygons }
 // Overloads for union function
 export function unionBase(source1: AContour, ...source: AContour[]): MaybePromise<AContour>
 export function unionBase(source1: AMesh, ...source: AMesh[]): MaybePromise<AMesh>
+export function unionBase<Target extends AContour | AMesh>(
+	source1: Target,
+	...source: Target[]
+): MaybePromise<Target>
 export function unionBase<Target extends AContour | AMesh>(
 	source1: Target,
 	...source: Target[]
@@ -48,12 +53,16 @@ export function union<Target extends AContour | AMesh>(
 		createDerivedComputation([source1, ...source], (resolvedArgs) => {
 			const [first, ...rest] = resolvedArgs
 			return unionBase(first as Target, ...(rest as Target[]))
-		})
-	) as Computed<Target>
+		}) as Computation<Awaited<Target>>
+	) as unknown as Computed<Target>
 }
 
 export function intersectBase(source1: AContour, ...source: AContour[]): MaybePromise<AContour>
 export function intersectBase(source1: AMesh, ...source: AMesh[]): MaybePromise<AMesh>
+export function intersectBase<Target extends AContour | AMesh>(
+	source1: Target,
+	...source: Target[]
+): MaybePromise<Target>
 export function intersectBase<Target extends AContour | AMesh>(
 	source1: Target,
 	...source: Target[]
@@ -79,12 +88,16 @@ export function intersect<Target extends AContour | AMesh>(
 		createDerivedComputation([source1, ...source], (resolvedArgs) => {
 			const [first, ...rest] = resolvedArgs
 			return intersectBase(first as Target, ...(rest as Target[]))
-		})
-	) as Computed<Target>
+		}) as Computation<Awaited<Target>>
+	) as unknown as Computed<Target>
 }
 
 export function subtractBase(source1: AContour, source2: AContour): MaybePromise<AContour>
 export function subtractBase(source1: AMesh, source2: AMesh): MaybePromise<AMesh>
+export function subtractBase<Target extends AContour | AMesh>(
+	source1: Target,
+	source2: Target
+): MaybePromise<Target>
 export function subtractBase<Target extends AContour | AMesh>(
 	source1: Target,
 	source2: Target
@@ -107,12 +120,16 @@ export function subtract<Target extends AContour | AMesh>(
 		createDerivedComputation([source1, source2], (resolvedArgs) => {
 			const [first, second] = resolvedArgs
 			return subtractBase(first as Target, second as Target)
-		})
-	) as Computed<Target>
+		}) as Computation<Awaited<Target>>
+	) as unknown as Computed<Target>
 }
 
 export function hullBase(source1: AContour, ...source: AContour[]): MaybePromise<AContour>
 export function hullBase(source1: AMesh, ...source: AMesh[]): MaybePromise<AMesh>
+export function hullBase<Target extends AContour | AMesh>(
+	source1: Target,
+	...source: Target[]
+): MaybePromise<Target>
 export function hullBase<Target extends AContour | AMesh>(
 	source1: Target,
 	...source: Target[]
@@ -135,6 +152,18 @@ export function hull<Target extends AContour | AMesh>(
 		createDerivedComputation([source1, ...source], (resolvedArgs) => {
 			const [first, ...rest] = resolvedArgs
 			return hullBase(first as Target, ...(rest as Target[]))
+		}) as Computation<Awaited<Target>>
+	) as unknown as Computed<Target>
+}
+
+export function offsetBase(contour: AContour, delta: number): MaybePromise<AContour> {
+	return offset2(contour, delta)
+}
+
+export function offset(contour: Computable<AContour>, delta: number): Computed<AContour> {
+	return computedRegistry.wrap(
+		createDerivedComputation([contour], (resolvedArgs) => {
+			return offsetBase(resolvedArgs[0] as AContour, delta)
 		})
-	) as Computed<Target>
+	) as Computed<AContour>
 }

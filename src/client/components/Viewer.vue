@@ -1,6 +1,9 @@
 <template>
 	<div class="export-viewer" ref="container">
 		<canvas ref="canvas"></canvas>
+		<div v-if="meshHealth" class="mesh-health-badge" :class="meshHealth.cssClass" :title="meshHealth.tooltip">
+			{{ meshHealth.icon }} {{ meshHealth.label }}
+		</div>
 	</div>
 </template>
 
@@ -8,7 +11,7 @@
 import type { AMesh } from '@tsculpt/types'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { isDark } from '../lib/stores'
 
 const colors = {
@@ -38,6 +41,22 @@ const props = defineProps<{
 	showAxes: boolean
 }>()
 
+const printabilityBadge: Record<string, { icon: string; label: string; cssClass: string; tooltip: string }> = {
+	printable: { icon: '✅', label: 'Printable', cssClass: 'health-ok', tooltip: 'Watertight, manifold, positive volume — ready for 3D printing' },
+	'not-watertight': { icon: '⚠️', label: 'Not watertight', cssClass: 'health-warn', tooltip: 'Mesh has holes (boundary edges). 3D printing may fail.' },
+	'non-manifold': { icon: '⚠️', label: 'Non-manifold', cssClass: 'health-warn', tooltip: 'Mesh has non-manifold edges (shared by >2 faces). 3D printing may fail.' },
+	degenerate: { icon: '❌', label: 'Degenerate', cssClass: 'health-err', tooltip: 'Zero or negative volume — not a valid solid' },
+}
+
+const meshHealth = computed(() => {
+	try {
+		const stats = props.viewed.analyze()
+		return printabilityBadge[stats.printability] ?? null
+	} catch {
+		return null
+	}
+})
+
 const container = ref<HTMLDivElement>()
 const canvas = ref<HTMLCanvasElement>()
 let scene: THREE.Scene
@@ -52,6 +71,11 @@ let hasSeenRealMesh = false
 let lastViewedMesh: AMesh | null = null
 let animationFrameId: number | null = null
 let isOrbiting = false
+
+function renderScene() {
+	if (!renderer || !scene || !camera) return
+	renderer.render(scene, camera)
+}
 
 // Watch for theme changes
 watch(isDark, updateColors, { immediate: false })
@@ -81,6 +105,8 @@ function updateColors() {
 			}
 		}
 	})
+
+	renderScene()
 }
 
 // Expose resetCamera and getCameraState for external use
@@ -119,6 +145,7 @@ function resetCamera() {
 		camera.position.set(sphereCenter.x, sphereCenter.y, sphereCenter.z + distance)
 		controls.target.copy(sphereCenter)
 		controls.update()
+		renderScene()
 	}
 }
 
@@ -164,7 +191,7 @@ function init() {
 
 	// Controls setup
 	controls = new OrbitControls(camera, canvas.value)
-	controls.enableDamping = true
+	controls.enableDamping = false
 	controls.zoomToCursor = true
 	controls.target.set(0, 0, 0)
 
@@ -181,9 +208,7 @@ function init() {
 		}
 	})
 	controls.addEventListener('change', () => {
-		if (!isOrbiting) {
-			renderer.render(scene, camera)
-		}
+		renderScene()
 	})
 
 	// Lighting setup
@@ -198,7 +223,7 @@ function init() {
 	}
 
 	// Initial render
-	renderer.render(scene, camera)
+	renderScene()
 }
 
 function setupLights() {
@@ -298,6 +323,8 @@ function showAxes(show: boolean) {
 		scene.remove(axes)
 		axes = null
 	}
+
+	renderScene()
 }
 
 function updateGeometry() {
@@ -424,7 +451,7 @@ function updateGeometry() {
 
 	// Request a render
 	if (!isOrbiting) {
-		renderer.render(scene, camera)
+		renderScene()
 	}
 }
 
@@ -449,6 +476,7 @@ function handleResize() {
 
 	// Update renderer with new size
 	renderer.setSize(width, height, true) // true for updateStyle
+	renderScene()
 }
 
 // Add ResizeObserver for more reliable size updates
@@ -488,6 +516,7 @@ watch(
 		if (!mesh || !edges) return
 		;(mesh.material as THREE.MeshStandardMaterial).wireframe = mode === 'wireframe'
 		edges.visible = mode === 'solid-edges'
+		renderScene()
 	},
 	{ immediate: true }
 )
@@ -522,4 +551,30 @@ watch(
 
 			&:hover
 				background: var(--surface-hover)
+
+.mesh-health-badge
+	position: absolute
+	bottom: 0.75rem
+	right: 0.75rem
+	padding: 0.3rem 0.65rem
+	border-radius: 6px
+	font-size: 0.8rem
+	font-weight: 600
+	font-family: var(--font-family-mono, monospace)
+	pointer-events: none
+	z-index: 10
+	backdrop-filter: blur(6px)
+	box-shadow: 0 1px 4px rgba(0,0,0,0.3)
+
+	&.health-ok
+		background: rgba(34, 197, 94, 0.85)
+		color: #fff
+
+	&.health-warn
+		background: rgba(234, 179, 8, 0.85)
+		color: #000
+
+	&.health-err
+		background: rgba(239, 68, 68, 0.85)
+		color: #fff
 </style>

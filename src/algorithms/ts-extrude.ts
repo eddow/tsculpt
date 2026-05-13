@@ -1,9 +1,13 @@
 import { Algorithms } from '@tsculpt/ts/di'
 import { AMesh } from '@tsculpt/types'
-import type { AContour, ContourBase, MeshSpecification, Vector2, Vector3 } from '@tsculpt/types'
-import type { ExtrusionResult } from 'ts-extrude-wasm'
+import type { AContour, ContourBase, Vector3 } from '@tsculpt/types'
+import type { ExtrusionResult, TsExtrudeFactoryFunction, TsExtrudeModule } from '../ts-extrude-wasm'
 
 let module: any = null
+const tsExtrudeModuleUrl = '/ts-extrude-wasm/ts_extrude.js'
+const importPublicModule = new Function('url', 'return import(url)') as <T>(
+	url: string
+) => Promise<T>
 
 /**
  * Extrusion result intermediate class
@@ -129,11 +133,13 @@ async function ensureTsExtrudeInitialized(): Promise<any> {
 	if (!module) {
 		try {
 			// Import the WASM module
-			const wasmModule = await import('ts-extrude-wasm')
+			const wasmModule = await importPublicModule<
+				TsExtrudeModule & { default: TsExtrudeFactoryFunction }
+			>(tsExtrudeModuleUrl)
 
 			// Initialize the WASM module
 			await wasmModule.default({
-				locateFile: () => '/ts_extrude_bg.wasm',
+				locateFile: () => '/ts-extrude-wasm/ts_extrude_bg.wasm',
 			})
 
 			// The module now has the exported functions
@@ -291,7 +297,7 @@ export const extrudeParallelWasm = async (
 }
 
 // Initialize WASM on module load
-ensureTsExtrudeInitialized().catch((error) => {
+ensureTsExtrudeInitialized().catch(() => {
 	// Silently fail initialization, will retry on first use
 })
 

@@ -56,6 +56,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ts-csg"
+version = "0.1.0"
+dependencies = [
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "ts-extrude"
 version = "0.1.0"
 dependencies = [

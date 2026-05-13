@@ -1,5 +1,5 @@
 [workspace]
-members = ["ts-extrude", "ts-math"]
+members = ["ts-extrude", "ts-math", "ts-csg"]
 resolver = "2"
 
 [workspace.dependencies]

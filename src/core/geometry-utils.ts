@@ -1,6 +1,14 @@
-// TODO: Unused file, use what was produced here for mesh statistics
 import { type AMesh } from '@tsculpt/types'
 import { Box3, Vector3 as ThreeVector3 } from 'three'
+
+/**
+ * Printability status of a mesh.
+ * - 'printable': watertight, manifold, positive volume — ready for 3D printing
+ * - 'not-watertight': at least one edge is shared by ≠2 faces — has holes
+ * - 'non-manifold': at least one edge shared by >2 faces — self-intersections or flaps
+ * - 'degenerate': zero or negative volume — flat or inside-out
+ */
+export type Printability = 'printable' | 'not-watertight' | 'non-manifold' | 'degenerate'
 
 /**
  * Geometry statistics and analysis
@@ -20,6 +28,12 @@ export interface GeometryStats {
 	hasUVs: boolean
 	isWatertight: boolean
 	isManifold: boolean
+	/** High-level printability assessment */
+	printability: Printability
+	/** Number of boundary edges (edges shared by only 1 face — holes) */
+	boundaryEdges: number
+	/** Number of non-manifold edges (edges shared by >2 faces) */
+	nonManifoldEdges: number
 }
 /**
  * Calculate comprehensive geometry statistics
@@ -88,10 +102,25 @@ export function analyzeGeometry(mesh: AMesh): GeometryStats {
 		}
 	}
 
-	const isWatertight = Array.from(edgeMap.values()).every((count) => count === 2)
+	const edgeCounts = Array.from(edgeMap.values())
+	const isWatertight = edgeCounts.every((count) => count === 2)
+	const isManifold = edgeCounts.every((count) => count <= 2)
+	const boundaryEdges = edgeCounts.filter((count) => count === 1).length
+	const nonManifoldEdges = edgeCounts.filter((count) => count > 2).length
 
-	// Check if manifold (no non-manifold edges)
-	const isManifold = Array.from(edgeMap.values()).every((count) => count <= 2)
+	// Determine printability
+	const absVolume = Math.abs(volume)
+	const isDegenerate = mesh.faces.length === 0 || absVolume < 1e-12
+	let printability: Printability
+	if (isDegenerate) {
+		printability = 'degenerate'
+	} else if (!isManifold) {
+		printability = 'non-manifold'
+	} else if (!isWatertight) {
+		printability = 'not-watertight'
+	} else {
+		printability = 'printable'
+	}
 
 	return {
 		vertexCount,
@@ -103,10 +132,13 @@ export function analyzeGeometry(mesh: AMesh): GeometryStats {
 			center: [center.x, center.y, center.z],
 		},
 		surfaceArea,
-		volume: Math.abs(volume),
+		volume: absVolume,
 		hasNormals: false, // Your mesh format doesn't store normals
 		hasUVs: false, // Your mesh format doesn't store UVs
 		isWatertight,
 		isManifold,
+		printability,
+		boundaryEdges,
+		nonManifoldEdges,
 	}
 }

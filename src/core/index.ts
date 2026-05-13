@@ -35,8 +35,13 @@ export {
 	rotateExtrude,
 	linearExtrudeBase,
 	rotateExtrudeBase,
+	sweep,
+	loft,
 } from './extrusions'
+export { extrude, type ExtrusionSpec } from './types/extrusion'
+export type { ContourFn, PathFn } from './types/extrusion'
 export { assert } from './ts/debug'
 export * from './math'
 
 export * from './algorithms'
+export { analyzeGeometry, type GeometryStats, type Printability } from './geometry-utils'

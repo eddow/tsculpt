@@ -271,6 +271,24 @@ function hull2(contour1: AContour, ...contours: AContour[]): AContour {
 	return result
 }
 
+function offset2(contour: AContour, delta: number): AContour {
+	if (!module) {
+		throw new Error('Clipper2 module not initialized')
+	}
+
+	const clipperContour = toClipper2Contour(contour)
+	const result = module.InflatePathsD(
+		clipperContour.pathsD,
+		delta,
+		module.JoinType.Miter,
+		module.EndType.Polygon,
+		2.0, // miter limit
+		0.25, // arc tolerance (unused for miter joins)
+		2 // decimal precision
+	)
+	return new Clipper2Contour(result)
+}
+
 function vectorIntersect(vA: [Vector2, Vector2], vB: [Vector2, Vector2]): boolean {
 	// Create two line segments as PathD objects
 	const lineA = module.MakePathD([vA[0].x, vA[0].y, vA[1].x, vA[1].y])
@@ -371,6 +389,7 @@ export default async () => {
 		intersect2,
 		subtract2,
 		hull2,
+		offset2,
 		vectorIntersect,
 		inPolygon,
 		polygonIntersect,

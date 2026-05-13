@@ -34,7 +34,7 @@
 			<AccordionContent>
 				<table class="statistics-table">
 					<tbody>
-						<tr v-for="item in statistics" :key="item.field">
+						<tr v-for="item in statistics" :key="item.field" :class="item.cssClass">
 							<th>{{ item.field }}</th>
 							<td>{{ item.value }}</td>
 						</tr>
@@ -54,6 +54,20 @@ import { computed, ref } from 'vue'
 import { AcceptedWaitable, awaited, hasResult } from './Await.vue'
 import Parameter from './Parameter.vue'
 
+const printabilityLabels: Record<string, string> = {
+	printable: '\u2705 Printable',
+	'not-watertight': '\u26A0\uFE0F Not watertight (has holes)',
+	'non-manifold': '\u26A0\uFE0F Non-manifold edges',
+	degenerate: '\u274C Degenerate (zero/negative volume)',
+}
+
+const printabilityClasses: Record<string, string> = {
+	printable: 'status-ok',
+	'not-watertight': 'status-warning',
+	'non-manifold': 'status-warning',
+	degenerate: 'status-error',
+}
+
 const shown = localStored('parameters-shown', ['parameters'])
 const props = defineProps<{
 	viewed: AcceptedWaitable<AMesh>
@@ -65,11 +79,32 @@ const emit = defineEmits<(e: 'update:parameters', value: GenerationParameters) =
 const statistics = computed(() => {
 	const viewed = awaited(props.viewed)
 	if (!hasResult(viewed)) return []
-	const stats = {
+	const basic = {
 		vertices: viewed.vectors.length,
 		faces: viewed.faces.length,
 	}
-	return Object.entries(stats).map(([field, value]) => ({ field, value }))
+	const entries: { field: string; value: string | number; cssClass?: string }[] =
+		Object.entries(basic).map(([field, value]) => ({ field, value }))
+
+	// Run geometry analysis for mesh health
+	const stats = viewed.analyze()
+	const fmt = (n: number) => (n < 0.01 && n > -0.01 ? '~0' : n.toFixed(2))
+
+	entries.push(
+		{ field: 'watertight', value: stats.isWatertight ? '\u2713 Yes' : '\u2717 No', cssClass: stats.isWatertight ? '' : 'status-warning' },
+		{ field: 'manifold', value: stats.isManifold ? '\u2713 Yes' : '\u2717 No', cssClass: stats.isManifold ? '' : 'status-error' },
+		{ field: 'printability', value: printabilityLabels[stats.printability] ?? stats.printability, cssClass: printabilityClasses[stats.printability] ?? '' },
+		{ field: 'surface area', value: fmt(stats.surfaceArea) },
+		{ field: 'volume', value: fmt(stats.volume) },
+	)
+	if (stats.boundaryEdges > 0) {
+		entries.push({ field: 'holes (boundary edges)', value: stats.boundaryEdges, cssClass: 'status-warning' })
+	}
+	if (stats.nonManifoldEdges > 0) {
+		entries.push({ field: 'non-manifold edges', value: stats.nonManifoldEdges, cssClass: 'status-error' })
+	}
+
+	return entries
 })
 const accordionRef = ref()
 
@@ -167,4 +202,19 @@ ensureDefaults()
 		padding: 0.25rem 0
 		color: var(--text-color)
 		font-family: var(--font-family-mono)
+
+.status-ok
+	color: #22c55e !important
+	td, th
+		color: #22c55e !important
+
+.status-warning
+	color: #eab308 !important
+	td, th
+		color: #eab308 !important
+
+.status-error
+	color: #ef4444 !important
+	td, th
+		color: #ef4444 !important
 </style>

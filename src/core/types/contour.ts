@@ -14,6 +14,7 @@ const {
 	intersect2,
 	hull2,
 	subtract2,
+	offset2,
 	triangulate,
 } = di()
 export type Surface = [Vector2, Vector2, Vector2][]
@@ -255,6 +256,9 @@ export abstract class AContour extends ArraySim<Shape>() {
 	subtract(other: AContour): MaybePromise<AContour> {
 		return subtract2(this, other)
 	}
+	offset(delta: number): MaybePromise<AContour> {
+		return offset2(this, delta)
+	}
 	subtractFrom(other: AContour): MaybePromise<AContour> {
 		return subtract2(other, this)
 	}
@@ -337,6 +341,7 @@ markComputedMethod(AContour.prototype, 'union')
 markComputedMethod(AContour.prototype, 'intersect')
 markComputedMethod(AContour.prototype, 'hull')
 markComputedMethod(AContour.prototype, 'subtract')
+markComputedMethod(AContour.prototype, 'offset')
 markComputedMethod(AContour.prototype, 'subtractFrom')
 markComputedMethod(AContour.prototype, 'triangulate', { returns: 'value' })
 

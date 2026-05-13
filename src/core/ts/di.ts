@@ -5,6 +5,7 @@ export interface AlgorithmsDef {
 	intersect2(contour1: AContour, ...contours: AContour[]): AContour
 	subtract2(contour1: AContour, contour2: AContour): AContour
 	hull2(contour1: AContour, ...contours: AContour[]): AContour
+	offset2(contour: AContour, delta: number): AContour
 	union3(mesh1: AMesh, ...meshes: AMesh[]): AMesh
 	intersect3(mesh1: AMesh, ...meshes: AMesh[]): AMesh
 	subtract3(mesh1: AMesh, mesh2: AMesh): AMesh

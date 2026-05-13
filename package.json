@@ -9,6 +9,7 @@
 		"build": "vite build",
 		"build:wasm": "cd crates/ts-extrude && wasm-pack build --target web --out-dir ../../public/ts-extrude-wasm",
 		"build:wasm:math": "cd crates/ts-math && wasm-pack build --target web --out-dir ../../public/ts-math-wasm",
+		"build:wasm:csg": "cd crates/ts-csg && wasm-pack build --target web --out-dir ../../public/ts-csg-wasm",
 		"biome": "biome check --fix",
 		"preview": "vite preview",
 		"test": "vitest run",
@@ -41,6 +42,7 @@
 		"three": "^0.177.0",
 		"ts-extrude-wasm": "file:./public/ts-extrude-wasm",
 		"ts-math-wasm": "file:./public/ts-math-wasm",
+		"ts-csg-wasm": "file:./public/ts-csg-wasm",
 		"ts-morph": "^26.0.0",
 		"vue": "^3.4.15",
 		"vue-router": "^4.5.1"
