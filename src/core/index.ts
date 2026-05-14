@@ -44,4 +44,4 @@ export { assert } from './ts/debug'
 export * from './math'
 
 export * from './algorithms'
-export { analyzeGeometry, type GeometryStats, type Printability } from './geometry-utils'
+export { analyzeGeometry, type GeometryStats, type Printability, repairMesh, type RepairReport } from './geometry-utils'

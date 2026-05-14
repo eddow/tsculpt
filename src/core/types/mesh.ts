@@ -2,7 +2,7 @@ import { MaybePromise } from '@tsculpt/ts/async'
 import { cached } from '@tsculpt/ts/decorators'
 import di from '@tsculpt/ts/di'
 import { markComputedMethod } from '../computed/decorators'
-import { analyzeGeometry, type GeometryStats } from '../geometry-utils'
+import { analyzeGeometry, type GeometryStats, repairMesh, type RepairReport } from '../geometry-utils'
 import { VectorMap } from '../optimizations'
 import { Matrix4, Vector, Vector3 } from './bunches'
 
@@ -161,6 +161,15 @@ export abstract class AMesh {
 	 */
 	analyze(): GeometryStats {
 		return analyzeGeometry(this)
+	}
+
+	/**
+	 * Run all available repair operations on this mesh.
+	 * Returns a brand-new repaired Mesh (never mutates the original)
+	 * and a report of what was fixed.
+	 */
+	repair(): { repaired: AMesh; report: RepairReport } {
+		return repairMesh(this)
 	}
 }
 
@@ -358,5 +367,6 @@ markComputedMethod(AMesh.prototype, 'subtractFrom')
 markComputedMethod(AMesh.prototype, 'intersect')
 markComputedMethod(AMesh.prototype, 'hull')
 markComputedMethod(AMesh.prototype, 'analyze', { returns: 'value' })
+markComputedMethod(AMesh.prototype, 'repair')
 
 export { Mesh as MeshBase }

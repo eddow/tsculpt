@@ -99,18 +99,19 @@ No operation to make a solid mesh hollow with a specified wall thickness (`shell
 | **Mesh validation / analysis** | Watertight/manifold check, printability assessment, volume/surface area — exposed via `AMesh.analyze()` and wired into the UI (Statistics panel + Viewer badge + pre-export dialog) | ✅ Done |
 | **Subdivision surface** | Catmull-Clark, Loop, or √3 subdivision | Medium |
 | **Mesh decimation** | Polygon reduction for LOD generation | Medium |
-| **Mesh repair** | Hole-filling, normal fixing, manifold repair (destructive fixes — distinct from read-only validation above) | Medium |
+| **Mesh repair** | Hole-filling (fan-triangulate boundary loops), normal-flip (if volume < 0), degenerate face removal — `AMesh.repair()` with one-click Repair button on Viewer badge + undoable toast | ✅ Mostly done |
+| **Non-manifold resolution** | Resolve edges shared by >2 faces, split non-manifold vertices — not yet implemented | Medium |
 | **Mesh smoothing** | Laplacian or Taubin smoothing | Medium |
 | **Normal computation** | Compute per-face or per-vertex normals | Medium |
 | **Edge split / weld** | Mesh topology editing | Low |
 | **Boolean cleanup** | Degenerate face removal after boolean ops | Low |
 
 **Files:**
-- [`src/core/geometry-utils.ts`](../src/core/geometry-utils.ts) — `analyzeGeometry()`, `GeometryStats`, `Printability`
-- [`src/core/types/mesh.ts`](../src/core/types/mesh.ts) — `AMesh.analyze()` method (computed)
+- [`src/core/geometry-utils.ts`](../src/core/geometry-utils.ts) — `analyzeGeometry()`, `GeometryStats`, `Printability`, `repairMesh()`, `repairNormals()`, `removeDegenerateFaces()`, `fillHoles()`, `RepairReport`
+- [`src/core/types/mesh.ts`](../src/core/types/mesh.ts) — `AMesh.analyze()` and `AMesh.repair()` methods
 - [`src/client/components/Parameters.vue`](../src/client/components/Parameters.vue) — Statistics panel with mesh health
-- [`src/client/components/Viewer.vue`](../src/client/components/Viewer.vue) — Mesh-health badge overlay
-- [`src/client/components/EntryViewer.vue`](../src/client/components/EntryViewer.vue) — Export menu with pre-export validation dialog
+- [`src/client/components/Viewer.vue`](../src/client/components/Viewer.vue) — Mesh-health badge + Repair button
+- [`src/client/components/EntryViewer.vue`](../src/client/components/EntryViewer.vue) — Export menu + repair orchestration with undo toast
 
 ---
 
@@ -300,6 +301,6 @@ The computed layer described in [`docs/builders.md`](../docs/builders.md) is sop
 | 13 | Constraint system |
 | 14 | Measurement tools |
 | 15 | Snapping |
-| 16 | Mesh repair (hole-filling, normal fixing, manifold repair) |
+| 16 | Non-manifold resolution (edges shared by >2 faces) |
 | 17 | Additional export formats (STEP, 3MF, GLTF) |
 | 18 | Test coverage for booleans, contours, and mesh operations |

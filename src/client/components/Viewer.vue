@@ -1,8 +1,18 @@
 <template>
 	<div class="export-viewer" ref="container">
 		<canvas ref="canvas"></canvas>
-		<div v-if="meshHealth" class="mesh-health-badge" :class="meshHealth.cssClass" :title="meshHealth.tooltip">
-			{{ meshHealth.icon }} {{ meshHealth.label }}
+		<div v-if="meshHealth" class="mesh-health-overlay">
+			<div class="mesh-health-badge" :class="meshHealth.cssClass" :title="meshHealth.tooltip">
+				{{ meshHealth.icon }} {{ meshHealth.label }}
+			</div>
+			<button
+				v-if="repairable"
+				class="mesh-repair-btn"
+				title="Attempt to repair this mesh (flip normals, remove degenerate faces, fill holes)"
+				@click="requestRepair"
+			>
+				🔧 Repair
+			</button>
 		</div>
 	</div>
 </template>
@@ -35,6 +45,10 @@ const colors = {
 	},
 }
 
+const emit = defineEmits<{
+	repair: []
+}>()
+
 const props = defineProps<{
 	viewed: AMesh
 	displayMode: 'solid' | 'wireframe' | 'solid-edges'
@@ -49,13 +63,18 @@ const printabilityBadge: Record<string, { icon: string; label: string; cssClass:
 }
 
 const meshHealth = computed(() => {
-	try {
-		const stats = props.viewed.analyze()
-		return printabilityBadge[stats.printability] ?? null
-	} catch {
-		return null
-	}
+	const stats = props.viewed.analyze()
+	return printabilityBadge[stats.printability] ?? null
 })
+
+const repairable = computed(() => {
+	const stats = props.viewed.analyze()
+	return stats.printability !== 'printable'
+})
+
+function requestRepair() {
+	emit('repair')
+}
 
 const container = ref<HTMLDivElement>()
 const canvas = ref<HTMLCanvasElement>()
@@ -552,17 +571,22 @@ watch(
 			&:hover
 				background: var(--surface-hover)
 
-.mesh-health-badge
+.mesh-health-overlay
 	position: absolute
 	bottom: 0.75rem
 	right: 0.75rem
+	display: flex
+	gap: 0.4rem
+	align-items: center
+	z-index: 10
+
+.mesh-health-badge
 	padding: 0.3rem 0.65rem
 	border-radius: 6px
 	font-size: 0.8rem
 	font-weight: 600
 	font-family: var(--font-family-mono, monospace)
 	pointer-events: none
-	z-index: 10
 	backdrop-filter: blur(6px)
 	box-shadow: 0 1px 4px rgba(0,0,0,0.3)
 
@@ -577,4 +601,20 @@ watch(
 	&.health-err
 		background: rgba(239, 68, 68, 0.85)
 		color: #fff
+
+.mesh-repair-btn
+	padding: 0.3rem 0.65rem
+	border-radius: 6px
+	border: none
+	font-size: 0.8rem
+	font-weight: 600
+	cursor: pointer
+	background: rgba(59, 130, 246, 0.85)
+	color: #fff
+	backdrop-filter: blur(6px)
+	box-shadow: 0 1px 4px rgba(0,0,0,0.3)
+	transition: background 0.15s
+
+	&:hover
+		background: rgba(37, 99, 235, 0.9)
 </style>

@@ -245,3 +245,83 @@ describe('Transformation Methods', () => {
 		})
 	})
 })
+
+describe('mesh analysis and repair', () => {
+	const tetraVectors = [v3(0, 0, 0), v3(1, 0, 0), v3(0, 1, 0), v3(0, 0, 1)] as const
+	const tetraFaces: [number, number, number][] = [
+		[0, 2, 1],
+		[0, 1, 3],
+		[0, 3, 2],
+		[1, 2, 3],
+	]
+
+	function tetra(faces = tetraFaces): Mesh {
+		return new Mesh(faces, tetraVectors)
+	}
+
+	it('classifies a closed manifold mesh as printable', () => {
+		const stats = tetra().analyze()
+
+		expect(stats.printability).toBe('printable')
+		expect(stats.isWatertight).toBe(true)
+		expect(stats.isManifold).toBe(true)
+		expect(stats.signedVolume).toBeGreaterThan(0)
+		expect(stats.volume).toBeGreaterThan(0)
+	})
+
+	it('classifies an inside-out closed mesh as degenerate with negative signed volume', () => {
+		const inverted = tetra(
+			tetraFaces.map((face) => [face[0], face[2], face[1]] as [number, number, number])
+		)
+		const stats = inverted.analyze()
+
+		expect(stats.printability).toBe('degenerate')
+		expect(stats.isWatertight).toBe(true)
+		expect(stats.isManifold).toBe(true)
+		expect(stats.signedVolume).toBeLessThan(0)
+	})
+
+	it('repairs inside-out normals into a printable mesh', () => {
+		const inverted = tetra(
+			tetraFaces.map((face) => [face[0], face[2], face[1]] as [number, number, number])
+		)
+		const { repaired, report } = inverted.repair()
+		const stats = repaired.analyze()
+
+		expect(report.normalsFlipped).toBe(true)
+		expect(stats.printability).toBe('printable')
+		expect(stats.signedVolume).toBeGreaterThan(0)
+	})
+
+	it('removes degenerate zero-area faces', () => {
+		const mesh = new Mesh([...tetraFaces, [0, 1, 4]], [...tetraVectors, v3(2, 0, 0)])
+		const { repaired, report } = mesh.repair()
+
+		expect(report.degenerateRemoved).toBe(1)
+		expect(repaired.faces.length).toBe(tetraFaces.length)
+	})
+
+	it('fills one simple boundary hole with consistently oriented triangles', () => {
+		const mesh = tetra(tetraFaces.slice(0, 3))
+		const { repaired, report } = mesh.repair()
+		const stats = repaired.analyze()
+
+		expect(report.holesFilled).toBe(1)
+		expect(stats.isWatertight).toBe(true)
+		expect(stats.isManifold).toBe(true)
+		expect(stats.printability).toBe('printable')
+		expect(stats.signedVolume).toBeGreaterThan(0)
+	})
+
+	it('reports non-manifold edges without claiming to repair them', () => {
+		const mesh = tetra([...tetraFaces, tetraFaces[3]])
+		const before = mesh.analyze()
+		const { repaired, report } = mesh.repair()
+		const after = repaired.analyze()
+
+		expect(before.printability).toBe('non-manifold')
+		expect(after.printability).toBe('non-manifold')
+		expect(after.nonManifoldEdges).toBeGreaterThan(0)
+		expect(report.holesFilled).toBe(0)
+	})
+})
