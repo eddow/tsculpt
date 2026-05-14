@@ -1,6 +1,4 @@
-import { distance } from '@tsculpt/math'
 import Diamond from 'flat-diamond'
-import { Vector2 } from 'three'
 import { Contour } from '../contour'
 import {
 	CompositeTPFactory,

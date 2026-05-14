@@ -10,6 +10,9 @@
 		"resolveJsonModule": true,
 		"isolatedModules": true,
 		"noEmit": false,
+		"declaration": true,
+		"declarationMap": true,
+		"outDir": "./dist",
 		"jsx": "preserve",
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
@@ -27,5 +30,7 @@
 			"@tsculpt/*": ["./src/core/*"],
 			"@meta": ["./src/meta.ts"]
 		}
-	}
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "e2e", "example"]
 }

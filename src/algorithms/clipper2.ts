@@ -1,4 +1,4 @@
-import { assert, winding } from '@tsculpt'
+import { winding } from '@tsculpt'
 import { Algorithms } from '@tsculpt/ts/di'
 import {
 	AContour,

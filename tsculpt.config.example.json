@@ -1,0 +1,13 @@
+{
+  "$schema": "./tsculpt.config.schema.json",
+  "defaultExport": "default",
+  "defaultFormat": "stl",
+  "outputDir": "./output",
+  "sculptDir": ".",
+  "port": "5173",
+  "host": "localhost",
+  "defaultParams": {
+    "size": 10,
+    "radius": 5
+  }
+}

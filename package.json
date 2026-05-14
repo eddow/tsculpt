@@ -1,12 +1,29 @@
 {
 	"name": "tsculpt",
-	"private": true,
+	"private": false,
 	"version": "0.0.0",
 	"type": "module",
-	"main": "src/index.ts",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"bin": {
+		"tsculpt": "./dist/cli/index.cjs"
+	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"default": "./dist/index.js"
+		},
+		"./core": {
+			"types": "./dist/core/index.d.ts",
+			"import": "./dist/core/index.js",
+			"default": "./dist/core/index.js"
+		}
+	},
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
+		"build:lib": "tsc -p tsconfig.json && node build-cli.js",
 		"build:wasm": "cd crates/ts-extrude && wasm-pack build --target web --out-dir ../../public/ts-extrude-wasm",
 		"build:wasm:math": "cd crates/ts-math && wasm-pack build --target web --out-dir ../../public/ts-math-wasm",
 		"build:wasm:csg": "cd crates/ts-csg && wasm-pack build --target web --out-dir ../../public/ts-csg-wasm",
@@ -55,7 +72,9 @@
 		"@types/node": "^20.11.16",
 		"@vitejs/plugin-vue": "^5.0.3",
 		"@vitest/coverage-v8": "^3.2.1",
+		"commander": "^12.1.0",
 		"concurrently": "^9.1.2",
+		"esbuild": "^0.24.0",
 		"nodemon": "^3.0.3",
 		"sass": "^1.89.1",
 		"tsx": "^4.7.1",
@@ -64,5 +83,11 @@
 		"vite": "^5.0.12",
 		"vite-bundle-analyzer": "^1.2.0",
 		"vitest": "^3.2.1"
-	}
+	},
+	"files": [
+		"dist",
+		"public",
+		"README.md",
+		"LICENSE"
+	]
 }

@@ -1,4 +1,4 @@
-import { FaceData, type FileHandler, type MeshData, type Vector3Data } from './index.js'
+import { type FileHandler, type MeshData, type Vector3Data } from './index.js'
 
 function arrayToVector3(arr: number[]): Vector3Data {
 	return [arr[0], arr[2], arr[1]] // Swap Y and Z

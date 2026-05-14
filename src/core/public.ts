@@ -1,5 +1,5 @@
 import { lift } from './computed'
-export { Contour, type Contour, Mesh, type Mesh } from './facades'
+export { Contour, Mesh } from './facades'
 import {
 	box as boxBase,
 	capsule3D as capsule3DBase,

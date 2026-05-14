@@ -1,6 +1,7 @@
 export * from './types'
 export * from './computed'
 export { Contour, Mesh } from './facades'
+export type { ContourType, MeshType } from './facades'
 
 export { generation, type GenerationParameters } from './globals'
 export * from './expression/linear'
